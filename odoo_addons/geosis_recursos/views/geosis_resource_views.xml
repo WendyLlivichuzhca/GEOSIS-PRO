@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_geosis_resource_tree" model="ir.ui.view">
+        <field name="name">geosis.resource.tree</field>
+        <field name="model">geosis.resource</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="code"/>
+                <field name="name"/>
+                <field name="category"/>
+                <field name="uom_id"/>
+                <field name="price"/>
+                <field name="active"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_geosis_resource_form" model="ir.ui.view">
+        <field name="name">geosis.resource.form</field>
+        <field name="model">geosis.resource</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="code"/>
+                            <field name="name"/>
+                            <field name="category"/>
+                        </group>
+                        <group>
+                            <field name="uom_id"/>
+                            <field name="price"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="description" placeholder="Notas internas del recurso"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_geosis_resource_search" model="ir.ui.view">
+        <field name="name">geosis.resource.search</field>
+        <field name="model">geosis.resource</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="code"/>
+                <field name="name"/>
+                <filter string="Activos" name="active_true" domain="[('active', '=', True)]"/>
+                <filter string="Inactivos" name="active_false" domain="[('active', '=', False)]"/>
+                <separator/>
+                <filter string="Equipos" name="category_m" domain="[('category', '=', 'M')]"/>
+                <filter string="Mano de Obra" name="category_n" domain="[('category', '=', 'N')]"/>
+                <filter string="Materiales" name="category_o" domain="[('category', '=', 'O')]"/>
+                <filter string="Transporte" name="category_p" domain="[('category', '=', 'P')]"/>
+                <group expand="0" string="Agrupar por">
+                    <filter string="Categoria" name="group_by_category" context="{'group_by': 'category'}"/>
+                    <filter string="Unidad" name="group_by_uom" context="{'group_by': 'uom_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_geosis_resources" model="ir.actions.act_window">
+        <field name="name">Recursos</field>
+        <field name="res_model">geosis.resource</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_geosis_resource_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Crea tu primer recurso de GEOSIS-PRO
+            </p>
+            <p>
+                Aqui administras materiales, equipos, mano de obra y transporte.
+            </p>
+        </field>
+    </record>
+
+    <menuitem
+        id="menu_geosis_resources"
+        name="Recursos"
+        parent="geosis_base.menu_geosis_catalogs"
+        action="action_geosis_resources"
+        sequence="10"
+        groups="geosis_base.group_geosis_admin,geosis_base.group_geosis_user,geosis_base.group_geosis_readonly"
+    />
+</odoo>

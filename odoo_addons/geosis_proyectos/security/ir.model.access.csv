@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_geosis_project_admin,access.geosis.project.admin,model_geosis_project,geosis_base.group_geosis_admin,1,1,1,1
+access_geosis_project_user,access.geosis.project.user,model_geosis_project,geosis_base.group_geosis_user,1,1,1,0
+access_geosis_project_readonly,access.geosis.project.readonly,model_geosis_project,geosis_base.group_geosis_readonly,1,0,0,0

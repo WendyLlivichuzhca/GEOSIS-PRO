@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_geosis_project_search" model="ir.ui.view">
+        <field name="name">geosis.project.search</field>
+        <field name="model">geosis.project</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Proyectos">
+                <field name="code"/>
+                <field name="name"/>
+                <field name="customer_name"/>
+                <field name="location"/>
+                <field name="start_date"/>
+                <filter name="filter_active" string="Activos" domain="[('active', '=', True)]"/>
+                <filter name="filter_inactive" string="Inactivos" domain="[('active', '=', False)]"/>
+                <separator/>
+                <filter name="filter_planning" string="Planificacion" domain="[('state', '=', 'planning')]"/>
+                <filter name="filter_running" string="Activo" domain="[('state', '=', 'active')]"/>
+                <filter name="filter_completed" string="Terminado" domain="[('state', '=', 'completed')]"/>
+                <filter name="filter_cancelled" string="Cancelado" domain="[('state', '=', 'cancelled')]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_geosis_project_tree" model="ir.ui.view">
+        <field name="name">geosis.project.tree</field>
+        <field name="model">geosis.project</field>
+        <field name="arch" type="xml">
+            <tree string="Proyectos">
+                <field name="code"/>
+                <field name="name"/>
+                <field name="customer_name"/>
+                <field name="location"/>
+                <field name="start_date"/>
+                <field name="end_date"/>
+                <field name="state"/>
+                <field name="budget_count"/>
+                <field name="total_budget_amount"/>
+                <field name="active"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_geosis_project_form" model="ir.ui.view">
+        <field name="name">geosis.project.form</field>
+        <field name="model">geosis.project</field>
+        <field name="arch" type="xml">
+            <form string="Proyecto">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="code"/>
+                            <field name="name"/>
+                            <field name="customer_name"/>
+                            <field name="location"/>
+                        </group>
+                        <group>
+                            <field name="start_date"/>
+                            <field name="end_date"/>
+                            <field name="state"/>
+                            <field name="active"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+
+                    <group>
+                        <group>
+                            <field name="budget_count" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="total_budget_amount" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Presupuestos">
+                            <field name="budget_ids">
+                                <tree editable="bottom" string="Presupuestos del proyecto">
+                                    <field name="code"/>
+                                    <field name="name"/>
+                                    <field name="customer_name"/>
+                                    <field name="location"/>
+                                    <field name="budget_date"/>
+                                    <field name="state"/>
+                                    <field name="total_amount" readonly="1"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Observaciones">
+                            <field name="description" placeholder="Notas del proyecto..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_geosis_projects" model="ir.actions.act_window">
+        <field name="name">Proyectos</field>
+        <field name="res_model">geosis.project</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_geosis_project_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Crea tu primer proyecto de GEOSIS-PRO
+            </p>
+            <p>
+                Aqui organizas clientes, ubicaciones y los presupuestos asociados
+                a cada proyecto.
+            </p>
+        </field>
+    </record>
+
+    <record id="view_geosis_budget_tree_project" model="ir.ui.view">
+        <field name="name">geosis.budget.tree.project</field>
+        <field name="model">geosis.budget</field>
+        <field name="inherit_id" ref="geosis_presupuesto.view_geosis_budget_tree"/>
+        <field name="arch" type="xml">
+            <field name="name" position="after">
+                <field name="project_id"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="view_geosis_budget_form_project" model="ir.ui.view">
+        <field name="name">geosis.budget.form.project</field>
+        <field name="model">geosis.budget</field>
+        <field name="inherit_id" ref="geosis_presupuesto.view_geosis_budget_form"/>
+        <field name="arch" type="xml">
+            <field name="location" position="after">
+                <field name="project_id"/>
+            </field>
+        </field>
+    </record>
+
+    <menuitem
+        id="menu_geosis_project_items"
+        name="Proyectos"
+        parent="geosis_base.menu_geosis_projects"
+        action="action_geosis_projects"
+        sequence="10"
+    />
+</odoo>

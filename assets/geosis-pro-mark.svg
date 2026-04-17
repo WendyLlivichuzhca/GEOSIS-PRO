@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+<title id="title">GEOSIS-PRO</title>
+<desc id="desc">Isotipo azul y naranja de GEOSIS-PRO</desc>
+<g fill="#1279bf">
+<path d="M128 20l15 1 8 24a84 84 0 0 1 27 11l23-12 11 11-12 23a84 84 0 0 1 11 27l24 8v15l-24 8a84 84 0 0 1-11 27l12 23-11 11-23-12a84 84 0 0 1-27 11l-8 24h-15l-8-24a84 84 0 0 1-27-11l-23 12-11-11 12-23a84 84 0 0 1-11-27l-24-8v-15l24-8a84 84 0 0 1 11-27L45 55l11-11 23 12a84 84 0 0 1 27-11l8-24h14z"/>
+</g>
+<circle cx="128" cy="128" r="78" fill="#fff"/>
+<path d="M128 55a73 73 0 0 1 55.2 120.8l-14.2-16.7A50 50 0 1 0 128 178a49.8 49.8 0 0 0 17.2-3.1l14 16.5A72.8 72.8 0 0 1 128 201a73 73 0 1 1 0-146z" fill="#e16f00"/>
+<path d="M162 192l-47-60 19-15 47 60z" fill="#1279bf"/>
+<path d="M148 192l-47-60 16-12 47 60z" fill="#e16f00"/>
+<circle cx="128" cy="128" r="66" fill="none" stroke="#1279bf" stroke-width="7"/>
+</svg>

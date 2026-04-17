@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_geosis_excel_import_wizard_form" model="ir.ui.view">
+        <field name="name">geosis.excel.import.wizard.form</field>
+        <field name="model">geosis.excel.import.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Importar Excel">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="file_data" filename="file_name"/>
+                            <field name="file_name"/>
+                            <field name="budget_date"/>
+                            <field name="note"/>
+                        </group>
+                        <group>
+                            <field name="budget_code"/>
+                            <field name="budget_name"/>
+                            <field name="project_code"/>
+                            <field name="project_name"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group>
+                            <field name="customer_name"/>
+                            <field name="location"/>
+                        </group>
+                        <group>
+                            <field name="import_apu_sheets"/>
+                            <field name="create_missing_apus"/>
+                            <field name="update_existing_apus"/>
+                            <field name="replace_budget_lines"/>
+                            <field name="use_budget_sheet_prices"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Formato esperado">
+                            <div class="text-muted">Hoja principal: Presupuesto</div>
+                            <div class="text-muted">Columnas recomendadas: codigo, descripcion, unidad, cantidad, precio unitario, total</div>
+                            <div class="text-muted">Hojas APU opcionales: una hoja por codigo de rubro</div>
+                            <div class="text-muted">En hojas APU: codigo, descripcion, categoria, unidad, cantidad, tarifa o costo</div>
+                        </group>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_import_excel" type="object" string="Importar" class="btn-primary"/>
+                    <button string="Cancelar" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_geosis_excel_import_wizard" model="ir.actions.act_window">
+        <field name="name">Importar Excel</field>
+        <field name="res_model">geosis.excel.import.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <menuitem
+        id="menu_geosis_excel_import"
+        name="Importar Excel"
+        parent="geosis_base.menu_geosis_budgets"
+        action="action_geosis_excel_import_wizard"
+        sequence="20"
+        groups="geosis_base.group_geosis_admin,geosis_base.group_geosis_user"
+    />
+</odoo>

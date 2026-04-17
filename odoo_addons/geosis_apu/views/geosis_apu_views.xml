@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_geosis_apu_search" model="ir.ui.view">
+        <field name="name">geosis.apu.search</field>
+        <field name="model">geosis.apu</field>
+        <field name="arch" type="xml">
+            <search string="Buscar APUs">
+                <field name="code"/>
+                <field name="name"/>
+                <field name="uom_name"/>
+                <filter name="filter_active" string="Activos" domain="[('active', '=', True)]"/>
+                <filter name="filter_inactive" string="Inactivos" domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_geosis_apu_tree" model="ir.ui.view">
+        <field name="name">geosis.apu.tree</field>
+        <field name="model">geosis.apu</field>
+        <field name="arch" type="xml">
+            <tree string="Rubros APU">
+                <field name="code"/>
+                <field name="name"/>
+                <field name="uom_name"/>
+                <field name="direct_cost"/>
+                <field name="indirect_percent"/>
+                <field name="total_cost"/>
+                <field name="active"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_geosis_apu_form" model="ir.ui.view">
+        <field name="name">geosis.apu.form</field>
+        <field name="model">geosis.apu</field>
+        <field name="arch" type="xml">
+            <form string="Rubro APU">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="code"/>
+                            <field name="name"/>
+                            <field name="uom_name"/>
+                            <field name="active"/>
+                        </group>
+                        <group>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="indirect_percent"/>
+                            <field name="direct_cost" readonly="1"/>
+                            <field name="indirect_value" readonly="1"/>
+                            <field name="total_cost" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Recursos">
+                            <field name="line_ids">
+                                <tree editable="bottom" string="Detalle de recursos">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="resource_id"/>
+                                    <field name="category"/>
+                                    <field name="uom_name"/>
+                                    <field name="quantity"/>
+                                    <field name="rate"/>
+                                    <field name="performance"/>
+                                    <field name="percentage"/>
+                                    <field name="distance"/>
+                                    <field name="cost" readonly="1"/>
+                                    <field name="note"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Observaciones">
+                            <field name="description" placeholder="Notas tecnicas del rubro APU..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_geosis_apus" model="ir.actions.act_window">
+        <field name="name">Rubros APU</field>
+        <field name="res_model">geosis.apu</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_geosis_apu_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Crea tu primer rubro APU de GEOSIS-PRO
+            </p>
+            <p>
+                Aqui administras el analisis de precios unitarios, sus recursos y el
+                calculo de costos directos e indirectos.
+            </p>
+        </field>
+    </record>
+
+    <menuitem
+        id="menu_geosis_apus"
+        name="Rubros APU"
+        parent="geosis_base.menu_geosis_catalogs"
+        action="action_geosis_apus"
+        sequence="20"
+    />
+</odoo>

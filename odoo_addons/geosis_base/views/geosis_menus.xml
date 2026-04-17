@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem
+        id="menu_geosis_root"
+        name="GEOSIS-PRO"
+        sequence="10"
+        groups="geosis_base.group_geosis_admin,geosis_base.group_geosis_user,geosis_base.group_geosis_readonly"
+    />
+
+    <menuitem
+        id="menu_geosis_catalogs"
+        name="Catalogos"
+        parent="menu_geosis_root"
+        sequence="10"
+        groups="geosis_base.group_geosis_admin,geosis_base.group_geosis_user,geosis_base.group_geosis_readonly"
+    />
+
+    <menuitem
+        id="menu_geosis_projects"
+        name="Proyectos"
+        parent="menu_geosis_root"
+        sequence="20"
+        groups="geosis_base.group_geosis_admin,geosis_base.group_geosis_user,geosis_base.group_geosis_readonly"
+    />
+
+    <menuitem
+        id="menu_geosis_budgets"
+        name="Presupuestos"
+        parent="menu_geosis_root"
+        sequence="30"
+        groups="geosis_base.group_geosis_admin,geosis_base.group_geosis_user,geosis_base.group_geosis_readonly"
+    />
+</odoo>
