@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- VISTA LISTA -->
+    <record id="view_geosis_estimation_tree" model="ir.ui.view">
+        <field name="name">geosis.estimation.tree</field>
+        <field name="model">geosis.estimation</field>
+        <field name="arch" type="xml">
+            <tree string="Planillas de Avance">
+                <field name="name"/>
+                <field name="budget_id"/>
+                <field name="date"/>
+                <field name="total_amount" sum="Total"/>
+                <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-success="state == 'approved'"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- VISTA FORMULARIO -->
+    <record id="view_geosis_estimation_form" model="ir.ui.view">
+        <field name="name">geosis.estimation.form</field>
+        <field name="model">geosis.estimation</field>
+        <field name="arch" type="xml">
+            <form string="Planilla de Avance">
+                <header>
+                    <button name="action_approve" string="Aprobar Planilla" type="object" class="oe_highlight" invisible="state != 'draft'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,approved,invoiced"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Ej: Planilla Mensual 01"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="budget_id" options="{'no_create': True}"/>
+                            <field name="date"/>
+                        </group>
+                        <group>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Detalle de Ejecución" name="lines">
+                            <field name="line_ids">
+                                <tree editable="bottom" create="false">
+                                    <field name="budget_line_id" invisible="1"/>
+                                    <field name="apu_name" style="font-weight: bold;"/>
+                                    <field name="uom_id" string="Unid."/>
+                                    <field name="qty_contract" string="Contrato" readonly="1"/>
+                                    <field name="qty_previous" string="Anterior" readonly="1" decoration-muted="1"/>
+                                    <field name="qty_current" string="ACTUAL" class="text-primary" style="font-weight: bold;"/>
+                                    <field name="qty_total" string="Acumulado" readonly="1"/>
+                                    <field name="qty_pending" string="Saldo" readonly="1" decoration-danger="qty_pending &lt; 0"/>
+                                    <field name="unit_price" string="P. Unit."/>
+                                    <field name="subtotal" string="SUBTOTAL" sum="Total Planillado"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                    <group class="oe_subtotal_footer oe_right">
+                        <field name="total_amount" string="Total de esta Planilla" class="oe_subtotal_footer_separator"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ACCION -->
+    <record id="action_geosis_estimations" model="ir.actions.act_window">
+        <field name="name">Planillas de Avance</field>
+        <field name="res_model">geosis.estimation</field>
+        <field name="view_mode">tree,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Crea tu primera planilla de avance
+            </p>
+            <p>
+                Selecciona un presupuesto aprobado y registra las cantidades ejecutadas del periodo.
+            </p>
+        </field>
+    </record>
+
+    <!-- MENUS -->
+    <menuitem id="menu_geosis_fiscalizacion_tab" 
+              name="Fiscalización" 
+              parent="geosis_base.menu_geosis_root"
+              sequence="40"/>
+
+    <menuitem id="menu_geosis_estimations" 
+              name="Planillas de Avance" 
+              parent="menu_geosis_fiscalizacion_tab" 
+              action="action_geosis_estimations" 
+              sequence="10"/>
+</odoo>

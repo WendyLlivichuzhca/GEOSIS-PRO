@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="geosis_public_header" name="GEOSIS Public Header">
+        <header class="geosis-site-header">
+            <div class="container geosis-site-header__inner">
+                <a href="/" class="geosis-site-brand">
+                    <div class="geosis-site-brand__logo">
+                        <img t-att-src="'/web/image/website/%s/logo' % request.website.id" alt="GEOSIS-PRO"/>
+                    </div>
+                    <div class="geosis-site-brand__copy">
+                        <strong>GEOSIS-PRO</strong>
+                        <span>Presupuestos, APUs y costos de obra</span>
+                    </div>
+                </a>
+
+                <nav class="geosis-site-nav">
+                    <a href="/" t-attf-class="#{'is-active' if public_page == 'home' else ''}">Inicio</a>
+                    <a href="/plataforma" t-attf-class="#{'is-active' if public_page == 'platform' else ''}">Plataforma</a>
+                    <a href="/flujo" t-attf-class="#{'is-active' if public_page == 'flow' else ''}">Flujo</a>
+                    <a href="/contactus" t-attf-class="#{'is-active' if public_page == 'contact' else ''}">Contacto</a>
+                </nav>
+
+                <div class="geosis-site-actions">
+                    <t t-if="request.session.uid">
+                        <a href="/geosis/dashboard" class="btn btn-outline-primary">Ir al dashboard</a>
+                    </t>
+                    <t t-else="">
+                        <a href="/web/login?redirect=/geosis/dashboard" class="btn btn-outline-primary">Sign in</a>
+                    </t>
+                    <a href="/contactus" class="btn btn-primary">Contactar</a>
+                </div>
+            </div>
+        </header>
+    </template>
+
+    <template id="geosis_public_layout" name="GEOSIS Public Layout">
+        <t t-call="website.layout">
+            <t t-set="no_header" t-value="True"/>
+            <t t-set="no_footer" t-value="True"/>
+            <div id="wrap" class="oe_structure oe_empty">
+                <div class="geosis-site">
+                    <t t-call="geosis_website.geosis_public_header"/>
+                    <main class="geosis-site-main">
+                        <t t-out="0"/>
+                    </main>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="geosis_public_homepage_content" name="GEOSIS Public Home Content">
+        <t t-set="public_page" t-value="'home'"/>
+        <div class="geosis-site">
+            <t t-call="geosis_website.geosis_public_header"/>
+            <main class="geosis-site-main">
+                <section class="geosis-public-placeholder">
+                    <div class="container">
+                        <div class="geosis-public-placeholder__card">
+                            <span class="geosis-pill">Inicio</span>
+                            <h1>Base lista para que disenes tu pagina de bienvenida.</h1>
+                            <p>La barra superior ya quedo integrada. Desde aqui puedes construir el resto visualmente como prefieras.</p>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </template>
+
+    <template id="geosis_public_platform_page" name="GEOSIS Public Platform">
+        <t t-call="geosis_website.geosis_public_layout">
+            <t t-set="public_page" t-value="'platform'"/>
+            <section class="geosis-public-placeholder">
+                <div class="container">
+                    <div class="geosis-public-placeholder__card">
+                        <span class="geosis-pill">Plataforma</span>
+                        <h1>Pagina base de Plataforma.</h1>
+                        <p>Aqui puedes disenar el contenido especifico de esta seccion sin mezclarlo con Inicio o Flujo.</p>
+                    </div>
+                </div>
+            </section>
+        </t>
+    </template>
+
+    <template id="geosis_public_flow_page" name="GEOSIS Public Flow">
+        <t t-call="geosis_website.geosis_public_layout">
+            <t t-set="public_page" t-value="'flow'"/>
+            <section class="geosis-public-placeholder">
+                <div class="container">
+                    <div class="geosis-public-placeholder__card">
+                        <span class="geosis-pill">Flujo</span>
+                        <h1>Pagina base de Flujo.</h1>
+                        <p>Aqui puedes disenar el recorrido del usuario como una pantalla separada y limpia.</p>
+                    </div>
+                </div>
+            </section>
+        </t>
+    </template>
+
+    <template id="geosis_homepage" inherit_id="website.homepage" name="GEOSIS-PRO Homepage">
+        <xpath expr="//div[@id='wrap']" position="replace">
+            <t t-call="geosis_website.geosis_public_homepage_content"/>
+        </xpath>
+    </template>
+</odoo>

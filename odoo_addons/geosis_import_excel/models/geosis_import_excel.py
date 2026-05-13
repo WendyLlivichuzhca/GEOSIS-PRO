@@ -17,6 +17,7 @@ XLSX_NS = {
 
 
 BUDGET_HEADER_ALIASES = {
+    'item': ('item', 'item nro', 'it', 'nro', '#', 'n'),
     'code': ('codigo', 'code', 'cod', 'codigo rubro', 'codigo apu', 'apu'),
     'name': ('descripcion', 'detalle', 'concepto', 'nombre', 'rubro'),
     'uom_name': ('unidad', 'unidad de medida', 'u m', 'um', 'und'),
@@ -66,7 +67,7 @@ METADATA_LABEL_ALIASES = {
         'nombre de proyecto',
         'obra',
     ),
-    'customer_name': (
+    'partner_id': (
         'cliente',
         'contratante',
         'propietario',
@@ -84,10 +85,10 @@ METADATA_LABEL_ALIASES = {
 
 
 CATEGORY_LABELS = {
-    'M': ('m', 'equipo', 'equipos', 'herramienta', 'herramientas', 'maquinaria'),
-    'N': ('n', 'mano de obra', 'mano', 'labor'),
-    'O': ('o', 'material', 'materiales'),
-    'P': ('p', 'transporte', 'flete'),
+    'M': ('equipo', 'equipos', 'herramienta', 'herramientas', 'maquinaria', 'equipo y herramienta'),
+    'N': ('mano de obra', 'labor'),
+    'O': ('material', 'materiales'),
+    'P': ('transporte', 'flete'),
 }
 
 
@@ -156,7 +157,7 @@ class GeosisExcelImportWizard(models.TransientModel):
     budget_name = fields.Char(string='Descripcion Presupuesto')
     project_code = fields.Char(string='Codigo Proyecto')
     project_name = fields.Char(string='Nombre del Proyecto')
-    customer_name = fields.Char(string='Cliente')
+    partner_id = fields.Many2one('res.partner', string='Cliente')
     location = fields.Char(string='Ubicacion')
     budget_date = fields.Date(
         string='Fecha Presupuesto',
@@ -206,7 +207,7 @@ class GeosisExcelImportWizard(models.TransientModel):
                 'budget_name',
                 'project_code',
                 'project_name',
-                'customer_name',
+                'partner_id',
                 'location',
             ):
                 if not wizard[field_name] and metadata.get(field_name):
@@ -233,8 +234,28 @@ class GeosisExcelImportWizard(models.TransientModel):
         apu_sheet_map = self._build_apu_sheet_map(workbook, budget_sheet_name, budget_lines)
         apu_cache = {}
         missing_codes = []
+        chapter_stack = {} # level -> chapter_id
 
         for index, line_data in enumerate(budget_lines, start=1):
+            if line_data.get('is_chapter'):
+                level = line_data.get('level', 1)
+                parent_chapter = chapter_stack.get(level - 1)
+                
+                chapter = self.env['geosis.budget.chapter'].create({
+                    'budget_id': budget.id,
+                    'sequence': index * 10,
+                    'code': line_data['item'],
+                    'name': line_data['name'],
+                    'parent_id': parent_chapter,
+                })
+                chapter_stack[level] = chapter.id
+                # Limpiar niveles inferiores del stack
+                for l in list(chapter_stack.keys()):
+                    if l > level:
+                        del chapter_stack[l]
+                continue
+
+            # Es un rubro
             apu = self._get_or_create_apu(workbook, line_data, apu_sheet_map, apu_cache)
             if not apu:
                 missing_codes.append(line_data['code'])
@@ -244,10 +265,18 @@ class GeosisExcelImportWizard(models.TransientModel):
             if not self.use_budget_sheet_prices or not unit_price:
                 unit_price = apu.total_cost or unit_price
 
+            # Determinar a qué capítulo pertenece este rubro
+            # Buscamos el nivel más profundo activo en el stack
+            current_chapter_id = False
+            if chapter_stack:
+                max_level = max(chapter_stack.keys())
+                current_chapter_id = chapter_stack[max_level]
+
             self.env['geosis.budget.line'].create(
                 {
                     'budget_id': budget.id,
                     'sequence': index * 10,
+                    'chapter_id': current_chapter_id,
                     'apu_id': apu.id,
                     'quantity': line_data['quantity'],
                     'unit_price': unit_price,
@@ -302,6 +331,7 @@ class GeosisExcelImportWizard(models.TransientModel):
         blank_count = 0
 
         for raw_row in rows[header_index + 1 :]:
+            item = _cell_as_string(_value_at(raw_row, header_map.get('item')))
             code = _cell_as_string(_value_at(raw_row, header_map.get('code')))
             name = _cell_as_string(_value_at(raw_row, header_map.get('name')))
             uom_name = _cell_as_string(_value_at(raw_row, header_map.get('uom_name')))
@@ -320,12 +350,30 @@ class GeosisExcelImportWizard(models.TransientModel):
             if not code and not name:
                 continue
 
+            # Detectar si es capítulo (Fila sin código o con formato de ítem jerárquico)
+            is_chapter = False
+            level = 1
+            if not code and name:
+                is_chapter = True
+                if item:
+                    level = len(item.split('.'))
+            
+            if is_chapter:
+                parsed_lines.append({
+                    'is_chapter': True,
+                    'item': item or '',
+                    'name': name,
+                    'level': level,
+                })
+                continue
+
             code = code or self._make_code('APU', name)
             if not unit_price and quantity and total:
                 unit_price = total / quantity
 
             parsed_lines.append(
                 {
+                    'item': item or '',
                     'code': code,
                     'name': name or code,
                     'uom_name': uom_name or 'Unit(s)',
@@ -346,6 +394,8 @@ class GeosisExcelImportWizard(models.TransientModel):
 
         mapping = {}
         for line_data in budget_lines:
+            if line_data.get('is_chapter'):
+                continue
             code = line_data['code']
             normalized_code = _normalize_text(code)
             matched_name = normalized_sheet_names.get(normalized_code)
@@ -424,8 +474,8 @@ class GeosisExcelImportWizard(models.TransientModel):
             metadata['project_code']
             or self._derive_project_code(metadata['project_name'] or metadata['budget_name'] or file_stem)
         )
-        metadata['customer_name'] = (
-            metadata['customer_name']
+        metadata['partner_id'] = (
+            metadata['partner_id']
             or self._derive_customer_name(text_candidates, metadata['location'], metadata['project_name'])
         )
         metadata['budget_code'] = metadata['budget_code'] or self._make_code('PRES', metadata['budget_name'])
@@ -520,6 +570,14 @@ class GeosisExcelImportWizard(models.TransientModel):
 
         return False
 
+    def _resolve_partner(self, partner_name):
+        if not partner_name:
+            return False
+        partner = self.env['res.partner'].search([('name', '=', partner_name)], limit=1)
+        if not partner:
+            partner = self.env['res.partner'].create({'name': partner_name})
+        return partner.id
+
     def _clean_customer_candidate(self, raw_value, project_name):
         text = _cell_as_string(raw_value)
         if not text:
@@ -575,7 +633,7 @@ class GeosisExcelImportWizard(models.TransientModel):
         values = {
             'code': project_code or self._make_code('PROY', project_name),
             'name': project_name or project_code,
-            'customer_name': self.customer_name or metadata.get('customer_name') or False,
+            'partner_id': self.partner_id.id if self.partner_id else self._resolve_partner(metadata.get('partner_id')),
             'location': self.location or metadata.get('location') or False,
             'start_date': self.budget_date,
             'state': 'planning',
@@ -598,6 +656,10 @@ class GeosisExcelImportWizard(models.TransientModel):
             (self.budget_code or metadata.get('budget_code') or '').strip()
             or self._make_code('PRES', file_stem)
         )
+        
+        # Limpieza de seguridad para evitar errores de integridad en el borrado (si existiera)
+        self.env.cr.execute("UPDATE geosis_budget SET project_id = NULL WHERE code = %s", [budget_code])
+
         budget_name = (
             (self.budget_name or metadata.get('budget_name') or '').strip()
             or file_stem
@@ -611,7 +673,7 @@ class GeosisExcelImportWizard(models.TransientModel):
         values = {
             'code': budget_code,
             'name': budget_name,
-            'customer_name': self.customer_name or metadata.get('customer_name') or False,
+            'partner_id': self.partner_id.id if self.partner_id else self._resolve_partner(metadata.get('partner_id')),
             'location': self.location or metadata.get('location') or False,
             'budget_date': self.budget_date,
             'description': self.note or False,
@@ -716,7 +778,25 @@ class GeosisExcelImportWizard(models.TransientModel):
         current_category = False
         blank_count = 0
 
-        for raw_row in rows[header_index + 1 :]:
+        # Escaneamos desde la fila 0 para capturar categorías que estén arriba de la cabecera
+        for raw_row in rows:
+            # Intentar detectar si esta fila es una categoría (ej: "EQUIPOS")
+            # Probamos en las primeras columnas
+            row_text_joined = ' '.join([_cell_as_string(c) for c in raw_row[:3] if c])
+            possible_category = self._map_category(row_text_joined)
+            
+            if possible_category:
+                # Si encontramos una categoría y no parece una fila de datos (sin cantidades/precios)
+                # la marcamos como la categoría actual
+                row_vals = [_to_float(c) for c in raw_row if _to_float(c) > 0]
+                if not row_vals:
+                    current_category = possible_category
+                    continue
+
+            # Si aún no tenemos cabecera detectada para las columnas, no podemos procesar datos
+            if not header_map:
+                continue
+
             code = _cell_as_string(_value_at(raw_row, header_map.get('code')))
             name = _cell_as_string(_value_at(raw_row, header_map.get('name')))
             raw_category = _cell_as_string(_value_at(raw_row, header_map.get('category')))
@@ -840,10 +920,11 @@ class GeosisExcelImportWizard(models.TransientModel):
             return False
 
         for category_code, aliases in CATEGORY_LABELS.items():
-            if normalized == category_code.lower():
-                return category_code
-            if any(alias in normalized for alias in aliases):
-                return category_code
+            # Buscamos coincidencia exacta o que empiece con la palabra clave
+            # para evitar confundirnos con "subtotal de..." o "rendimiento de..."
+            for alias in aliases:
+                if normalized == alias or normalized.startswith(alias + ' '):
+                    return category_code
         return False
 
     def _infer_category_from_code(self, code):

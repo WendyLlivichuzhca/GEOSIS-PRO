@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_geosis_budget_export_msproject_form" model="ir.ui.view">
+        <field name="name">geosis.budget.export.msproject.form</field>
+        <field name="model">geosis.budget.export.msproject</field>
+        <field name="arch" type="xml">
+            <form string="Exportar a MS Project">
+                <group invisible="file_data">
+                    <p>¿Desea generar el archivo XML compatible con Microsoft Project para este presupuesto?</p>
+                    <field name="budget_id" invisible="1"/>
+                </group>
+                <group invisible="not file_data">
+                    <field name="filename" invisible="1"/>
+                    <div class="alert alert-success" role="alert">
+                        ¡Archivo generado con éxito! Haga clic en el enlace para descargar.
+                    </div>
+                    <field name="file_data" filename="filename" string="Descargar Archivo"/>
+                </group>
+                <footer>
+                    <button name="action_export" string="Generar XML" type="object" class="btn-primary" invisible="file_data"/>
+                    <button string="Cerrar" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_geosis_budget_export_msproject" model="ir.actions.act_window">
+        <field name="name">Exportar a MS Project</field>
+        <field name="res_model">geosis.budget.export.msproject</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

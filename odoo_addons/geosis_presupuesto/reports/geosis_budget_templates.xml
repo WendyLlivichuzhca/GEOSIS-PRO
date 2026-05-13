@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="report_budget_apus_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="budget">
+                <t t-foreach="budget.line_ids" t-as="line">
+                    <t t-set="apu" t-value="line.apu_id"/>
+                    <t t-if="apu">
+                        <t t-call="web.external_layout">
+                            <div class="text-right text-muted mb-2">
+                                Presupuesto: <t t-esc="budget.code"/>
+                            </div>
+                            <t t-call="geosis_apu.geosis_apu_content_template"/>
+                            
+                            <!-- Salto de página para el siguiente rubro -->
+                            <p style="page-break-after:always;"></p>
+                        </t>
+                    </t>
+                </t>
+            </t>
+        </t>
+    </template>
+    <!-- Reporte de Presupuesto General (Listado) -->
+    <template id="report_budget_summary_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div class="page" style="font-family: 'Helvetica', sans-serif; font-size: 11px;">
+                        <div class="text-center mb-4">
+                            <h4 style="color: #1a4d8a;">PRESUPUESTO GENERAL DE OBRA</h4>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-6">
+                                <strong>PROYECTO:</strong> <t t-esc="o.name"/><br/>
+                                <strong>UBICACION:</strong> <t t-esc="o.location"/><br/>
+                                <strong>CLIENTE:</strong> <t t-esc="o.partner_id.name"/>
+                            </div>
+                            <div class="col-6 text-right">
+                                <strong>CODIGO:</strong> <t t-esc="o.code"/><br/>
+                                <strong>FECHA:</strong> <t t-esc="o.budget_date.strftime('%d/%m/%Y')"/><br/>
+                                <strong>MONEDA:</strong> <t t-esc="o.currency_id.name"/>
+                            </div>
+                        </div>
+
+                        <table class="table table-sm table-bordered">
+                            <thead>
+                                <tr style="background-color: #1a4d8a; color: white;">
+                                    <th width="10%">CODIGO</th>
+                                    <th width="45%">DESCRIPCION</th>
+                                    <th width="10%" class="text-right">CANTIDAD</th>
+                                    <th width="10%" class="text-right">PRECIO U.</th>
+                                    <th width="10%" class="text-right">VAE %</th>
+                                    <th width="15%" class="text-right">SUBTOTAL</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="o.chapter_ids.sorted(lambda c: c.sequence)" t-as="chapter">
+                                    <!-- Fila de Capítulo -->
+                                    <tr style="background-color: #f2f2f2; font-weight: bold;">
+                                        <td><t t-esc="chapter.code"/></td>
+                                        <td colspan="4"><t t-esc="chapter.name"/></td>
+                                        <td class="text-right"><t t-esc="formatLang(chapter.total_amount, currency_obj=o.currency_id)"/></td>
+                                    </tr>
+                                    
+                                    <!-- Rubros del Capítulo -->
+                                    <t t-foreach="chapter.line_ids.sorted(lambda l: l.sequence)" t-as="line">
+                                        <tr>
+                                            <td class="pl-4"><t t-esc="line.apu_code"/></td>
+                                            <td><t t-esc="line.apu_name"/></td>
+                                            <td class="text-right"><t t-esc="formatLang(line.quantity, digits=2)"/></td>
+                                            <td class="text-right"><t t-esc="formatLang(line.unit_price, currency_obj=o.currency_id)"/></td>
+                                            <td class="text-right"><t t-esc="formatLang(line.vae_percent, digits=0)"/>%</td>
+                                            <td class="text-right"><t t-esc="formatLang(line.subtotal, currency_obj=o.currency_id)"/></td>
+                                        </tr>
+                                    </t>
+                                </t>
+                            </tbody>
+                        </table>
+
+                        <!-- Resumen de Totales -->
+                        <div class="row justify-content-end mt-4">
+                            <div class="col-5">
+                                <table class="table table-sm table-bordered">
+                                    <tr>
+                                        <td width="60%"><strong>SUBTOTAL OFERTA:</strong></td>
+                                        <td width="40%" class="text-right"><strong><t t-esc="formatLang(o.subtotal_offer, currency_obj=o.currency_id)"/></strong></td>
+                                    </tr>
+                                    <tr>
+                                        <td>IVA (<t t-esc="o.iva_percent"/>%):</td>
+                                        <td class="text-right"><t t-esc="formatLang(o.iva_amount, currency_obj=o.currency_id)"/></td>
+                                    </tr>
+                                    <tr style="background-color: #1a4d8a; color: white; font-size: 14px;">
+                                        <td><strong>TOTAL PRESUPUESTO:</strong></td>
+                                        <td class="text-right"><strong><t t-esc="formatLang(o.total_amount, currency_obj=o.currency_id)"/></strong></td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="mt-5 text-center" style="font-size: 10px;">
+                            VAE PROMEDIO DE LA OFERTA: <strong><t t-esc="formatLang(o.vae_total, digits=2)"/>%</strong>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+    <!-- Reporte de Listado de Insumos (Totales por obra) -->
+    <template id="report_budget_resources_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div class="page" style="font-family: 'Helvetica', sans-serif; font-size: 11px;">
+                        <div class="text-center mb-4">
+                            <h4 style="color: #1a4d8a;">LISTADO DE INSUMOS TOTALES</h4>
+                            <p class="text-muted">Presupuesto: <t t-esc="o.name"/></p>
+                        </div>
+
+                        <t t-set="agg_data" t-value="o.get_aggregated_resources()"/>
+
+                        <t t-foreach="['M', 'N', 'O', 'P']" t-as="cat_key">
+                            <t t-set="category" t-value="agg_data[cat_key]"/>
+                            <t t-if="category['lines']">
+                                <h6 class="mt-4" style="border-bottom: 2px solid #1a4d8a; color: #1a4d8a;">
+                                    <t t-esc="category['name']"/>
+                                </h6>
+                                <table class="table table-sm table-striped">
+                                    <thead>
+                                        <tr style="background-color: #f9f9f9;">
+                                            <th width="15%">CODIGO</th>
+                                            <th width="40%">DESCRIPCION</th>
+                                            <th width="10%">UNIDAD</th>
+                                            <th width="15%" class="text-right">CANTIDAD TOTAL</th>
+                                            <th width="20%" class="text-right">VALOR TOTAL</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-foreach="category['lines']" t-as="data">
+                                            <tr>
+                                                <td><t t-esc="data['resource'].code"/></td>
+                                                <td><t t-esc="data['resource'].name"/></td>
+                                                <td><t t-esc="data['resource'].uom_id.name"/></td>
+                                                <td class="text-right"><t t-esc="formatLang(data['qty'], digits=2)"/></td>
+                                                <td class="text-right"><strong><t t-esc="formatLang(data['cost'], currency_obj=o.currency_id)"/></strong></td>
+                                            </tr>
+                                        </t>
+                                    </tbody>
+                                    <tfoot>
+                                        <tr style="font-weight: bold;">
+                                            <td colspan="4" class="text-right">TOTAL <t t-esc="category['name']"/>:</td>
+                                            <td class="text-right" style="border-top: 2px solid #000;">
+                                                <t t-esc="formatLang(sum([l['cost'] for l in category['lines']]), currency_obj=o.currency_id)"/>
+                                            </td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </t>
+                        </t>
+
+                        <div class="row justify-content-end mt-4">
+                            <div class="col-4">
+                                <table class="table table-sm table-bordered">
+                                    <tr style="background-color: #1a4d8a; color: white; font-size: 14px;">
+                                        <td><strong>TOTAL DIRECTO:</strong></td>
+                                        <td class="text-right"><strong><t t-esc="formatLang(o.direct_cost, currency_obj=o.currency_id)"/></strong></td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

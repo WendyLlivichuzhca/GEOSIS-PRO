@@ -19,6 +19,7 @@ class GeosisApu(models.Model):
     name = fields.Char(string='Descripcion', required=True)
     uom_name = fields.Char(string='Unidad de Medida', required=True, default='U')
     description = fields.Text(string='Observaciones')
+    cpc_code = fields.Char(string='Código CPC', help="Código del Clasificador Central de Productos para este rubro")
     indirect_percent = fields.Float(string='Indirectos %', default=0.0)
     line_ids = fields.One2many(
         'geosis.apu.line',
@@ -58,6 +59,13 @@ class GeosisApu(models.Model):
         store=True,
         currency_field='currency_id',
     )
+    vae_percent = fields.Float(
+        string='VAE % Total',
+        compute='_compute_totals',
+        store=True,
+        digits=(5, 2),
+        help="Valor Agregado Ecuatoriano total del rubro"
+    )
 
     _sql_constraints = [
         (
@@ -75,6 +83,84 @@ class GeosisApu(models.Model):
             record.direct_cost = direct_cost
             record.indirect_value = indirect_value
             record.total_cost = direct_cost + indirect_value
+            
+            # Cálculo de VAE Ponderado
+            if direct_cost > 0:
+                vae_sum = sum(line.cost * line.vae_percent for line in record.line_ids)
+                record.vae_percent = vae_sum / direct_cost
+            else:
+                record.vae_percent = 0.0
+
+    def action_generate_with_ia(self):
+        """
+        Motor de sugerencias inteligentes para APUs.
+        Analiza el nombre del rubro y sugiere recursos comunes.
+        """
+        self.ensure_one()
+        
+        # Limpiar sugerencias anteriores para evitar duplicados
+        self.line_ids.unlink()
+        
+        name_lower = self.name.lower()
+        suggestions = []
+
+        # Reglas de sugerencia basadas en palabras clave (Simulación de IA)
+        if 'excavacion' in name_lower or 'excavación' in name_lower:
+            suggestions = [
+                ('M', 'Excavadora', 0.02), # Categoría, Nombre aprox, Rendimiento
+                ('N', 'Peon', 1.0),
+                ('N', 'Operador de Equipo Pesado', 1.0),
+            ]
+        elif 'hormigon' in name_lower or 'hormigón' in name_lower:
+            suggestions = [
+                ('O', 'Cemento Portand', 7.5),
+                ('O', 'Arena', 0.5),
+                ('O', 'Ripio', 0.8),
+                ('O', 'Agua', 0.2),
+                ('N', 'Albañil', 1.5),
+                ('N', 'Peon', 3.0),
+                ('M', 'Mezcladora', 0.05),
+            ]
+        elif 'acero' in name_lower or 'hierro' in name_lower:
+            suggestions = [
+                ('O', 'Acero de refuerzo', 1.05),
+                ('O', 'Alambre galvanizado', 0.05),
+                ('N', 'Fierrero', 0.08),
+                ('N', 'Ayudante', 0.08),
+            ]
+
+        if not suggestions:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'IA Geosis',
+                    'message': 'No se encontraron sugerencias automáticas para este rubro. Intente con nombres como "Excavación" o "Hormigón".',
+                    'type': 'warning',
+                }
+            }
+
+        # Insertar los recursos encontrados (buscando en el catálogo)
+        resource_obj = self.env['geosis.resource']
+        for cat, res_name, qty in suggestions:
+            # Buscar el recurso más parecido en el catálogo
+            resource = resource_obj.search([
+                ('name', 'ilike', res_name),
+                ('category', '=', cat)
+            ], limit=1)
+            
+            if resource:
+                self.env['geosis.apu.line'].create({
+                    'apu_id': self.id,
+                    'resource_id': resource.id,
+                    'quantity': qty,
+                    'performance': 1.0,
+                })
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'reload',
+        }
 
 
 class GeosisApuLine(models.Model):
@@ -109,6 +195,11 @@ class GeosisApuLine(models.Model):
     performance = fields.Float(string='Rendimiento', default=1.0, digits=(16, 4))
     percentage = fields.Float(string='Porcentaje', digits=(16, 4))
     distance = fields.Float(string='Distancia', digits=(16, 4))
+    vae_percent = fields.Float(
+        string='VAE %',
+        digits=(5, 2),
+        help="Heredado del recurso"
+    )
     note = fields.Char(string='Observacion')
     company_id = fields.Many2one(
         'res.company',
@@ -146,6 +237,9 @@ class GeosisApuLine(models.Model):
             if 'category' in field_names:
                 line.category = resource.category
 
+            if 'vae_percent' in field_names:
+                line.vae_percent = resource.vae_percent
+
             for candidate in ('uom_name', 'uom_id', 'uom', 'unit', 'unit_name'):
                 if candidate not in field_names:
                     continue
@@ -159,7 +253,4 @@ class GeosisApuLine(models.Model):
     @api.depends('quantity', 'rate', 'performance')
     def _compute_cost(self):
         for line in self:
-            if not line.performance or line.performance <= 0:
-                line.cost = line.quantity * line.rate
-            else:
-                line.cost = (line.quantity * line.rate) / line.performance
+            line.cost = line.quantity * line.rate * line.performance

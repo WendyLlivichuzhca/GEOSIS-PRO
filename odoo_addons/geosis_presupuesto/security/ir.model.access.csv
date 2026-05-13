@@ -5,3 +5,10 @@ access_geosis_budget_readonly,access.geosis.budget.readonly,model_geosis_budget,
 access_geosis_budget_line_admin,access.geosis.budget.line.admin,model_geosis_budget_line,geosis_base.group_geosis_admin,1,1,1,1
 access_geosis_budget_line_user,access.geosis.budget.line.user,model_geosis_budget_line,geosis_base.group_geosis_user,1,1,1,0
 access_geosis_budget_line_readonly,access.geosis.budget.line.readonly,model_geosis_budget_line,geosis_base.group_geosis_readonly,1,0,0,0
+access_geosis_budget_chapter_admin,access.geosis.budget.chapter.admin,model_geosis_budget_chapter,geosis_base.group_geosis_admin,1,1,1,1
+access_geosis_budget_chapter_user,access.geosis.budget.chapter.user,model_geosis_budget_chapter,geosis_base.group_geosis_user,1,1,1,0
+access_geosis_budget_chapter_readonly,access.geosis.budget.chapter.readonly,model_geosis_budget_chapter,geosis_base.group_geosis_readonly,1,0,0,0
+access_geosis_budget_formula_line_admin,access.geosis.budget.formula.line.admin,model_geosis_budget_formula_line,geosis_base.group_geosis_admin,1,1,1,1
+access_geosis_budget_formula_line_user,access.geosis.budget.formula.line.user,model_geosis_budget_formula_line,geosis_base.group_geosis_user,1,1,1,0
+access_geosis_budget_formula_line_readonly,access.geosis.budget.formula.line.readonly,model_geosis_budget_formula_line,geosis_base.group_geosis_readonly,1,0,0,0
+access_geosis_budget_export_msproject_user,access.geosis.budget.export.msproject.user,model_geosis_budget_export_msproject,base.group_user,1,1,1,1

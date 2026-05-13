@@ -1,0 +1,2029 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="portal_simple_pager" name="Paginacion Portal GEOSIS">
+        <nav t-if="pager and pager.get('page_count', 0) > 1" class="geosis-simple-pager" aria-label="Paginacion">
+            <a t-if="pager.get('page_previous')"
+               t-att-href="pager['page_previous']['url']"
+               class="geosis-simple-pager__link is-nav">
+                Anterior
+            </a>
+            <span t-else="" class="geosis-simple-pager__link is-nav is-disabled">Anterior</span>
+
+            <t t-foreach="pager.get('pages', [])" t-as="page_item">
+                <a t-if="page_item.get('num') != pager.get('page')"
+                   t-att-href="page_item['url']"
+                   class="geosis-simple-pager__link">
+                    <t t-esc="page_item['num']"/>
+                </a>
+                <span t-else="" class="geosis-simple-pager__link is-active">
+                    <t t-esc="page_item['num']"/>
+                </span>
+            </t>
+
+            <a t-if="pager.get('page_next')"
+               t-att-href="pager['page_next']['url']"
+               class="geosis-simple-pager__link is-nav">
+                Siguiente
+            </a>
+            <span t-else="" class="geosis-simple-pager__link is-nav is-disabled">Siguiente</span>
+        </nav>
+    </template>
+
+    <template id="geosis_portal_layout" name="GEOSIS Portal Layout">
+        <t t-call="website.layout">
+            <t t-set="no_header" t-value="True"/>
+            <t t-set="no_footer" t-value="True"/>
+            <div id="wrap" class="oe_structure">
+                <div class="geosis-app-shell">
+                    <aside class="geosis-app-sidebar">
+                        <a href="/geosis/dashboard" class="geosis-app-brand">
+                            <div class="geosis-app-brand__logo">
+                                <img t-att-src="'/web/image/website/%s/logo' % request.website.id" alt="GEOSIS-PRO"/>
+                            </div>
+                            <div class="geosis-app-brand__copy">
+                                <strong>GEOSIS-PRO</strong>
+                                <span>Presupuestos, APUs y costos de obra</span>
+                            </div>
+                        </a>
+
+                        <nav class="geosis-app-menu">
+                            <div class="geosis-app-menu__group">Principal</div>
+                            <a href="/geosis/dashboard" t-attf-class="geosis-app-menu__item #{'is-active' if page_name == 'home' else ''}">
+                                <i class="fa fa-th-large"/> Dashboard
+                            </a>
+
+                            <div class="geosis-app-menu__group">Catalogos</div>
+                            <a href="/my/rubros" t-attf-class="geosis-app-menu__item #{'is-active' if page_name == 'rubro' else ''}">
+                                <i class="fa fa-list-alt"/> Rubros APU
+                            </a>
+                            <a href="/my/resources" t-attf-class="geosis-app-menu__item #{'is-active' if page_name == 'resource' else ''}">
+                                <i class="fa fa-cubes"/> Recursos
+                            </a>
+
+                            <div class="geosis-app-menu__group">Operacion</div>
+                            <a href="/my/projects" t-attf-class="geosis-app-menu__item #{'is-active' if page_name == 'project' else ''}">
+                                <i class="fa fa-building"/> Proyectos
+                            </a>
+                            <a href="/my/gantt" t-attf-class="geosis-app-menu__item #{'is-active' if page_name == 'gantt' else ''}">
+                                <i class="fa fa-tasks"/> Cronograma (Gantt)
+                            </a>
+                            <a href="/my/budgets" t-attf-class="geosis-app-menu__item #{'is-active' if page_name == 'budget' else ''}">
+                                <i class="fa fa-calculator"/> Presupuestos
+                            </a>
+                            <a href="/my/estimations" t-attf-class="geosis-app-menu__item #{'is-active' if page_name == 'estimation' else ''}">
+                                <i class="fa fa-line-chart"/> Planillas de Avance
+                            </a>
+                            <a href="/my/import-excel" t-attf-class="geosis-app-menu__item #{'is-active' if page_name == 'import' else ''}">
+                                <i class="fa fa-file-excel-o"/> Importar Excel
+                            </a>
+                        </nav>
+
+                        <a href="/my/profile" class="geosis-app-user">
+                            <div class="geosis-app-user__avatar">
+                                <i class="fa fa-user"/>
+                            </div>
+                            <div class="geosis-app-user__copy">
+                                <strong><t t-esc="request.env.user.name"/></strong>
+                                <span><t t-esc="request.env.user.partner_id.email or 'Portal cliente GEOSIS'"/></span>
+                            </div>
+                        </a>
+
+                        <a href="/web/session/logout?redirect=/" class="geosis-app-logout">
+                            <i class="fa fa-sign-out"/> Cerrar sesion
+                        </a>
+                    </aside>
+
+                    <main class="geosis-app-main">
+                        <header class="geosis-app-topbar">
+                            <div class="geosis-app-topbar__intro">
+                                <div class="geosis-app-topbar__eyebrow">Workspace GEOSIS</div>
+                                <h1><t t-esc="page_title or 'Dashboard'"/></h1>
+                                <p><t t-esc="page_subtitle or 'Operacion del cliente'"/></p>
+                            </div>
+                            <div class="geosis-app-topbar__actions">
+                                <form action="/geosis/search" method="get" class="geosis-app-topbar__search">
+                                    <input type="text" name="q" t-att-value="request.params.get('search') or request.params.get('q') or ''" class="form-control" placeholder="Buscar en el workspace"/>
+                                    <select name="scope" class="form-select">
+                                        <option value="projects" t-att-selected="'selected' if (request.params.get('scope') or 'projects') == 'projects' else None">Proyectos</option>
+                                        <option value="budgets" t-att-selected="'selected' if request.params.get('scope') == 'budgets' else None">Presupuestos</option>
+                                        <option value="rubros" t-att-selected="'selected' if request.params.get('scope') == 'rubros' else None">Rubros</option>
+                                        <option value="resources" t-att-selected="'selected' if request.params.get('scope') == 'resources' else None">Recursos</option>
+                                    </select>
+                                    <button type="submit" class="btn btn-outline-primary btn-sm">Buscar</button>
+                                </form>
+                                <div class="geosis-app-topbar__quick">
+                                    <a href="/my/import-excel" class="btn btn-outline-primary btn-sm">Importar Excel</a>
+                                    <a href="/my/projects/new" class="btn btn-primary btn-sm">Nuevo proyecto</a>
+                                </div>
+                            </div>
+                        </header>
+
+                        <section class="geosis-app-content">
+                            <t t-out="0"/>
+                        </section>
+                    </main>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="geosis_private_dashboard_page" name="GEOSIS Private Dashboard Page">
+        <t t-call="geosis_website.geosis_portal_layout">
+            <t t-set="page_name" t-value="'home'"/>
+            <t t-set="page_title" t-value="'Dashboard'"/>
+            <t t-set="page_subtitle" t-value="'Tu centro de operacion tecnico'"/>
+
+            <!-- Chart.js para visualizaciones -->
+            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+            <section class="geosis-dashboard-hero">
+                <div class="geosis-dashboard-hero__copy">
+                    <span class="geosis-pill">Centro de Control de Ingeniería</span>
+                    <h2>Toda tu oficina técnica en una sola vista.</h2>
+                    <p>
+                        Gestiona la Ruta Crítica, optimiza rubros con IA y controla tus costos operativos
+                        en tiempo real desde este panel centralizado.
+                    </p>
+                    <div class="geosis-public-actions">
+                        <a href="/my/projects" class="btn btn-primary">Navegar Proyectos</a>
+                        <a href="/my/rubros" class="btn btn-outline-primary">Catálogo APU</a>
+                    </div>
+                </div>
+                <div class="geosis-dashboard-hero__card">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="geosis-avatar-main"><i class="fa fa-user-circle-o"/></div>
+                        <div>
+                            <strong><t t-esc="request.env.user.name"/></strong>
+                            <div class="small text-muted text-uppercase">Cliente Principal</div>
+                        </div>
+                    </div>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2"><i class="fa fa-envelope-o me-2 text-primary"/> <t t-esc="request.env.user.partner_id.email or 'Sin correo'"/></li>
+                        <li><i class="fa fa-map-marker me-2 text-primary"/> <t t-esc="request.env.user.partner_id.city or 'Ubicación no registrada'"/></li>
+                    </ul>
+                </div>
+            </section>
+
+            <div class="geosis-metric-grid">
+                <article class="geosis-metric-card is-blue">
+                    <div class="geosis-metric-card__icon"><i class="fa fa-list-alt"/></div>
+                    <div class="geosis-metric-card__data">
+                        <span>Rubros APU</span>
+                        <strong><t t-esc="apu_count or 0"/></strong>
+                    </div>
+                </article>
+                <article class="geosis-metric-card is-green">
+                    <div class="geosis-metric-card__icon"><i class="fa fa-cubes"/></div>
+                    <div class="geosis-metric-card__data">
+                        <span>Recursos</span>
+                        <strong><t t-esc="resource_count or 0"/></strong>
+                    </div>
+                </article>
+                <article class="geosis-metric-card is-orange">
+                    <div class="geosis-metric-card__icon"><i class="fa fa-building-o"/></div>
+                    <div class="geosis-metric-card__data">
+                        <span>Proyectos</span>
+                        <strong><t t-esc="project_count or 0"/></strong>
+                    </div>
+                </article>
+                <article class="geosis-metric-card is-danger">
+                    <div class="geosis-metric-card__icon"><i class="fa fa-exclamation-triangle"/></div>
+                    <div class="geosis-metric-card__data">
+                        <span>Tareas Críticas</span>
+                        <strong><t t-esc="len(critical_tasks or [])"/></strong>
+                    </div>
+                </article>
+            </div>
+
+            <div class="geosis-dashboard-grid">
+                <!-- PANEL DE RUTA CRÍTICA -->
+                <section class="geosis-panel">
+                    <div class="geosis-panel__header">
+                        <h3><i class="fa fa-road me-2 text-danger"/>Alertas de Ruta Crítica</h3>
+                        <span class="badge bg-danger">Atención Inmediata</span>
+                    </div>
+                    <div class="geosis-critical-list">
+                        <t t-if="critical_tasks">
+                            <t t-foreach="critical_tasks" t-as="task">
+                                <a t-attf-href="/my/projects/#{task.project_id.id}" class="geosis-critical-item">
+                                    <div class="geosis-critical-item__info">
+                                        <strong><t t-esc="task.name"/></strong>
+                                        <span>Proyecto: <t t-esc="task.project_id.name"/></span>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="text-danger fw-bold">CRÍTICA</div>
+                                        <div class="small text-muted">Vence: <t t-esc="task.date_deadline or 'N/A'"/></div>
+                                    </div>
+                                </a>
+                            </t>
+                        </t>
+                        <t t-else="">
+                            <div class="text-center py-5 text-muted">
+                                <i class="fa fa-check-circle-o fa-3x mb-3 text-success d-block"/>
+                                No hay tareas críticas pendientes. ¡Tu cronograma está al día!
+                            </div>
+                        </t>
+                    </div>
+                </section>
+
+                <!-- GRÁFICO DE COSTOS -->
+                <section class="geosis-panel">
+                    <div class="geosis-panel__header">
+                        <h3><i class="fa fa-pie-chart me-2 text-primary"/>Distribución de Costos</h3>
+                    </div>
+                    <div class="geosis-chart-container" style="position: relative; height:250px; width:100%">
+                        <canvas id="costDistributionChart"></canvas>
+                    </div>
+                    <div class="geosis-chart-legend mt-3">
+                        <div class="small text-muted text-center">Basado en el promedio de precios de tus recursos actuales.</div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- JAVASCRIPT PARA EL GRÁFICO -->
+            <script type="text/javascript">
+                document.addEventListener('DOMContentLoaded', function() {
+                    var ctx = document.getElementById('costDistributionChart').getContext('2d');
+                    var myChart = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Equipos', 'Mano de Obra', 'Materiales', 'Transporte'],
+                            datasets: [{
+                                data: [<t t-esc="cost_dist.get('M', 0)"/>, <t t-esc="cost_dist.get('N', 0)"/>, <t t-esc="cost_dist.get('O', 0)"/>, <t t-esc="cost_dist.get('P', 0)"/>],
+                                backgroundColor: ['#3498db', '#2ecc71', '#f39c12', '#1abc9c'],
+                                borderWidth: 0
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { position: 'bottom' }
+                            },
+                            cutout: '70%'
+                        }
+                    });
+                });
+            </script>
+
+            <!-- TABLA DE PROYECTOS RECIENTES -->
+            <section class="geosis-panel mt-4">
+                <div class="geosis-panel__header">
+                    <h3><i class="fa fa-folder-open-o me-2 text-primary"/>Proyectos Recientes</h3>
+                    <a href="/my/projects" class="btn btn-sm btn-outline-primary">Ver todos</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table geosis-clean-table">
+                        <thead>
+                            <tr>
+                                <th>Nombre del Proyecto</th>
+                                <th>Ubicación</th>
+                                <th class="text-center">Presupuestos</th>
+                                <th class="text-end">Monto Total</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-if="latest_projects">
+                                <t t-foreach="latest_projects" t-as="project">
+                                    <tr>
+                                        <td>
+                                            <strong><a t-attf-href="/my/projects/#{project.id}"><t t-esc="project.name"/></a></strong>
+                                            <div class="small text-muted"><t t-esc="project.code"/></div>
+                                        </td>
+                                        <td><t t-esc="project.location or '-'"/></td>
+                                        <td class="text-center"><span class="geosis-chip"><t t-esc="project.budget_count"/></span></td>
+                                        <td class="text-end fw-bold">$<t t-esc="'%.2f' % project.total_budget_amount"/></td>
+                                        <td><span t-attf-class="geosis-state #{project.state}"><t t-esc="dict(project._fields['state'].selection).get(project.state)"/></span></td>
+                                    </tr>
+                                </t>
+                            </t>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="geosis-panel mt-4">
+                <div class="geosis-panel__header">
+                    <h3>Acciones rapidas</h3>
+                </div>
+                <div class="geosis-action-grid">
+                    <a href="/my/projects/new" class="geosis-action-card">
+                        <strong>Nuevo proyecto</strong>
+                        <span>Crea una nueva obra y organiza su seguimiento.</span>
+                    </a>
+                    <a href="/my/import-excel" class="geosis-action-card">
+                        <strong>Importar Excel</strong>
+                        <span>Sube un archivo y genera presupuesto, rubros y recursos.</span>
+                    </a>
+                    <a href="/my/rubros" class="geosis-action-card">
+                        <strong>Catalogo APU</strong>
+                        <span>Consulta rubros, costos unitarios y detalles tecnicos.</span>
+                    </a>
+                    <a href="/web/session/logout?redirect=/" class="geosis-action-card is-danger">
+                        <strong>Cerrar sesion</strong>
+                        <span>Volver a la pagina de bienvenida publica.</span>
+                    </a>
+                </div>
+            </section>
+        </t>
+    </template>
+
+    <template id="portal_my_home_geosis_v2" inherit_id="portal.portal_my_home" name="GEOSIS Dashboard Redirect" priority="1000">
+        <xpath expr="//div[hasclass('o_portal_my_home')]" position="replace">
+            <script type="text/javascript">window.location.replace('/geosis/dashboard');</script>
+            <div class="alert alert-info m-4">Redirigiendo al dashboard GEOSIS...</div>
+        </xpath>
+    </template>
+
+    <template id="portal_my_profile" name="Perfil del Cliente">
+        <t t-call="geosis_website.geosis_portal_layout">
+            <t t-set="page_name" t-value="'profile'"/>
+            <t t-set="page_title" t-value="'Mi Perfil'"/>
+            <t t-set="page_subtitle" t-value="'Actualiza tus datos basicos y de contacto'"/>
+
+            <div t-if="profile_updated" class="alert alert-success geosis-notice" role="alert">
+                Tu perfil se actualizo correctamente.
+            </div>
+            <div t-if="error_message" class="alert alert-danger geosis-notice" role="alert">
+                <t t-esc="error_message"/>
+            </div>
+
+            <div class="geosis-profile-grid">
+                <section class="geosis-panel">
+                    <div class="geosis-panel__header">
+                        <h3>Editar datos del cliente</h3>
+                    </div>
+                    <form action="/my/profile" method="post" class="geosis-form">
+                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                        <div class="geosis-form__grid">
+                            <label><span>Nombre</span><input type="text" name="name" t-att-value="form_data.get('name', '')" class="form-control" required="required"/></label>
+                            <label><span>Correo</span><input type="email" name="email" t-att-value="form_data.get('email', '')" class="form-control"/></label>
+                            <label><span>Telefono</span><input type="text" name="phone" t-att-value="form_data.get('phone', '')" class="form-control"/></label>
+                            <label><span>Celular</span><input type="text" name="mobile" t-att-value="form_data.get('mobile', '')" class="form-control"/></label>
+                            <label><span>Direccion</span><input type="text" name="street" t-att-value="form_data.get('street', '')" class="form-control"/></label>
+                            <label><span>Ciudad</span><input type="text" name="city" t-att-value="form_data.get('city', '')" class="form-control"/></label>
+                            <label><span>Codigo postal</span><input type="text" name="zip" t-att-value="form_data.get('zip', '')" class="form-control"/></label>
+                            <label>
+                                <span>Pais</span>
+                                <select name="country_id" class="form-select">
+                                    <option value="">Selecciona un pais</option>
+                                    <t t-foreach="countries" t-as="country">
+                                        <option t-att-value="country.id" t-att-selected="'selected' if form_data.get('country_id') == country.id else None">
+                                            <t t-esc="country.name"/>
+                                        </option>
+                                    </t>
+                                </select>
+                            </label>
+                        </div>
+                        <div class="geosis-form__actions">
+                            <button type="submit" class="btn btn-primary">Guardar cambios</button>
+                            <a href="/geosis/dashboard" class="btn btn-outline-secondary">Volver al dashboard</a>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="geosis-panel">
+                    <div class="geosis-panel__header">
+                        <h3>Resumen actual</h3>
+                    </div>
+                    <div class="geosis-profile-card">
+                        <div class="geosis-profile-card__avatar"><i class="fa fa-user"/></div>
+                        <div>
+                            <strong><t t-esc="request.env.user.name"/></strong>
+                            <span><t t-esc="request.env.user.partner_id.email or 'Sin correo registrado'"/></span>
+                        </div>
+                    </div>
+                    <div class="geosis-detail-grid">
+                        <div><strong>Direccion</strong><span><t t-esc="request.env.user.partner_id.street or '-'"/></span></div>
+                        <div><strong>Ciudad</strong><span><t t-esc="request.env.user.partner_id.city or '-'"/></span></div>
+                        <div><strong>Pais</strong><span><t t-esc="request.env.user.partner_id.country_id.name or '-'"/></span></div>
+                        <div><strong>Telefono</strong><span><t t-esc="request.env.user.partner_id.phone or request.env.user.partner_id.mobile or '-'"/></span></div>
+                    </div>
+                </section>
+            </div>
+        </t>
+    </template>
+
+    <template id="portal_my_projects" name="Mis Proyectos">
+        <t t-call="geosis_website.geosis_portal_layout">
+            <t t-set="page_name" t-value="'project'"/>
+            <t t-set="page_title" t-value="'Proyectos'"/>
+            <t t-set="page_subtitle" t-value="'Gestion de obras del cliente'"/>
+            <div class="geosis-stat-strip">
+                <article class="geosis-mini-card"><span>Total proyectos</span><strong><t t-esc="project_total_count or 0"/></strong></article>
+                <article class="geosis-mini-card"><span>Activos</span><strong><t t-esc="project_active_count or 0"/></strong></article>
+                <article class="geosis-mini-card"><span>Planificacion</span><strong><t t-esc="project_planning_count or 0"/></strong></article>
+                <article class="geosis-mini-card"><span>Total presupuestado</span><strong>$<t t-esc="'%.2f' % (project_total_amount or 0.0)"/></strong></article>
+            </div>
+            <section class="geosis-panel">
+                <div class="geosis-panel__header">
+                    <h3>Mis proyectos</h3>
+                    <a href="/my/projects/new" class="btn btn-primary btn-sm">+ Nuevo proyecto</a>
+                </div>
+                <form action="/my/projects" method="get" class="geosis-filterbar">
+                    <div class="geosis-filterbar__search">
+                        <input type="text" name="search" class="form-control" t-att-value="search or ''" placeholder="Buscar por nombre, codigo o ubicacion"/>
+                    </div>
+                    <select name="state" class="form-select">
+                        <option value="all" t-att-selected="'selected' if selected_state == 'all' else None">Todos los estados</option>
+                        <option value="planning" t-att-selected="'selected' if selected_state == 'planning' else None">Planificacion</option>
+                        <option value="active" t-att-selected="'selected' if selected_state == 'active' else None">Activo</option>
+                        <option value="completed" t-att-selected="'selected' if selected_state == 'completed' else None">Terminado</option>
+                        <option value="cancelled" t-att-selected="'selected' if selected_state == 'cancelled' else None">Cancelado</option>
+                    </select>
+                    <select name="sort_by" class="form-select">
+                        <t t-foreach="sortings.items()" t-as="sort_item">
+                            <option t-att-value="sort_item[0]" t-att-selected="'selected' if sort_by == sort_item[0] else None"><t t-esc="sort_item[1]['label']"/></option>
+                        </t>
+                    </select>
+                    <div class="geosis-filterbar__actions">
+                        <button type="submit" class="btn btn-outline-primary btn-sm">Aplicar</button>
+                        <a href="/my/projects" class="btn btn-outline-secondary btn-sm">Limpiar</a>
+                    </div>
+                </form>
+                <div class="geosis-tile-grid">
+                    <t t-if="projects">
+                        <t t-foreach="projects" t-as="project">
+                            <article class="geosis-tile">
+                                <div class="geosis-tile__top">
+                                    <span t-attf-class="geosis-state #{project.state}"><t t-esc="dict(project._fields['state'].selection).get(project.state)"/></span>
+                                    <span class="geosis-chip"><t t-esc="project.code"/></span>
+                                </div>
+                                <h3><t t-esc="project.name"/></h3>
+                                <p><t t-esc="project.location or project.partner_id.name or 'Sin ubicacion registrada'"/></p>
+                                <div class="geosis-tile__meta">
+                                    <div><span>Presupuestos</span><strong><t t-esc="project.budget_count"/></strong></div>
+                                    <div><span>Total</span><strong>$<t t-esc="'%.2f' % project.total_budget_amount"/></strong></div>
+                                </div>
+                                <div class="geosis-tile__actions">
+                                    <a t-attf-href="/my/projects/#{project.id}" class="btn btn-primary btn-sm">Abrir</a>
+                                    <a href="/my/import-excel" class="btn btn-outline-primary btn-sm">Importar presupuesto</a>
+                                </div>
+                            </article>
+                        </t>
+                    </t>
+                    <t t-else="">
+                        <div class="text-center text-muted py-5">No hay proyectos registrados para este cliente.</div>
+                    </t>
+                </div>
+                <div t-if="pager and pager.get('page_count', 0) > 1" class="geosis-panel__pager">
+                    <t t-call="geosis_website.portal_simple_pager"/>
+                </div>
+            </section>
+        </t>
+    </template>
+
+    <template id="portal_project_form" name="Nuevo Proyecto Portal">
+        <t t-call="geosis_website.geosis_portal_layout">
+            <t t-set="page_name" t-value="'project'"/>
+            <t t-set="page_title" t-value="'Nuevo Proyecto'"/>
+            <t t-set="page_subtitle" t-value="'Crear una nueva obra privada'"/>
+            <section class="geosis-panel">
+                <div class="geosis-panel__header">
+                    <h3>Crear proyecto</h3>
+                </div>
+                <div t-if="error_message" class="alert alert-danger" role="alert"><t t-esc="error_message"/></div>
+                <form action="/my/projects/new" method="post" class="geosis-form">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <div class="geosis-form__grid">
+                        <label><span>Codigo</span><input type="text" name="code" t-att-value="form_data.get('code', '')" class="form-control" placeholder="Automatico si lo dejas vacio"/></label>
+                        <label><span>Nombre del proyecto</span><input type="text" name="name" t-att-value="form_data.get('name', '')" class="form-control" required="required"/></label>
+                        <label><span>Ubicacion</span><input type="text" name="location" t-att-value="form_data.get('location', '')" class="form-control"/></label>
+                        <label>
+                            <span>Estado</span>
+                            <select name="state" class="form-select">
+                                <option value="planning" t-att-selected="'selected' if form_data.get('state', 'planning') == 'planning' else None">Planificacion</option>
+                                <option value="active" t-att-selected="'selected' if form_data.get('state') == 'active' else None">Activo</option>
+                                <option value="completed" t-att-selected="'selected' if form_data.get('state') == 'completed' else None">Terminado</option>
+                                <option value="cancelled" t-att-selected="'selected' if form_data.get('state') == 'cancelled' else None">Cancelado</option>
+                            </select>
+                        </label>
+                        <label><span>Fecha inicio</span><input type="date" name="start_date" t-att-value="form_data.get('start_date', '')" class="form-control"/></label>
+                        <label><span>Fecha fin</span><input type="date" name="end_date" t-att-value="form_data.get('end_date', '')" class="form-control"/></label>
+                    </div>
+                    <label class="geosis-form__block">
+                        <span>Observaciones</span>
+                        <textarea name="description" class="form-control" rows="4"><t t-esc="form_data.get('description', '')"/></textarea>
+                    </label>
+                    <div class="geosis-form__actions">
+                        <button type="submit" class="btn btn-primary">Guardar proyecto</button>
+                        <a href="/my/projects" class="btn btn-outline-secondary">Cancelar</a>
+                    </div>
+                </form>
+            </section>
+        </t>
+    </template>
+
+    <template id="portal_my_project_detail" name="Detalle de Proyecto">
+        <t t-call="geosis_website.geosis_portal_layout">
+            <t t-set="page_name" t-value="'project'"/>
+            <t t-set="page_title" t-value="project.name"/>
+            <t t-set="page_subtitle" t-value="'Vista del proyecto y sus presupuestos'"/>
+
+            <div t-if="success == 'metadata_updated'" class="alert alert-success geosis-notice" role="alert">
+                <i class="fa fa-check-circle me-1"/> La informacion del proyecto ha sido actualizada correctamente.
+            </div>
+            <div t-if="project_created" class="alert alert-success geosis-notice" role="alert">
+                Proyecto creado correctamente. Ya puedes cargar su presupuesto o continuar con la configuracion.
+            </div>
+            <div t-if="budget_line_added" class="alert alert-success geosis-notice" role="alert">
+                El rubro se agrego correctamente al presupuesto del proyecto.
+            </div>
+            <div t-if="budget_line_updated" class="alert alert-success geosis-notice" role="alert">
+                La cantidad del rubro se actualizo correctamente.
+            </div>
+            <div t-if="budget_line_deleted" class="alert alert-warning geosis-notice" role="alert">
+                El rubro se elimino del presupuesto del proyecto.
+            </div>
+            <div class="geosis-stat-strip">
+                <article class="geosis-mini-card"><span>Codigo</span><strong><t t-esc="project.code"/></strong></article>
+                <article class="geosis-mini-card"><span>Estado</span><strong><t t-esc="dict(project._fields['state'].selection).get(project.state)"/></strong></article>
+                <article class="geosis-mini-card"><span>Presupuestos</span><strong><t t-esc="project.budget_count"/></strong></article>
+                <article class="geosis-mini-card"><span>Total</span><strong>$<t t-esc="'%.2f' % project.total_budget_amount"/></strong></article>
+            </div>
+
+            <section class="geosis-panel mb-4">
+                <div class="geosis-panel__header">
+                    <h3>Gestion del Proyecto</h3>
+                    <a href="/my/import-excel" class="btn btn-success btn-sm">Importar presupuesto Excel</a>
+                </div>
+                <form t-attf-action="/my/project/#{project.id}/update-metadata" method="post" class="p-4 bg-light border-bottom border-top">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-3">
+                            <label class="small text-muted mb-1">Estado</label>
+                            <select name="state" class="form-select form-select-sm">
+                                <t t-foreach="project._fields['state'].selection" t-as="st">
+                                    <option t-att-value="st[0]" t-att-selected="'selected' if project.state == st[0] else None">
+                                        <t t-esc="st[1]"/>
+                                    </option>
+                                </t>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="small text-muted mb-1">Fecha Inicio</label>
+                            <input type="date" name="start_date" t-att-value="project.start_date" class="form-control form-control-sm"/>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="small text-muted mb-1">Fecha Fin</label>
+                            <input type="date" name="end_date" t-att-value="project.end_date" class="form-control form-control-sm"/>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-primary btn-sm w-100"><i class="fa fa-save me-1"/> Guardar cambios</button>
+                        </div>
+                    </div>
+                </form>
+                <div class="geosis-detail-grid">
+                    <div><strong>Cliente</strong><span><t t-esc="project.partner_id.name or '-'"/></span></div>
+                    <div><strong>Ubicacion</strong><span><t t-esc="project.location or '-'"/></span></div>
+                    <div><strong>Ultimo presupuesto</strong><span>$<t t-esc="'%.2f' % project.total_budget_amount"/></span></div>
+                    <div><strong>ID Sistema</strong><span>#<t t-esc="project.id"/></span></div>
+                </div>
+                <p t-if="project.description" class="geosis-detail-note"><t t-esc="project.description"/></p>
+            </section>
+
+            <div class="geosis-project-budget-grid mb-4">
+                <section class="geosis-panel">
+                    <div class="geosis-panel__header">
+                        <h3>Agregar rubro al presupuesto</h3>
+                    </div>
+                    <form t-attf-action="/my/projects/#{project.id}/budget/add-line" method="post" class="geosis-form">
+                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                        <label class="geosis-form__block">
+                            <span>Rubro APU</span>
+                            <select name="apu_id" class="form-select" required="required">
+                                <option value="">Selecciona un rubro</option>
+                                <t t-foreach="available_apus" t-as="available_apu">
+                                    <option t-att-value="available_apu.id">
+                                        <t t-esc="available_apu.code"/> - <t t-esc="available_apu.name"/>
+                                    </option>
+                                </t>
+                            </select>
+                        </label>
+                        <label class="geosis-form__block">
+                            <span>Cantidad</span>
+                            <input type="number" name="quantity" class="form-control" min="0.01" step="0.01" value="1" required="required"/>
+                        </label>
+                        <div class="geosis-form__actions">
+                            <button type="submit" class="btn btn-primary">Agregar al presupuesto</button>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="geosis-panel">
+                    <div class="geosis-panel__header">
+                        <h3>Resumen del presupuesto operativo</h3>
+                        <div class="d-flex gap-2">
+                            <form t-attf-action="/my/estimations/create" method="post">
+                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                <input type="hidden" name="project_id" t-att-value="project.id"/>
+                                <input type="hidden" name="budget_id" t-att-value="editable_budget.id"/>
+                                <button type="submit" class="btn btn-success btn-sm"><i class="fa fa-plus me-1"/> Generar Planilla</button>
+                            </form>
+                            <a t-attf-href="/my/budgets/#{editable_budget.id}" class="btn btn-outline-primary btn-sm">Abrir detalle</a>
+                        </div>
+                    </div>
+                    <div class="geosis-detail-grid">
+                        <div><strong>Codigo</strong><span><t t-esc="editable_budget.code"/></span></div>
+                        <div><strong>Fecha</strong><span><t t-esc="editable_budget.budget_date or '-'"/></span></div>
+                        <div><strong>Lineas</strong><span><t t-esc="len(editable_budget.line_ids)"/></span></div>
+                        <div><strong>Estado</strong><span><t t-esc="dict(editable_budget._fields['state'].selection).get(editable_budget.state)"/></span></div>
+                        <div><strong>Directo</strong><span>$<t t-esc="'%.2f' % editable_budget.direct_cost"/></span></div>
+                        <div><strong>Total</strong><span>$<t t-esc="'%.2f' % editable_budget.total_amount"/></span></div>
+                    </div>
+                </section>
+            </div>
+
+            <section class="geosis-panel mb-4">
+                <div class="geosis-panel__header">
+                    <h3>Items del presupuesto del proyecto</h3>
+                    <span class="geosis-chip"><t t-esc="len(editable_budget.line_ids)"/> rubros</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table geosis-clean-table">
+                        <thead>
+                            <tr>
+                                <th>Rubro</th>
+                                <th>Unidad</th>
+                                <th class="text-center">Cantidad</th>
+                                <th class="text-end">P. unit.</th>
+                                <th class="text-end">Subtotal</th>
+                                <th class="text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-if="editable_budget.line_ids">
+                                <t t-foreach="editable_budget.line_ids.sorted('sequence')" t-as="line">
+                                    <tr>
+                                        <td>
+                                            <strong><t t-esc="line.apu_name or line.apu_id.name"/></strong>
+                                            <div class="text-muted small"><t t-esc="line.apu_code or line.apu_id.code"/></div>
+                                        </td>
+                                        <td><span class="geosis-chip"><t t-esc="line.uom_name or line.apu_id.uom_name or '-'"/></span></td>
+                                        <td class="text-center">
+                                            <form t-attf-action="/my/projects/#{project.id}/budget/line/#{line.id}/update" method="post" class="geosis-inline-form">
+                                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                                <div class="geosis-inline-form__row">
+                                                    <input type="number" name="quantity" class="form-control form-control-sm" min="0.01" step="0.01" t-att-value="'%.2f' % line.quantity"/>
+                                                    <button type="submit" class="btn btn-outline-primary btn-sm">Guardar</button>
+                                                </div>
+                                            </form>
+                                        </td>
+                                        <td class="text-end">$<t t-esc="'%.2f' % line.unit_price"/></td>
+                                        <td class="text-end">$<t t-esc="'%.2f' % line.subtotal"/></td>
+                                        <td class="text-center">
+                                            <div class="d-flex justify-content-center gap-2">
+                                                <a t-attf-href="/my/rubro/#{line.apu_id.id}" class="geosis-open-link">Ver</a>
+                                                <form t-attf-action="/my/projects/#{project.id}/budget/line/#{line.id}/delete" method="post" class="d-inline">
+                                                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                                    <button type="submit" class="btn btn-link btn-sm text-danger p-0">Quitar</button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </t>
+                            <t t-else="">
+                                <tr><td colspan="6" class="text-center text-muted py-4">Este proyecto todavia no tiene rubros cargados en su presupuesto operativo.</td></tr>
+                            </t>
+                        </tbody>
+                        <tfoot t-if="editable_budget.line_ids">
+                            <tr>
+                                <th colspan="4" class="text-end">Total presupuesto</th>
+                                <th class="text-end">$<t t-esc="'%.2f' % editable_budget.total_amount"/></th>
+                                <th></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </section>
+
+            <section class="geosis-panel mb-4">
+                <div class="geosis-panel__header">
+                    <h3>Cronograma de Tareas (Planificación)</h3>
+                    <span class="geosis-chip"><t t-esc="len(project_tasks or [])"/> tareas</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table geosis-clean-table">
+                        <thead>
+                            <tr>
+                                <th>Tarea / Actividad</th>
+                                <th>Inicio</th>
+                                <th>Fin</th>
+                                <th class="text-center">Holgura</th>
+                                <th>Predecesor</th>
+                                <th class="text-center">Ruta Crítica</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-if="tasks_with_gantt">
+                                <t t-foreach="tasks_with_gantt" t-as="g_data">
+                                    <t t-set="task" t-value="g_data['task']"/>
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex flex-column">
+                                                <strong><t t-esc="task.name"/></strong>
+                                                <div class="geosis-gantt-track mt-2">
+                                                    <div t-attf-class="geosis-gantt-bar #{'is-critical' if task.is_critical else ''}" 
+                                                         t-attf-style="left: #{g_data['left']}%; width: #{g_data['width']}%;"
+                                                         t-attf-title="Duracion: #{task.planned_date_start} a #{task.planned_date_end}"/>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="small text-muted"><t t-esc="task.planned_date_start" t-options='{"widget": "date"}'/></td>
+                                        <td class="small text-muted"><t t-esc="task.planned_date_end" t-options='{"widget": "date"}'/></td>
+                                        <td class="text-center">
+                                            <t t-if="task.slack_time > 0">
+                                                <span class="text-info fw-bold"><t t-esc="task.slack_time"/> días</span>
+                                            </t>
+                                            <t t-else="">
+                                                <span class="text-danger fw-bold">0 días</span>
+                                            </t>
+                                        </td>
+                                        <td>
+                                            <form t-attf-action="/my/projects/#{project.id}/task/#{task.id}/predecessor" method="post" class="d-inline">
+                                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                                <select name="predecessor_id" class="form-select form-select-sm d-inline-block w-auto" onchange="this.form.submit()">
+                                                    <option value="">- Ninguna -</option>
+                                                    <t t-foreach="project_tasks" t-as="p_task">
+                                                        <t t-if="p_task.id != task.id">
+                                                            <option t-att-value="p_task.id" t-att-selected="'selected' if p_task.id in task.depend_on_ids.ids else None">
+                                                                <t t-esc="p_task.name"/>
+                                                            </option>
+                                                        </t>
+                                                    </t>
+                                                </select>
+                                            </form>
+                                        </td>
+                                        <td class="text-center">
+                                            <t t-if="task.is_critical">
+                                                <span class="badge rounded-pill bg-danger" style="font-size: 0.65rem;">CRÍTICA</span>
+                                            </t>
+                                            <t t-else="">
+                                                <span class="badge rounded-pill bg-success" style="font-size: 0.65rem; color: white;">A TIEMPO</span>
+                                            </t>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </t>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="geosis-panel mb-4">
+                <div class="geosis-panel__header">
+                    <h3>Bitacora simple</h3>
+                </div>
+                <div class="geosis-detail-grid">
+                    <div><strong>Ultima actualizacion</strong><span><t t-esc="last_activity or '-'"/></span></div>
+                    <div><strong>Ultimo presupuesto</strong><span><t t-esc="last_budget_date or '-'"/></span></div>
+                    <div><strong>Cliente principal</strong><span><t t-esc="project.partner_id.commercial_company_name or project.partner_id.name or '-'"/></span></div>
+                    <div><strong>Presupuestos cargados</strong><span><t t-esc="project.budget_count"/></span></div>
+                </div>
+            </section>
+
+            <section class="geosis-panel">
+                <div class="geosis-panel__header">
+                    <h3>Presupuestos vinculados</h3>
+                </div>
+                <div class="table-responsive">
+                    <table class="table geosis-clean-table">
+                        <thead>
+                            <tr>
+                                <th>Codigo</th>
+                                <th>Descripcion</th>
+                                <th>Fecha</th>
+                                <th>Estado</th>
+                                <th class="text-end">Directo</th>
+                                <th class="text-end">Total</th>
+                                <th class="text-center">Abrir</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-if="budgets">
+                                <t t-foreach="budgets" t-as="budget">
+                                    <tr>
+                                        <td><t t-esc="budget.code"/></td>
+                                        <td><t t-esc="budget.name"/></td>
+                                        <td><t t-esc="budget.budget_date or '-'"/></td>
+                                        <td><span t-attf-class="geosis-state #{budget.state}"><t t-esc="dict(budget._fields['state'].selection).get(budget.state)"/></span></td>
+                                        <td class="text-end">$<t t-esc="'%.2f' % budget.direct_cost"/></td>
+                                        <td class="text-end">$<t t-esc="'%.2f' % budget.total_amount"/></td>
+                                        <td class="text-center">
+                                            <a t-attf-href="/my/budgets/#{budget.id}" class="geosis-open-link">Ver</a>
+                                            <a t-attf-href="/my/budgets/#{budget.id}/pdf" class="geosis-open-link geosis-open-link--muted">PDF</a>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </t>
+                            <t t-else="">
+                                <tr><td colspan="7" class="text-center text-muted py-4">Este proyecto todavia no tiene presupuestos.</td></tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </t>
+    </template>
+
+    <template id="portal_my_budgets" name="Presupuestos">
+        <t t-call="geosis_website.geosis_portal_layout">
+            <t t-set="page_name" t-value="'budget'"/>
+            <t t-set="page_title" t-value="'Presupuestos'"/>
+            <t t-set="page_subtitle" t-value="'Control consolidado de ofertas'"/>
+            <div class="geosis-stat-strip">
+                <article class="geosis-mini-card"><span>Total presupuestos</span><strong><t t-esc="budget_total_count or 0"/></strong></article>
+                <article class="geosis-mini-card"><span>Borrador</span><strong><t t-esc="budget_draft_count or 0"/></strong></article>
+                <article class="geosis-mini-card"><span>Aprobados</span><strong><t t-esc="budget_approved_count or 0"/></strong></article>
+                <article class="geosis-mini-card"><span>Total acumulado</span><strong>$<t t-esc="'%.2f' % (budget_total_amount_sum or 0.0)"/></strong></article>
+            </div>
+            <section class="geosis-panel">
+                <div class="geosis-panel__header">
+                    <h3>Presupuestos del cliente</h3>
+                    <a href="/my/import-excel" class="btn btn-success btn-sm">Importar Excel</a>
+                </div>
+                <form action="/my/budgets" method="get" class="geosis-filterbar">
+                    <div class="geosis-filterbar__search">
+                        <input type="text" name="search" class="form-control" t-att-value="search or ''" placeholder="Buscar por proyecto, codigo o ubicacion"/>
+                    </div>
+                    <select name="state" class="form-select">
+                        <option value="all" t-att-selected="'selected' if selected_state == 'all' else None">Todos los estados</option>
+                        <option value="draft" t-att-selected="'selected' if selected_state == 'draft' else None">Borrador</option>
+                        <option value="approved" t-att-selected="'selected' if selected_state == 'approved' else None">Aprobado</option>
+                        <option value="archived" t-att-selected="'selected' if selected_state == 'archived' else None">Archivado</option>
+                    </select>
+                    <select name="sort_by" class="form-select">
+                        <t t-foreach="sortings.items()" t-as="sort_item">
+                            <option t-att-value="sort_item[0]" t-att-selected="'selected' if sort_by == sort_item[0] else None"><t t-esc="sort_item[1]['label']"/></option>
+                        </t>
+                    </select>
+                    <div class="geosis-filterbar__actions">
+                        <button type="submit" class="btn btn-outline-primary btn-sm">Aplicar</button>
+                        <a href="/my/budgets" class="btn btn-outline-secondary btn-sm">Limpiar</a>
+                    </div>
+                </form>
+                <div class="table-responsive">
+                    <table class="table geosis-clean-table">
+                        <thead>
+                            <tr>
+                                <th>Proyecto</th>
+                                <th>Cliente</th>
+                                <th>Estado</th>
+                                <th class="text-end">Costo directo</th>
+                                <th class="text-end">Total presupuesto</th>
+                                <th class="text-center">Abrir</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-if="budgets">
+                                <t t-foreach="budgets" t-as="budget">
+                                    <tr>
+                                        <td><t t-esc="budget.project_id.name or budget.name"/></td>
+                                        <td><t t-esc="budget.partner_id.name or '-'"/></td>
+                                        <td><span t-attf-class="geosis-state #{budget.state}"><t t-esc="dict(budget._fields['state'].selection).get(budget.state)"/></span></td>
+                                        <td class="text-end">$<t t-esc="'%.2f' % budget.direct_cost"/></td>
+                                        <td class="text-end">$<t t-esc="'%.2f' % budget.total_amount"/></td>
+                                        <td class="text-center"><a t-attf-href="/my/budgets/#{budget.id}" class="geosis-open-link">Ver</a></td>
+                                    </tr>
+                                </t>
+                            </t>
+                            <t t-else="">
+                                <tr><td colspan="6" class="text-center text-muted py-4">No hay presupuestos registrados.</td></tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </div>
+                <div t-if="pager and pager.get('page_count', 0) > 1" class="geosis-panel__pager">
+                    <t t-call="geosis_website.portal_simple_pager"/>
+                </div>
+            </section>
+        </t>
+    </template>
+
+    <template id="portal_my_budget_detail" name="Detalle de Presupuesto">
+        <t t-call="geosis_website.geosis_portal_layout">
+            <t t-set="page_name" t-value="'budget'"/>
+            <t t-set="page_title" t-value="budget.project_id.name or budget.name"/>
+            <t t-set="page_subtitle" t-value="'Detalle operativo del presupuesto'"/>
+
+            <div t-if="success == 'metadata_updated'" class="alert alert-success geosis-notice" role="alert">
+                <i class="fa fa-check-circle me-1"/> Los totales y metadatos del presupuesto han sido actualizados.
+            </div>
+            <div t-if="success == 'line_updated'" class="alert alert-success geosis-notice" role="alert">
+                <i class="fa fa-check-circle me-1"/> Linea de presupuesto actualizada correctamente.
+            </div>
+            <div t-if="success == 'line_added'" class="alert alert-success geosis-notice" role="alert">
+                <i class="fa fa-check-circle me-1"/> Nuevo rubro agregado al presupuesto.
+            </div>
+            <div t-if="success == 'line_deleted'" class="alert alert-warning geosis-notice" role="alert">
+                <i class="fa fa-trash me-1"/> Rubro eliminado del presupuesto.
+            </div>
+            <div t-if="budget_imported" class="alert alert-success geosis-notice" role="alert">
+                El archivo Excel se importo correctamente y el presupuesto ya esta disponible para revision.
+            </div>
+            <div class="geosis-stat-strip">
+                <article class="geosis-mini-card"><span>Codigo</span><strong><t t-esc="budget.code"/></strong></article>
+                <article class="geosis-mini-card"><span>Fecha</span><strong><t t-esc="budget.budget_date or '-'"/></strong></article>
+                <article class="geosis-mini-card"><span>Directo</span><strong>$<t t-esc="'%.2f' % budget.direct_cost"/></strong></article>
+                <article class="geosis-mini-card"><span>Total</span><strong>$<t t-esc="'%.2f' % budget.total_amount"/></strong></article>
+            </div>
+
+            <div class="geosis-stat-strip">
+                <article class="geosis-mini-card"><span>VAE % Oferta</span><strong><t t-esc="'%.1f' % budget.vae_percent"/>%</strong></article>
+                <article class="geosis-mini-card"><span>Indirectos (%)</span><strong><t t-esc="'%.2f' % budget.indirect_percent"/>%</strong></article>
+                <article class="geosis-mini-card"><span>IVA (%)</span><strong><t t-esc="'%.1f' % budget.iva_percent"/>%</strong></article>
+                <article class="geosis-mini-card"><span>Rubros</span><strong><t t-esc="len(budget.line_ids)"/></strong></article>
+            </div>
+
+            <div t-if="polynomial_calculated" class="alert alert-success geosis-notice" role="alert">
+                ¡Éxito! La fórmula polinómica ha sido calculada basándose en los índices INEC de los recursos.
+            </div>
+            <div t-if="request.params.get('error')" class="alert alert-danger geosis-notice" role="alert">
+                Error: <t t-esc="request.params.get('error')"/>
+            </div>
+
+            <section class="geosis-panel mb-4">
+                <div class="geosis-panel__header">
+                    <h3>Cabecera del presupuesto</h3>
+                    <div class="geosis-inline-actions">
+                        <form t-attf-action="/my/budgets/#{budget.id}/generate-schedule" method="post" class="d-inline">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <button type="submit" class="btn btn-primary btn-sm">Generar Cronograma</button>
+                        </form>
+                        <form t-if="budget.state == 'draft'" t-attf-action="/my/budgets/#{budget.id}/approve" method="post" class="d-inline">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <button type="submit" class="btn btn-success btn-sm">Aprobar Presupuesto</button>
+                        </form>
+                        <form t-attf-action="/my/budgets/#{budget.id}/calculate-polynomial" method="post" class="d-inline">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <button type="submit" class="btn btn-outline-primary btn-sm">Calcular Fórmula</button>
+                        </form>
+                        <form t-attf-action="/my/budgets/#{budget.id}/duplicate" method="post" class="d-inline">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <button type="submit" class="btn btn-outline-secondary btn-sm">Duplicar Presupuesto</button>
+                        </form>
+                        <div class="dropdown d-inline-block">
+                            <button class="btn btn-outline-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                Descargar Reporte
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" t-attf-href="/my/budgets/#{budget.id}/pdf?type=apus">Ficha de Rubros (APU)</a></li>
+                                <li><a class="dropdown-item" t-attf-href="/my/budgets/#{budget.id}/pdf?type=summary">Resumen de Presupuesto</a></li>
+                                <li><a class="dropdown-item" t-attf-href="/my/budgets/#{budget.id}/pdf?type=resources">Explosión de Insumos</a></li>
+                            </ul>
+                        </div>
+                        <a t-attf-href="/my/budgets/#{budget.id}/msproject" class="btn btn-outline-success btn-sm">MS Project (XML)</a>
+                    </div>
+                </div>
+                <form t-attf-action="/my/budget/#{budget.id}/update-metadata" method="post" class="p-4 bg-light border-bottom border-top">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-3">
+                            <label class="small text-muted mb-1">Oferente</label>
+                            <input type="text" name="offerer_text" t-att-value="budget.offerer_id.name or '-'" class="form-control form-control-sm" readonly="readonly" title="Solo lectura"/>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="small text-muted mb-1">Indirectos (%)</label>
+                            <input type="number" step="0.01" name="indirect_percent" t-att-value="budget.indirect_percent" class="form-control form-control-sm"/>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="small text-muted mb-1">IVA (%)</label>
+                            <input type="number" step="0.1" name="iva_percent" t-att-value="budget.iva_percent" class="form-control form-control-sm"/>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary btn-sm w-100"><i class="fa fa-save me-1"/> Actualizar</button>
+                        </div>
+                    </div>
+                </form>
+                <div class="geosis-detail-grid">
+                    <div><strong>Descripcion</strong><span><t t-esc="budget.name"/></span></div>
+                    <div><strong>Cliente</strong><span><t t-esc="budget.partner_id.name or '-'"/></span></div>
+                    <div><strong>Ubicacion</strong><span><t t-esc="budget.location or '-'"/></span></div>
+                    <div><strong>Estado</strong><span><t t-esc="dict(budget._fields['state'].selection).get(budget.state)"/></span></div>
+                </div>
+            </section>
+
+            <ul class="nav nav-tabs geosis-tabs mb-4" id="budgetTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="items-tab" data-bs-toggle="tab" data-bs-target="#items" type="button" role="tab">Rubros del Presupuesto</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="chapters-tab" data-bs-toggle="tab" data-bs-target="#chapters" type="button" role="tab">Estructura de Capítulos</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="formula-tab" data-bs-toggle="tab" data-bs-target="#formula" type="button" role="tab">Fórmula Polinómica</button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="budgetTabsContent">
+                <!-- PESTAÑA RUBROS -->
+                <div class="tab-pane fade show active" id="items" role="tabpanel">
+                    <section t-if="budget.state == 'draft'" class="geosis-panel mb-4 p-4 bg-light border">
+                        <h5 class="mb-3">Añadir Rubro al Presupuesto</h5>
+                        <form t-attf-action="/my/budget/#{budget.id}/line/add" method="post" class="row g-2 align-items-end">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <div class="col-md-6">
+                                <label class="small text-muted mb-1">Seleccionar Rubro APU</label>
+                                <select name="apu_id" class="form-select form-select-sm" required="required">
+                                    <option value="">- Selecciona un rubro -</option>
+                                    <t t-foreach="available_apus" t-as="apu">
+                                        <option t-att-value="apu.id">[<t t-esc="apu.code"/>] <t t-esc="apu.name"/> ($<t t-esc="'%.2f' % apu.total_cost"/>)</option>
+                                    </t>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="small text-muted mb-1">Cantidad</label>
+                                <input type="number" step="0.01" name="quantity" value="1.00" class="form-control form-control-sm"/>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="small text-muted mb-1">Capítulo</label>
+                                <select name="chapter_id" class="form-select form-select-sm">
+                                    <option value="">- Sin capítulo -</option>
+                                    <t t-foreach="budget.chapter_ids" t-as="ch">
+                                        <option t-att-value="ch.id"><t t-esc="ch.name"/></option>
+                                    </t>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-success btn-sm w-100"><i class="fa fa-plus me-1"/> Agregar</button>
+                            </div>
+                        </form>
+                    </section>
+
+                    <section class="geosis-panel">
+                        <div class="table-responsive">
+                            <table class="table geosis-clean-table">
+                                <thead>
+                                    <tr>
+                                        <th>Codigo</th>
+                                        <th>Rubro APU</th>
+                                        <th>Capítulo</th>
+                                        <th class="text-end">Cantidad</th>
+                                        <th class="text-end">Precio Unit.</th>
+                                        <th class="text-end">Subtotal</th>
+                                        <th class="text-center">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-if="budget.line_ids">
+                                        <t t-foreach="budget.line_ids" t-as="line">
+                                            <tr>
+                                                <form t-attf-action="/my/budget/#{budget.id}/line/#{line.id}/update" method="post">
+                                                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                                    <td><span class="text-muted small"><t t-esc="line.apu_code"/></span></td>
+                                                    <td>
+                                                        <strong><t t-esc="line.apu_name"/></strong>
+                                                        <t t-if="line.vae_percent">
+                                                            <span class="badge bg-success ms-1" style="font-size:0.65rem;">VAE <t t-esc="'%.0f' % line.vae_percent"/>%</span>
+                                                        </t>
+                                                    </td>
+                                                    <td>
+                                                        <select name="chapter_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                                                            <option value="">- Sin capítulo -</option>
+                                                            <t t-foreach="budget.chapter_ids" t-as="ch">
+                                                                <option t-att-value="ch.id" t-att-selected="'selected' if line.chapter_id.id == ch.id else None">
+                                                                    <t t-esc="ch.name"/>
+                                                                </option>
+                                                            </t>
+                                                        </select>
+                                                    </td>
+                                                    <td class="text-end" style="width: 120px;">
+                                                        <input type="number" step="0.01" name="quantity" t-att-value="line.quantity" class="form-control form-control-sm text-end"/>
+                                                    </td>
+                                                    <td class="text-end" style="width: 130px;">
+                                                        <input type="number" step="0.0001" name="unit_price" t-att-value="line.unit_price" class="form-control form-control-sm text-end"/>
+                                                    </td>
+                                                    <td class="text-end">
+                                                        <div class="d-flex align-items-center justify-content-end gap-2">
+                                                            <span class="fw-bold">$<t t-esc="'%.2f' % line.subtotal"/></span>
+                                                            <button type="submit" class="btn btn-link btn-sm p-0 text-primary" title="Guardar cambios">
+                                                                <i class="fa fa-save"/>
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </form>
+                                                <td class="text-center">
+                                                    <div class="d-flex align-items-center justify-content-center gap-1">
+                                                        <a t-attf-href="/my/rubro/#{line.apu_id.id}" class="btn btn-link btn-sm p-0" title="Ver ficha">
+                                                            <i class="fa fa-eye text-info"/>
+                                                        </a>
+                                                        <form t-attf-action="/my/budget/#{budget.id}/line/#{line.id}/delete" method="post" onsubmit="return confirm('¿Eliminar rubro del presupuesto?');">
+                                                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                                            <button type="submit" class="btn btn-link btn-sm p-0 text-danger" title="Eliminar">
+                                                                <i class="fa fa-trash"/>
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </t>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- PESTAÑA CAPÍTULOS -->
+                <div class="tab-pane fade" id="chapters" role="tabpanel">
+                    <section class="geosis-panel mb-4">
+                        <div class="geosis-panel__header">
+                            <h3>Crear nuevo capítulo</h3>
+                        </div>
+                        <form t-attf-action="/my/budgets/#{budget.id}/chapter/create" method="post" class="p-4 bg-light border-bottom">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <div class="row g-3">
+                                <div class="col-md-5">
+                                    <input type="text" name="name" class="form-control" placeholder="Nombre del capítulo (Ej: Movimiento de Tierras)" required="required"/>
+                                </div>
+                                <div class="col-md-5">
+                                    <select name="parent_id" class="form-select">
+                                        <option value="">- Capítulo raíz -</option>
+                                        <t t-foreach="budget.chapter_ids" t-as="ch">
+                                            <option t-att-value="ch.id"><t t-esc="ch.complete_name or ch.name"/></option>
+                                        </t>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <button type="submit" class="btn btn-primary w-100">Añadir</button>
+                                </div>
+                            </div>
+                        </form>
+                        <div class="geosis-chapter-list p-4">
+                            <t t-if="budget.chapter_ids">
+                                <t t-foreach="budget.chapter_ids.sorted('sequence')" t-as="chapter">
+                                    <article class="geosis-chapter-card" t-att-style="'--chapter-level:%s;' % (chapter.level or 1)">
+                                        <div class="geosis-chapter-card__copy">
+                                            <strong><t t-esc="chapter.complete_name or chapter.name"/></strong>
+                                            <span><t t-esc="len(chapter.line_ids)"/> rubros directos</span>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-3">
+                                            <div class="geosis-chapter-card__amount">$<t t-esc="'%.2f' % chapter.total_amount"/></div>
+                                            <form t-attf-action="/my/budgets/#{budget.id}/chapter/#{chapter.id}/delete" method="post" onsubmit="return confirm('¿Eliminar capítulo?');">
+                                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                                <button type="submit" class="btn btn-link text-danger p-0" title="Eliminar Capítulo"><i class="fa fa-trash"/></button>
+                                            </form>
+                                        </div>
+                                    </article>
+                                </t>
+                            </t>
+                            <t t-else="">
+                                <div class="text-center text-muted py-4">No se han definido capítulos para este presupuesto.</div>
+                            </t>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- PESTAÑA FÓRMULA -->
+                <div class="tab-pane fade" id="formula" role="tabpanel">
+                    <section class="geosis-panel">
+                        <div class="geosis-panel__header">
+                            <h3>Componentes de Reajuste (K)</h3>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table geosis-clean-table">
+                                <thead>
+                                    <tr>
+                                        <th>Símbolo</th>
+                                        <th>Descripción / Índice INEC</th>
+                                        <th class="text-center">Coeficiente</th>
+                                        <th class="text-center">Peso (%)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-if="budget.formula_line_ids">
+                                        <t t-foreach="budget.formula_line_ids" t-as="f_line">
+                                            <tr>
+                                                <td class="fw-bold text-primary"><t t-esc="f_line.symbol"/></td>
+                                                <td><t t-esc="f_line.name"/></td>
+                                                <td class="text-center"><t t-esc="'%.3f' % f_line.coefficient"/></td>
+                                                <td class="text-center">
+                                                    <div class="progress" style="height: 6px; width: 100px; margin: 0 auto;">
+                                                        <div class="progress-bar" role="progressbar" t-att-style="'width: %s%%' % (f_line.coefficient * 100)"/>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </t>
+                                    </t>
+                                    <t t-else="">
+                                        <tr><td colspan="4" class="text-center text-muted py-5">
+                                            La fórmula aún no ha sido calculada. 
+                                            <form t-attf-action="/my/budgets/#{budget.id}/calculate-polynomial" method="post" class="mt-3">
+                                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                                <button type="submit" class="btn btn-primary">Calcular ahora</button>
+                                            </form>
+                                        </td></tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="portal_import_excel" name="Importar Presupuesto Excel Portal">
+        <t t-call="geosis_website.geosis_portal_layout">
+            <t t-set="page_name" t-value="'import'"/>
+            <t t-set="page_title" t-value="'Importar Presupuesto Excel'"/>
+            <t t-set="page_subtitle" t-value="'Sube un archivo y convierte trabajo externo en datos operativos'"/>
+            <div class="geosis-import-grid">
+                <section class="geosis-panel">
+                    <div class="geosis-panel__header">
+                        <h3>Subir archivo</h3>
+                    </div>
+                    <div t-if="error_message" class="alert alert-danger" role="alert"><t t-esc="error_message"/></div>
+                    <form action="/my/import-excel" method="post" enctype="multipart/form-data" class="geosis-form">
+                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                        <label class="geosis-form__block"><span>Archivo Excel (.xlsx)</span><input type="file" name="file_data" class="form-control" accept=".xlsx" required="required"/></label>
+                        <div class="geosis-form__grid">
+                            <label><span>Codigo presupuesto</span><input type="text" name="budget_code" t-att-value="form_data.get('budget_code', '')" class="form-control"/></label>
+                            <label><span>Descripcion presupuesto</span><input type="text" name="budget_name" t-att-value="form_data.get('budget_name', '')" class="form-control"/></label>
+                            <label><span>Codigo proyecto</span><input type="text" name="project_code" t-att-value="form_data.get('project_code', '')" class="form-control"/></label>
+                            <label><span>Nombre proyecto</span><input type="text" name="project_name" t-att-value="form_data.get('project_name', '')" class="form-control"/></label>
+                            <label><span>Fecha presupuesto</span><input type="date" name="budget_date" t-att-value="form_data.get('budget_date', '')" class="form-control"/></label>
+                            <label><span>Ubicacion</span><input type="text" name="location" t-att-value="form_data.get('location', '')" class="form-control"/></label>
+                        </div>
+                        <label class="geosis-form__block"><span>Observaciones</span><textarea name="note" class="form-control" rows="3"><t t-esc="form_data.get('note', '')"/></textarea></label>
+                        <div class="geosis-toggle-grid">
+                            <label><input type="checkbox" name="import_apu_sheets" t-att-checked="'checked' if form_data.get('import_apu_sheets', 'on') else None"/> Importar hojas APU</label>
+                            <label><input type="checkbox" name="create_missing_apus" t-att-checked="'checked' if form_data.get('create_missing_apus', 'on') else None"/> Crear APU faltantes</label>
+                            <label><input type="checkbox" name="update_existing_apus" t-att-checked="'checked' if form_data.get('update_existing_apus', 'on') else None"/> Actualizar APUs existentes</label>
+                            <label><input type="checkbox" name="replace_budget_lines" t-att-checked="'checked' if form_data.get('replace_budget_lines', 'on') else None"/> Reemplazar lineas del presupuesto</label>
+                            <label><input type="checkbox" name="use_budget_sheet_prices" t-att-checked="'checked' if form_data.get('use_budget_sheet_prices', 'on') else None"/> Respetar precios del presupuesto</label>
+                        </div>
+                        <div class="geosis-form__actions">
+                            <button type="submit" class="btn btn-success">Importar presupuesto</button>
+                            <a href="/my/budgets" class="btn btn-outline-secondary">Cancelar</a>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="geosis-panel">
+                    <div class="geosis-panel__header">
+                        <h3>Como funciona</h3>
+                    </div>
+                    <div class="geosis-help-stack">
+                        <article>
+                            <strong>1. Hoja principal</strong>
+                            <p>Usa una hoja llamada Presupuesto con codigo, descripcion, unidad, cantidad, precio unitario y total.</p>
+                        </article>
+                        <article>
+                            <strong>2. Hojas APU</strong>
+                            <p>Si existen hojas por codigo de rubro, el sistema puede crear o actualizar recursos y detalle tecnico.</p>
+                        </article>
+                        <article>
+                            <strong>3. Resultado</strong>
+                            <p>GEOSIS crea o actualiza proyecto, presupuesto, lineas, rubros y recursos vinculados al cliente.</p>
+                        </article>
+                    </div>
+                    <div class="geosis-panel__subsection">
+                        <h4>Ultimos presupuestos cargados</h4>
+                        <div class="geosis-recent-stack">
+                            <t t-if="recent_budgets">
+                                <t t-foreach="recent_budgets" t-as="recent_budget">
+                                    <a t-attf-href="/my/budgets/#{recent_budget.id}" class="geosis-recent-item">
+                                        <div>
+                                            <strong><t t-esc="recent_budget.project_id.name or recent_budget.name"/></strong>
+                                            <span><t t-esc="recent_budget.code"/> · <t t-esc="recent_budget.budget_date or '-'"/></span>
+                                        </div>
+                                        <em>$<t t-esc="'%.2f' % recent_budget.total_amount"/></em>
+                                    </a>
+                                </t>
+                            </t>
+                            <t t-else="">
+                                <div class="text-muted small">Aun no hay importaciones recientes para este cliente.</div>
+                            </t>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </t>
+    </template>
+
+    <template id="portal_my_rubros" name="Catalogo de Rubros APU">
+        <t t-call="geosis_website.geosis_portal_layout">
+            <t t-set="page_name" t-value="'rubro'"/>
+            <t t-set="page_title" t-value="'Rubros APU'"/>
+            <t t-set="page_subtitle" t-value="'Catalogo tecnico de analisis unitarios'"/>
+            <div t-if="rubro_created" class="alert alert-success geosis-notice" role="alert">
+                El rubro se creo correctamente.
+            </div>
+            <div t-if="rubro_updated" class="alert alert-success geosis-notice" role="alert">
+                El rubro se actualizo correctamente.
+            </div>
+            <div t-if="rubro_deleted" class="alert alert-warning geosis-notice" role="alert">
+                El rubro se elimino del catalogo.
+            </div>
+            <div class="geosis-stat-strip">
+                <article class="geosis-mini-card"><span>Total rubros</span><strong><t t-esc="rubro_total_count or 0"/></strong></article>
+                <article class="geosis-mini-card"><span>Activos</span><strong><t t-esc="rubro_active_count or 0"/></strong></article>
+                <article class="geosis-mini-card"><span>Inactivos</span><strong><t t-esc="rubro_inactive_count or 0"/></strong></article>
+                <article class="geosis-mini-card"><span>Prom. costo total</span><strong>$<t t-esc="'%.2f' % (rubro_avg_total or 0.0)"/></strong></article>
+            </div>
+            <section class="geosis-panel">
+                <div class="geosis-panel__header">
+                    <h3>Catalogo de rubros</h3>
+                    <a href="/my/rubros/new" class="btn btn-primary btn-sm">Nuevo rubro</a>
+                </div>
+                <form action="/my/rubros" method="get" class="geosis-filterbar">
+                    <div class="geosis-filterbar__search">
+                        <input type="text" name="search" class="form-control" t-att-value="search or ''" placeholder="Buscar por codigo, descripcion o unidad"/>
+                    </div>
+                    <select name="active" class="form-select">
+                        <option value="active" t-att-selected="'selected' if selected_active == 'active' else None">Activos</option>
+                        <option value="all" t-att-selected="'selected' if selected_active == 'all' else None">Todos</option>
+                        <option value="inactive" t-att-selected="'selected' if selected_active == 'inactive' else None">Inactivos</option>
+                    </select>
+                    <select name="sort_by" class="form-select">
+                        <t t-foreach="sortings.items()" t-as="sort_item">
+                            <option t-att-value="sort_item[0]" t-att-selected="'selected' if sort_by == sort_item[0] else None"><t t-esc="sort_item[1]['label']"/></option>
+                        </t>
+                    </select>
+                    <div class="geosis-filterbar__actions">
+                        <button type="submit" class="btn btn-outline-primary btn-sm">Aplicar</button>
+                        <a href="/my/rubros" class="btn btn-outline-secondary btn-sm">Limpiar</a>
+                    </div>
+                </form>
+                <div class="table-responsive">
+                    <table class="table geosis-clean-table">
+                        <thead>
+                            <tr>
+                                <th>Codigo</th>
+                                <th>Nombre del rubro</th>
+                                <th>Unidad</th>
+                                <th class="text-center">VAE %</th>
+                                <th class="text-end">Costo directo</th>
+                                <th class="text-end">Indirectos</th>
+                                <th class="text-end">Costo total</th>
+                                <th class="text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-if="rubros">
+                                <t t-foreach="rubros" t-as="rubro">
+                                    <tr>
+                                        <td><t t-esc="rubro.code"/></td>
+                                        <td><t t-esc="rubro.name"/></td>
+                                        <td><span class="geosis-chip"><t t-esc="rubro.uom_name"/></span></td>
+                                        <td class="text-center">
+                                            <span t-attf-class="badge #{'bg-success' if rubro.vae_percent >= 40 else 'bg-warning' if rubro.vae_percent > 0 else 'bg-secondary'}" style="font-size: 0.75rem;">
+                                                <t t-esc="'%.1f' % rubro.vae_percent"/>%
+                                            </span>
+                                        </td>
+                                        <td class="text-end">$<t t-esc="'%.2f' % rubro.direct_cost"/></td>
+                                        <td class="text-end"><t t-esc="'%.2f' % rubro.indirect_percent"/>%</td>
+                                        <td class="text-end">$<t t-esc="'%.2f' % rubro.total_cost"/></td>
+                                        <td class="text-center">
+                                            <div class="geosis-inline-actions">
+                                                <a t-attf-href="/my/rubro/#{rubro.id}" class="geosis-open-link">Ver</a>
+                                                <a t-attf-href="/my/rubro/#{rubro.id}/edit" class="geosis-open-link">Editar</a>
+                                                <form t-attf-action="/my/rubro/#{rubro.id}/delete" method="post" class="d-inline" onsubmit="return confirm('Se eliminara este rubro. Deseas continuar?');">
+                                                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                                    <button type="submit" class="btn btn-link btn-sm geosis-delete-link">Eliminar</button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </t>
+                            <t t-else="">
+                                <tr><td colspan="7" class="text-center text-muted py-4">No hay rubros disponibles.</td></tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </div>
+                <div t-if="pager and pager.get('page_count', 0) > 1" class="geosis-panel__pager">
+                    <t t-call="geosis_website.portal_simple_pager"/>
+                </div>
+            </section>
+        </t>
+    </template>
+
+    <template id="portal_rubro_form" name="Formulario de Rubro APU">
+        <t t-call="geosis_website.geosis_portal_layout">
+            <t t-set="page_name" t-value="'rubro'"/>
+            <t t-set="page_title" t-value="'Editar Rubro' if apu else 'Nuevo Rubro'"/>
+            <t t-set="page_subtitle" t-value="'Inicio / Rubros / Editar' if apu else 'Inicio / Rubros / Nuevo'"/>
+            <section class="geosis-panel">
+                <div class="geosis-panel__header">
+                    <h3><t t-esc="'Editar rubro' if apu else 'Crear rubro'"/></h3>
+                </div>
+                <div t-if="error_message" class="alert alert-danger" role="alert"><t t-esc="error_message"/></div>
+                <form t-att-action="'/my/rubro/%s/edit' % apu.id if apu else '/my/rubros/new'" method="post" class="geosis-form">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <div class="geosis-form__grid">
+                        <label><span>Codigo</span><input type="text" name="code" t-att-value="form_data.get('code', '')" class="form-control" required="required"/></label>
+                        <label><span>Nombre del rubro</span><input type="text" name="name" t-att-value="form_data.get('name', '')" class="form-control" required="required"/></label>
+                        <label><span>Unidad</span><input type="text" name="uom_name" t-att-value="form_data.get('uom_name', 'U')" class="form-control" required="required"/></label>
+                        <label><span>Indirectos (%)</span><input type="number" step="0.0001" min="0" name="indirect_percent" t-att-value="form_data.get('indirect_percent', 0.0)" class="form-control"/></label>
+                    </div>
+                    <label class="geosis-form__block">
+                        <span>Observaciones</span>
+                        <textarea name="description" class="form-control" rows="4"><t t-esc="form_data.get('description', '')"/></textarea>
+                    </label>
+                    <label class="geosis-form__check">
+                        <input type="checkbox" name="active" value="1" t-att-checked="'checked' if form_data.get('active') else None"/>
+                        <span>Rubro activo</span>
+                    </label>
+                    <div class="geosis-form__actions">
+                        <button type="submit" class="btn btn-primary"><t t-esc="'Guardar cambios' if apu else 'Guardar rubro'"/></button>
+                        <a t-att-href="'/my/rubro/%s' % apu.id if apu else '/my/rubros'" class="btn btn-outline-secondary">Cancelar</a>
+                    </div>
+                </form>
+            </section>
+        </t>
+    </template>
+
+    <template id="portal_my_rubro_detail" name="Detalle de Rubro APU">
+        <t t-call="geosis_website.geosis_portal_layout">
+            <t t-set="page_name" t-value="'rubro'"/>
+            <t t-set="page_title" t-value="apu.name"/>
+            <t t-set="page_subtitle" t-value="'Detalle tecnico del rubro seleccionado'"/>
+
+            <div class="geosis-stat-strip">
+                <article class="geosis-mini-card"><span>Codigo</span><strong><t t-esc="apu.code"/></strong></article>
+                <article class="geosis-mini-card"><span>CPC</span><strong><t t-esc="apu.cpc_code or '-'"/></strong></article>
+                <article class="geosis-mini-card"><span>Unidad</span><strong><t t-esc="apu.uom_name"/></strong></article>
+                <article class="geosis-mini-card"><span>Directo</span><strong>$<t t-esc="'%.2f' % apu.direct_cost"/></strong></article>
+                <article class="geosis-mini-card"><span>Total</span><strong>$<t t-esc="'%.2f' % apu.total_cost"/></strong></article>
+            </div>
+
+            <div t-if="success == 'indirects_updated'" class="alert alert-success geosis-notice" role="alert">
+                <i class="fa fa-check-circle me-1"/> El porcentaje de costos indirectos se actualizo correctamente.
+            </div>
+
+            <div t-if="ia_generated" class="alert alert-success geosis-notice" role="alert">
+                ¡Éxito! Los recursos han sido generados automáticamente mediante IA basándose en el nombre del rubro.
+            </div>
+
+            <div t-if="resource_line_added" class="alert alert-success geosis-notice" role="alert">
+                El recurso se agrego correctamente al rubro.
+            </div>
+            <div t-if="resource_line_deleted" class="alert alert-warning geosis-notice" role="alert">
+                La linea del recurso se elimino del rubro.
+            </div>
+            <div t-if="rubro_created" class="alert alert-success geosis-notice" role="alert">
+                El rubro se creo correctamente.
+            </div>
+            <div t-if="rubro_updated" class="alert alert-success geosis-notice" role="alert">
+                El rubro se actualizo correctamente.
+            </div>
+
+            <div class="geosis-rubro-resource-grid">
+                <section class="geosis-panel geosis-rubro-resource-sticky">
+                    <div class="geosis-panel__header">
+                        <h3>Agregar recurso</h3>
+                        <div class="geosis-inline-actions">
+                            <a t-attf-href="/my/rubro/#{apu.id}/edit" class="geosis-open-link">Editar rubro</a>
+                            <form t-attf-action="/my/rubro/#{apu.id}/generate-ia" method="post" class="d-inline">
+                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                <button type="submit" class="btn btn-link btn-sm text-success p-0">Sugerir con IA</button>
+                            </form>
+                            <a t-attf-href="/my/rubro/#{apu.id}" class="geosis-open-link">Refrescar</a>
+                            <form t-attf-action="/my/rubro/#{apu.id}/duplicate" method="post" class="d-inline">
+                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                <button type="submit" class="btn btn-link btn-sm text-info p-0 me-2">Duplicar rubro</button>
+                            </form>
+                            <a t-attf-href="/my/rubros/#{apu.id}/pdf" class="btn btn-link btn-sm text-primary p-0 me-2">Descargar ficha PDF</a>
+                            <form t-attf-action="/my/rubro/#{apu.id}/delete" method="post" class="d-inline" onsubmit="return confirm('Se eliminara este rubro. Deseas continuar?');">
+                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                <button type="submit" class="btn btn-link btn-sm geosis-delete-link">Eliminar rubro</button>
+                            </form>
+                        </div>
+                    </div>
+                    <form t-attf-action="/my/rubro/#{apu.id}/add-resource" method="post" class="geosis-form">
+                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                        <div class="geosis-form__grid">
+                            <label>
+                                <span>Categoria</span>
+                                <select name="category" class="form-select" id="geosis-rubro-category" onchange="geosisFilterResources()">
+                                    <t t-foreach="resource_categories.items()" t-as="category_item">
+                                        <option t-att-value="category_item[0]"><t t-esc="category_item[0]"/> - <t t-esc="category_item[1]['label']"/></option>
+                                    </t>
+                                </select>
+                            </label>
+                            <label>
+                                <span>Recurso</span>
+                                <select name="resource_id" class="form-select" id="geosis-rubro-resource" onchange="geosisSyncResourceForm()">
+                                    <t t-foreach="resource_available" t-as="resource">
+                                        <option t-att-value="resource.id"
+                                                t-att-data-category="resource.category"
+                                                t-att-data-price="'%.4f' % (resource.price or 0.0)"
+                                                t-att-data-uom="resource.uom_id.name or ''">
+                                            <t t-esc="resource.name"/>
+                                        </option>
+                                    </t>
+                                </select>
+                            </label>
+                            <label>
+                                <span>Cantidad</span>
+                                <input type="number" name="quantity" class="form-control" step="0.0001" min="0" value="1" id="geosis-rubro-quantity" onchange="geosisComputeResourceCost()"/>
+                            </label>
+                            <label>
+                                <span>Tarifa</span>
+                                <input type="number" name="rate" class="form-control" step="0.0001" min="0" value="0" id="geosis-rubro-rate" onchange="geosisComputeResourceCost()"/>
+                            </label>
+                            <label>
+                                <span>Rendimiento</span>
+                                <input type="number" name="performance" class="form-control" step="0.0001" min="0" value="1" id="geosis-rubro-performance" onchange="geosisComputeResourceCost()"/>
+                            </label>
+                            <label>
+                                <span>Unidad</span>
+                                <input type="text" class="form-control" id="geosis-rubro-uom" readonly="readonly" value=""/>
+                            </label>
+                        </div>
+                        <label class="geosis-form__block">
+                            <span>Observacion</span>
+                            <input type="text" name="note" class="form-control" placeholder="Notas cortas para esta linea"/>
+                        </label>
+                        <div class="geosis-rubro-estimate">
+                            <span>Costo estimado</span>
+                            <strong id="geosis-rubro-estimated-cost">$0.00</strong>
+                        </div>
+                        <div class="geosis-form__actions">
+                            <button type="submit" class="btn btn-primary">Agregar recurso</button>
+                            <a href="/my/rubros" class="btn btn-outline-secondary">Volver al catalogo</a>
+                        </div>
+                    </form>
+                </section>
+
+                <div class="geosis-rubro-resource-groups">
+                    <t t-foreach="resource_categories.items()" t-as="category_item">
+                        <section class="geosis-panel">
+                            <div class="geosis-panel__header">
+                                <div>
+                                    <h3><t t-esc="category_item[0]"/> - <t t-esc="category_item[1]['label']"/></h3>
+                                    <p class="geosis-panel__lead"><t t-esc="category_item[1]['description']"/></p>
+                                </div>
+                                <strong class="geosis-rubro-subtotal">$<t t-esc="'%.2f' % ((resource_subtotals or {}).get(category_item[0], 0.0))"/></strong>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table geosis-clean-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Descripcion</th>
+                                            <th class="text-end">Cant.</th>
+                                            <th class="text-end">Tarifa</th>
+                                            <th class="text-end">Rend.</th>
+                                            <th class="text-end">Costo</th>
+                                            <th class="text-center">Accion</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-if="(resource_grouped_lines or {}).get(category_item[0])">
+                                            <t t-foreach="resource_grouped_lines.get(category_item[0])" t-as="line">
+                                                <tr>
+                                                    <td>
+                                                        <strong><t t-esc="line.resource_id.name"/></strong>
+                                                        <span class="geosis-table-meta"><t t-esc="line.uom_name or '-'"/></span>
+                                                    </td>
+                                                    <td class="text-end"><t t-esc="'%.4f' % line.quantity"/></td>
+                                                    <td class="text-end">$<t t-esc="'%.4f' % line.rate"/></td>
+                                                    <td class="text-end"><t t-esc="'%.4f' % line.performance"/></td>
+                                                    <td class="text-end">$<t t-esc="'%.2f' % line.cost"/></td>
+                                                    <td class="text-center">
+                                                        <div class="geosis-inline-actions">
+                                                            <button class="btn btn-link btn-sm p-0 me-2" t-attf-onclick="geosisToggleEditLine(#{line.id})">Editar</button>
+                                                            <form t-attf-action="/my/rubro/#{apu.id}/line/#{line.id}/delete" method="post" class="d-inline">
+                                                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                                                <button type="submit" class="btn btn-link btn-sm geosis-delete-link p-0">Quitar</button>
+                                                            </form>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                <!-- FORMULARIO DE EDICION RAPIDA (OCULTO) -->
+                                                <tr t-attf-id="edit-line-#{line.id}" class="d-none bg-light">
+                                                    <td colspan="6" class="p-3">
+                                                        <form t-attf-action="/my/rubro/#{apu.id}/line/#{line.id}/update" method="post">
+                                                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                                            <div class="row g-2 align-items-end">
+                                                                <div class="col-md-2">
+                                                                    <label class="small text-muted mb-1">Cant.</label>
+                                                                    <input type="number" name="quantity" step="0.0001" t-att-value="line.quantity" class="form-control form-control-sm"/>
+                                                                </div>
+                                                                <div class="col-md-2">
+                                                                    <label class="small text-muted mb-1">Tarifa</label>
+                                                                    <input type="number" name="rate" step="0.0001" t-att-value="line.rate" class="form-control form-control-sm"/>
+                                                                </div>
+                                                                <div class="col-md-2">
+                                                                    <label class="small text-muted mb-1">Rend.</label>
+                                                                    <input type="number" name="performance" step="0.0001" t-att-value="line.performance" class="form-control form-control-sm"/>
+                                                                </div>
+                                                                <div class="col-md-4">
+                                                                    <label class="small text-muted mb-1">Nota</label>
+                                                                    <input type="text" name="note" t-att-value="line.note" class="form-control form-control-sm"/>
+                                                                </div>
+                                                                <div class="col-md-2">
+                                                                    <button type="submit" class="btn btn-primary btn-sm w-100 mb-1">OK</button>
+                                                                    <button type="button" class="btn btn-outline-secondary btn-sm w-100" t-attf-onclick="geosisToggleEditLine(#{line.id})">X</button>
+                                                                </div>
+                                                            </div>
+                                                        </form>
+                                                    </td>
+                                                </tr>
+                                            </t>
+                                        </t>
+                                        <t t-else="">
+                                            <tr><td colspan="6" class="text-center text-muted py-4">Sin items en esta categoria.</td></tr>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+                    </t>
+
+                    <section class="geosis-panel">
+                        <div class="geosis-panel__header">
+                            <h3>Resumen del rubro</h3>
+                            <a t-attf-href="/my/rubro/#{apu.id}" class="geosis-open-link">Ficha actual</a>
+                        </div>
+                        <div class="geosis-rubro-summary">
+                            <div><span>Total costo directo</span><strong>$<t t-esc="'%.2f' % (resource_direct_total or 0.0)"/></strong></div>
+                            <div>
+                                <span>Indirectos (%)</span>
+                                <form t-attf-action="/my/rubro/#{apu.id}/update-indirects" method="post" class="d-inline-flex align-items-center gap-1">
+                                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                    <input type="number" name="indirect_percent" step="0.01" t-att-value="apu.indirect_percent" 
+                                           class="form-control form-control-sm text-end" style="width: 70px;"/>
+                                    <button type="submit" class="btn btn-link btn-sm p-0" title="Actualizar">
+                                        <i class="fa fa-save"/>
+                                    </button>
+                                </form>
+                            </div>
+                            <div><span>Valor indirecto</span><strong>$<t t-esc="'%.2f' % apu.indirect_value"/></strong></div>
+                            <div class="is-primary"><span>Valor ofertado</span><strong>$<t t-esc="'%.2f' % apu.total_cost"/></strong></div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <script type="text/javascript">
+                function geosisFilterResources() {
+                    const categorySelect = document.getElementById('geosis-rubro-category');
+                    const resourceSelect = document.getElementById('geosis-rubro-resource');
+                    if (!categorySelect || !resourceSelect) {
+                        return;
+                    }
+                    const category = categorySelect.value;
+                    let firstVisible = null;
+                    Array.from(resourceSelect.options).forEach((option) =&gt; {
+                        const visible = option.dataset.category === category;
+                        option.hidden = !visible;
+                        if (visible &amp;&amp; !firstVisible) {
+                            firstVisible = option;
+                        }
+                    });
+                    if (firstVisible) {
+                        resourceSelect.value = firstVisible.value;
+                    }
+                    geosisSyncResourceForm();
+                }
+
+                function geosisSyncResourceForm() {
+                    const resourceSelect = document.getElementById('geosis-rubro-resource');
+                    const categorySelect = document.getElementById('geosis-rubro-category');
+                    const rateInput = document.getElementById('geosis-rubro-rate');
+                    const uomInput = document.getElementById('geosis-rubro-uom');
+                    if (!resourceSelect) {
+                        return;
+                    }
+                    const selected = resourceSelect.options[resourceSelect.selectedIndex];
+                    if (!selected) {
+                        return;
+                    }
+                    if (categorySelect &amp;&amp; selected.dataset.category) {
+                        categorySelect.value = selected.dataset.category;
+                    }
+                    if (rateInput) {
+                        rateInput.value = selected.dataset.price || '0';
+                    }
+                    if (uomInput) {
+                        uomInput.value = selected.dataset.uom || '';
+                    }
+                    geosisComputeResourceCost();
+                }
+
+                function geosisComputeResourceCost() {
+                    const quantity = parseFloat(document.getElementById('geosis-rubro-quantity')?.value || '0');
+                    const rate = parseFloat(document.getElementById('geosis-rubro-rate')?.value || '0');
+                    const performance = parseFloat(document.getElementById('geosis-rubro-performance')?.value || '0');
+                    const output = document.getElementById('geosis-rubro-estimated-cost');
+                    if (!output) {
+                        return;
+                    }
+                    output.textContent = '$' + (quantity * rate * performance).toFixed(2);
+                }
+
+                function geosisToggleEditLine(lineId) {
+                    const el = document.getElementById('edit-line-' + lineId);
+                    if (el) {
+                        el.classList.toggle('d-none');
+                    }
+                }
+
+                geosisFilterResources();
+            </script>
+        </t>
+    </template>
+
+    <template id="portal_my_resources" name="Catalogo de Recursos">
+        <t t-call="geosis_website.geosis_portal_layout">
+            <t t-set="page_name" t-value="'resource'"/>
+            <t t-set="page_title" t-value="'Recursos'"/>
+            <t t-set="page_subtitle" t-value="'Catalogo operativo de materiales, mano de obra y equipos'"/>
+
+            <!-- Banner de éxito -->
+            <t t-if="success == 'price_updated'">
+                <div class="alert alert-success geosis-notice d-flex align-items-center gap-2" role="alert">
+                    <i class="fa fa-check-circle"/> Precio actualizado correctamente.
+                </div>
+            </t>
+
+            <!-- Estadísticas rápidas -->
+            <div class="geosis-stat-strip">
+                <article class="geosis-mini-card"><span>Total recursos</span><strong><t t-esc="resource_total_count or 0"/></strong></article>
+                <article class="geosis-mini-card"><span>Equipos</span><strong><t t-esc="resource_equipment_count or 0"/></strong></article>
+                <article class="geosis-mini-card"><span>Mano de obra</span><strong><t t-esc="resource_labor_count or 0"/></strong></article>
+                <article class="geosis-mini-card"><span>Materiales</span><strong><t t-esc="resource_material_count or 0"/></strong></article>
+            </div>
+
+            <section class="geosis-panel">
+                <div class="geosis-panel__header">
+                    <h3>Catalogo de recursos</h3>
+                    <span class="geosis-panel__lead text-muted small">Haz clic en el precio para editarlo directamente</span>
+                </div>
+
+                <!-- Filtros -->
+                <form action="/my/resources" method="get" class="geosis-filterbar">
+                    <div class="geosis-filterbar__search">
+                        <input type="text" name="search" class="form-control" t-att-value="search or ''" placeholder="Buscar por codigo o descripcion..."/>
+                    </div>
+                    <select name="category" class="form-select">
+                        <option value="all" t-att-selected="'selected' if selected_category == 'all' else None">Todas las categorias</option>
+                        <option value="M" t-att-selected="'selected' if selected_category == 'M' else None">Equipos</option>
+                        <option value="N" t-att-selected="'selected' if selected_category == 'N' else None">Mano de obra</option>
+                        <option value="O" t-att-selected="'selected' if selected_category == 'O' else None">Materiales</option>
+                        <option value="P" t-att-selected="'selected' if selected_category == 'P' else None">Transporte</option>
+                    </select>
+                    <select name="sort_by" class="form-select">
+                        <t t-foreach="sortings.items()" t-as="sort_item">
+                            <option t-att-value="sort_item[0]" t-att-selected="'selected' if sort_by == sort_item[0] else None"><t t-esc="sort_item[1]['label']"/></option>
+                        </t>
+                    </select>
+                    <div class="geosis-filterbar__actions">
+                        <button type="submit" class="btn btn-outline-primary btn-sm">Aplicar</button>
+                        <a href="/my/resources" class="btn btn-outline-secondary btn-sm">Limpiar</a>
+                    </div>
+                </form>
+
+                <!-- Tabla con INEC y edición de precio -->
+                <div class="table-responsive">
+                    <table class="table geosis-clean-table">
+                        <thead>
+                            <tr>
+                                <th>Codigo</th>
+                                <th>Descripcion</th>
+                                <th>Categoria</th>
+                                <th>Unidad</th>
+                                <th class="text-center">VAE %</th>
+                                <th>Indice INEC</th>
+                                <th class="text-end">Precio (editable)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-if="resources">
+                                <t t-foreach="resources" t-as="resource">
+                                    <tr>
+                                        <td><span class="text-muted small"><t t-esc="resource.code or '-'"/></span></td>
+                                        <td>
+                                            <strong><t t-esc="resource.name"/></strong>
+                                            <t t-if="resource.description">
+                                                <div class="text-muted small text-truncate" style="max-width:200px;"><t t-esc="resource.description"/></div>
+                                            </t>
+                                        </td>
+                                        <td><span class="geosis-chip"><t t-esc="dict(resource._fields['category'].selection).get(resource.category)"/></span></td>
+                                        <td><t t-esc="resource.uom_id.name"/></td>
+                                        <td class="text-center">
+                                            <t t-if="resource.vae_percent">
+                                                <span class="badge bg-success" style="font-size:0.65rem;"><t t-esc="'%.1f' % resource.vae_percent"/>%</span>
+                                            </t>
+                                            <t t-else=""><span class="text-muted">-</span></t>
+                                        </td>
+                                        <td>
+                                            <t t-if="resource.inec_index_id">
+                                                <span class="geosis-chip is-info" title="Indice INEC para formula polinomica">
+                                                    [<t t-esc="resource.inec_index_id.code"/>] <t t-esc="resource.inec_index_id.name"/>
+                                                </span>
+                                            </t>
+                                            <t t-else=""><span class="text-muted small">Sin indice</span></t>
+                                        </td>
+                                        <!-- Precio editable inline -->
+                                        <td class="text-end">
+                                            <form t-attf-action="/my/resources/#{resource.id}/update-price"
+                                                  method="post"
+                                                  class="d-flex align-items-center justify-content-end gap-1">
+                                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                                <span class="text-muted small me-1">$</span>
+                                                <input type="number"
+                                                       name="price"
+                                                       step="0.0001"
+                                                       t-att-value="'%.4f' % resource.price"
+                                                       class="form-control form-control-sm text-end"
+                                                       style="width:110px;"
+                                                       title="Editar precio"/>
+                                                <button type="submit" class="btn btn-link btn-sm p-0" title="Guardar precio">
+                                                    <i class="fa fa-save text-primary"/>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </t>
+                            <t t-else="">
+                                <tr><td colspan="7" class="text-center text-muted py-4">No hay recursos disponibles.</td></tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div t-if="pager and pager.get('page_count', 0) > 1" class="geosis-panel__pager">
+                    <t t-call="geosis_website.portal_simple_pager"/>
+                </div>
+            </section>
+        </t>
+    </template>
+
+    <!-- LISTA DE PLANILLAS -->
+    <template id="portal_my_estimations" name="Planillas de Avance">
+        <t t-call="geosis_website.geosis_portal_layout">
+            <t t-set="page_name" t-value="'estimation'"/>
+            <t t-set="page_title" t-value="'Planillas de Avance'"/>
+            <t t-set="page_subtitle" t-value="'Seguimiento y fiscalización de obra'"/>
+
+            <div class="geosis-stat-strip">
+                <article class="geosis-mini-card"><span>Total Planillas</span><strong><t t-esc="estimation_total_count"/></strong></article>
+                <article class="geosis-mini-card"><span>Total Ejecutado</span><strong>$<t t-esc="'%.2f' % estimation_total_amount"/></strong></article>
+            </div>
+
+            <section class="geosis-panel">
+                <div class="geosis-panel__header">
+                    <h3>Registro de Avances</h3>
+                </div>
+                <form action="/my/estimations" method="get" class="geosis-filterbar">
+                    <div class="geosis-filterbar__search">
+                        <input type="text" name="search" class="form-control" t-att-value="search" placeholder="Buscar por numero o notas..."/>
+                    </div>
+                    <select name="state" class="form-select">
+                        <option value="all" t-att-selected="'selected' if selected_state == 'all' else None">Todos los estados</option>
+                        <option value="draft" t-att-selected="'selected' if selected_state == 'draft' else None">Borrador</option>
+                        <option value="submitted" t-att-selected="'selected' if selected_state == 'submitted' else None">Presentada</option>
+                        <option value="approved" t-att-selected="'selected' if selected_state == 'approved' else None">Aprobada</option>
+                    </select>
+                    <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
+                </form>
+
+                <div class="table-responsive">
+                    <table class="table geosis-clean-table">
+                        <thead>
+                            <tr>
+                                <th>Numero</th>
+                                <th>Proyecto</th>
+                                <th>Fecha</th>
+                                <th>Estado</th>
+                                <th class="text-end">Total Planilla</th>
+                                <th class="text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="estimations" t-as="est">
+                                <tr>
+                                    <td><strong><t t-esc="est.code"/></strong></td>
+                                    <td><t t-esc="est.project_id.name"/></td>
+                                    <td><t t-esc="est.estimation_date"/></td>
+                                    <td>
+                                        <span t-attf-class="geosis-state #{est.state}">
+                                            <t t-esc="dict(est._fields['state'].selection).get(est.state)"/>
+                                        </span>
+                                    </td>
+                                    <td class="text-end">$<t t-esc="'%.2f' % est.total_executed"/></td>
+                                    <td class="text-center">
+                                        <a t-attf-href="/my/estimations/#{est.id}" class="geosis-open-link">Gestionar</a>
+                                    </td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </div>
+                <div t-if="pager" class="geosis-panel__pager">
+                    <t t-call="geosis_website.portal_simple_pager"/>
+                </div>
+            </section>
+        </t>
+    </template>
+
+    <!-- DETALLE DE PLANILLA / FISCALIZACIÓN -->
+    <template id="portal_my_estimation_detail" name="Detalle de Planilla">
+        <t t-call="geosis_website.geosis_portal_layout">
+            <t t-set="page_name" t-value="'estimation'"/>
+            <t t-set="page_title" t-value="estimation.code"/>
+            <t t-set="page_subtitle" t-value="'Fiscalizacion de rubros ejecutados'"/>
+
+            <div t-if="success" class="alert alert-success geosis-notice" role="alert">
+                <i class="fa fa-check-circle me-1"/> Operación realizada con éxito.
+            </div>
+
+            <div class="geosis-stat-strip">
+                <article class="geosis-mini-card"><span>Periodo</span><strong><t t-esc="estimation.period_start or '-'"/> al <t t-esc="estimation.period_end or '-'"/></strong></article>
+                <article class="geosis-mini-card"><span>Total Planilla</span><strong>$<t t-esc="'%.2f' % estimation.total_executed"/></strong></article>
+                <article class="geosis-mini-card"><span>Acumulado Obra</span><strong>$<t t-esc="'%.2f' % estimation.total_accumulated"/></strong></article>
+                <article class="geosis-mini-card"><span>Estado</span><strong><t t-esc="dict(estimation._fields['state'].selection).get(estimation.state)"/></strong></article>
+            </div>
+
+            <section class="geosis-panel mb-4">
+                <div class="geosis-panel__header">
+                    <h3>Acciones de Fiscalización</h3>
+                    <div class="geosis-inline-actions">
+                        <form t-if="estimation.state == 'draft'" t-attf-action="/my/estimations/#{estimation.id}/action/submit" method="post">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <button type="submit" class="btn btn-primary btn-sm">Presentar Planilla</button>
+                        </form>
+                        <form t-if="estimation.state == 'submitted'" t-attf-action="/my/estimations/#{estimation.id}/action/approve" method="post">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <button type="submit" class="btn btn-success btn-sm">Aprobar Planilla</button>
+                        </form>
+                        <form t-if="estimation.state == 'submitted'" t-attf-action="/my/estimations/#{estimation.id}/action/reject" method="post">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <button type="submit" class="btn btn-danger btn-sm">Rechazar</button>
+                        </form>
+                    </div>
+                </div>
+                <div class="geosis-detail-grid">
+                    <div><strong>Proyecto</strong><span><t t-esc="estimation.project_id.name"/></span></div>
+                    <div><strong>Presupuesto Ref.</strong><span><t t-esc="estimation.budget_id.code"/></span></div>
+                    <div><strong>Fiscalizador</strong><span><t t-esc="request.env.user.name"/></span></div>
+                </div>
+            </section>
+
+            <section class="geosis-panel">
+                <div class="geosis-panel__header">
+                    <h3>Detalle de Rubros Planillados</h3>
+                </div>
+                <div class="table-responsive">
+                    <table class="table geosis-clean-table" style="font-size: 0.85rem;">
+                        <thead>
+                            <tr>
+                                <th>Rubro</th>
+                                <th class="text-end">Cant. Cont.</th>
+                                <th class="text-end" style="width: 150px;">Cant. Ejecutada</th>
+                                <th class="text-end">P. Unit</th>
+                                <th class="text-end">Acumulado</th>
+                                <th class="text-end">% Avance</th>
+                                <th class="text-end">Saldo Qty</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="estimation.line_ids" t-as="line">
+                                <tr>
+                                    <td>
+                                        <strong><t t-esc="line.apu_name"/></strong>
+                                        <div class="text-muted small"><t t-esc="line.apu_code"/></div>
+                                    </td>
+                                    <td class="text-end"><t t-esc="'%.2f' % line.quantity_budgeted"/> <t t-esc="line.uom_name"/></td>
+                                    <td class="text-end">
+                                        <form t-if="estimation.state == 'draft'" t-attf-action="/my/estimations/#{estimation.id}/line/#{line.id}/update" method="post" class="d-inline">
+                                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                            <div class="input-group input-group-sm">
+                                                <input type="number" step="0.01" name="quantity_executed" t-att-value="line.quantity_executed" class="form-control text-end" onchange="this.form.submit()"/>
+                                            </div>
+                                        </form>
+                                        <t t-else="">
+                                            <strong><t t-esc="'%.2f' % line.quantity_executed"/></strong>
+                                        </t>
+                                    </td>
+                                    <td class="text-end">$<t t-esc="'%.2f' % line.unit_price"/></td>
+                                    <td class="text-end">$<t t-esc="'%.2f' % line.subtotal_accumulated"/></td>
+                                    <td class="text-end">
+                                        <div class="progress" style="height: 10px; width: 60px; display: inline-flex;">
+                                            <div class="progress-bar" role="progressbar" t-attf-style="width: #{min(line.percent_executed, 100)}%;" t-attf-class="#{ 'bg-success' if line.percent_executed >= 100 else 'bg-primary' }"></div>
+                                        </div>
+                                        <span class="ms-1"><t t-esc="'%.1f' % line.percent_executed"/>%</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <t t-set="qty_pending" t-value="line.quantity_budgeted - line.quantity_accumulated"/>
+                                        <span t-attf-class="#{ 'text-danger' if qty_pending &lt; 0 else 'text-muted' }">
+                                            <t t-esc="'%.2f' % qty_pending"/>
+                                        </span>
+                                    </td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </t>
+    </template>
+</odoo>

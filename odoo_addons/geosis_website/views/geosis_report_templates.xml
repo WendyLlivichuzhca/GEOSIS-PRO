@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_geosis_budget_portal" model="ir.actions.report">
+        <field name="name">Presupuesto Portal GEOSIS</field>
+        <field name="model">geosis.budget</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">geosis_website.report_geosis_budget_portal</field>
+        <field name="report_file">geosis_website.report_geosis_budget_portal</field>
+        <field name="print_report_name">'Presupuesto-%s' % (object.code or object.id)</field>
+    </record>
+
+    <template id="report_geosis_budget_portal">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="budget">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2 style="margin-bottom: 8px;">Presupuesto GEOSIS</h2>
+                        <p style="margin: 0 0 18px;">
+                            <strong>Proyecto:</strong>
+                            <span t-esc="budget.project_id.name or budget.name"/>
+                        </p>
+
+                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 12px;">
+                            <tr>
+                                <td style="padding: 6px 0;"><strong>Codigo</strong></td>
+                                <td style="padding: 6px 0;" t-esc="budget.code"/>
+                                <td style="padding: 6px 0;"><strong>Fecha</strong></td>
+                                <td style="padding: 6px 0;" t-esc="budget.budget_date or '-'"/>
+                            </tr>
+                            <tr>
+                                <td style="padding: 6px 0;"><strong>Cliente</strong></td>
+                                <td style="padding: 6px 0;" t-esc="budget.partner_id.name or '-'"/>
+                                <td style="padding: 6px 0;"><strong>Estado</strong></td>
+                                <td style="padding: 6px 0;" t-esc="dict(budget._fields['state'].selection).get(budget.state)"/>
+                            </tr>
+                            <tr>
+                                <td style="padding: 6px 0;"><strong>Ubicacion</strong></td>
+                                <td colspan="3" style="padding: 6px 0;" t-esc="budget.location or '-'"/>
+                            </tr>
+                        </table>
+
+                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px;">
+                            <thead>
+                                <tr style="background: #f4f6f8;">
+                                    <th style="padding: 8px; text-align: left; border: 1px solid #dfe3e8;">Concepto</th>
+                                    <th style="padding: 8px; text-align: right; border: 1px solid #dfe3e8;">Valor</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="padding: 8px; border: 1px solid #e7eaee;">Costo directo</td>
+                                    <td style="padding: 8px; text-align: right; border: 1px solid #e7eaee;">$<t t-esc="'%.2f' % budget.direct_cost"/></td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; border: 1px solid #e7eaee;">Indirectos</td>
+                                    <td style="padding: 8px; text-align: right; border: 1px solid #e7eaee;">$<t t-esc="'%.2f' % budget.indirect_value"/></td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; border: 1px solid #e7eaee;">Subtotal</td>
+                                    <td style="padding: 8px; text-align: right; border: 1px solid #e7eaee;">$<t t-esc="'%.2f' % budget.subtotal_amount"/></td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; border: 1px solid #e7eaee;">IVA</td>
+                                    <td style="padding: 8px; text-align: right; border: 1px solid #e7eaee;">$<t t-esc="'%.2f' % budget.iva_value"/></td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px; border: 1px solid #e7eaee;"><strong>Total general</strong></td>
+                                    <td style="padding: 8px; text-align: right; border: 1px solid #e7eaee;"><strong>$<t t-esc="'%.2f' % budget.total_amount"/></strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h3 style="margin: 0 0 10px;">Rubros del presupuesto</h3>
+                        <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                            <thead>
+                                <tr style="background: #f4f6f8;">
+                                    <th style="padding: 8px; text-align: left; border: 1px solid #dfe3e8;">Codigo</th>
+                                    <th style="padding: 8px; text-align: left; border: 1px solid #dfe3e8;">Rubro</th>
+                                    <th style="padding: 8px; text-align: left; border: 1px solid #dfe3e8;">Unidad</th>
+                                    <th style="padding: 8px; text-align: right; border: 1px solid #dfe3e8;">Cantidad</th>
+                                    <th style="padding: 8px; text-align: right; border: 1px solid #dfe3e8;">P. Unitario</th>
+                                    <th style="padding: 8px; text-align: right; border: 1px solid #dfe3e8;">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="budget.line_ids" t-as="line">
+                                    <tr>
+                                        <td style="padding: 8px; border: 1px solid #e7eaee;" t-esc="line.apu_code"/>
+                                        <td style="padding: 8px; border: 1px solid #e7eaee;" t-esc="line.apu_name"/>
+                                        <td style="padding: 8px; border: 1px solid #e7eaee;" t-esc="line.uom_name"/>
+                                        <td style="padding: 8px; text-align: right; border: 1px solid #e7eaee;"><t t-esc="'%.4f' % line.quantity"/></td>
+                                        <td style="padding: 8px; text-align: right; border: 1px solid #e7eaee;">$<t t-esc="'%.2f' % line.unit_price"/></td>
+                                        <td style="padding: 8px; text-align: right; border: 1px solid #e7eaee;">$<t t-esc="'%.2f' % line.subtotal"/></td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

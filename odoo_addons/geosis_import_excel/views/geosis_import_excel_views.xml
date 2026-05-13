@@ -22,7 +22,7 @@
                     </group>
                     <group>
                         <group>
-                            <field name="customer_name"/>
+                            <field name="partner_id"/>
                             <field name="location"/>
                         </group>
                         <group>

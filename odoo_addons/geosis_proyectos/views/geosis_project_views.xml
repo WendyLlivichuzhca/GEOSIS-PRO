@@ -7,7 +7,7 @@
             <search string="Buscar Proyectos">
                 <field name="code"/>
                 <field name="name"/>
-                <field name="customer_name"/>
+                <field name="partner_id"/>
                 <field name="location"/>
                 <field name="start_date"/>
                 <filter name="filter_active" string="Activos" domain="[('active', '=', True)]"/>
@@ -28,7 +28,7 @@
             <tree string="Proyectos">
                 <field name="code"/>
                 <field name="name"/>
-                <field name="customer_name"/>
+                <field name="partner_id"/>
                 <field name="location"/>
                 <field name="start_date"/>
                 <field name="end_date"/>
@@ -42,7 +42,7 @@
 
     <record id="view_geosis_project_form" model="ir.ui.view">
         <field name="name">geosis.project.form</field>
-        <field name="model">geosis.project</field>
+        <field name="model" >geosis.project</field>
         <field name="arch" type="xml">
             <form string="Proyecto">
                 <sheet>
@@ -50,7 +50,7 @@
                         <group>
                             <field name="code"/>
                             <field name="name"/>
-                            <field name="customer_name"/>
+                            <field name="partner_id"/>
                             <field name="location"/>
                         </group>
                         <group>
@@ -78,7 +78,7 @@
                                 <tree editable="bottom" string="Presupuestos del proyecto">
                                     <field name="code"/>
                                     <field name="name"/>
-                                    <field name="customer_name"/>
+                                    <field name="partner_id"/>
                                     <field name="location"/>
                                     <field name="budget_date"/>
                                     <field name="state"/>

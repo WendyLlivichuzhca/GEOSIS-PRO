@@ -14,6 +14,8 @@
     'data': [
         'security/ir.model.access.csv',
         'views/geosis_apu_views.xml',
+        'reports/geosis_apu_reports.xml',
+        'reports/geosis_apu_templates.xml',
     ],
     'installable': True,
     'application': False,

@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_geosis_estimation_admin,geosis.estimation.admin,model_geosis_estimation,geosis_base.group_geosis_admin,1,1,1,1
+access_geosis_estimation_line_admin,geosis.estimation.line.admin,model_geosis_estimation_line,geosis_base.group_geosis_admin,1,1,1,1
+access_geosis_estimation_user,geosis.estimation.user,model_geosis_estimation,geosis_base.group_geosis_user,1,1,1,1
+access_geosis_estimation_line_user,geosis.estimation.line.user,model_geosis_estimation_line,geosis_base.group_geosis_user,1,1,1,1
+access_geosis_estimation_readonly,geosis.estimation.readonly,model_geosis_estimation,geosis_base.group_geosis_readonly,1,0,0,0
+access_geosis_estimation_line_readonly,geosis.estimation.line.readonly,model_geosis_estimation_line,geosis_base.group_geosis_readonly,1,0,0,0

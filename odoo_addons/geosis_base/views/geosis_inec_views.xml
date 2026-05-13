@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_geosis_inec_index_tree" model="ir.ui.view">
+        <field name="name">geosis.inec.index.tree</field>
+        <field name="model">geosis.inec.index</field>
+        <field name="arch" type="xml">
+            <tree string="Índices INEC">
+                <field name="code"/>
+                <field name="name"/>
+                <field name="active"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_geosis_inec_index_form" model="ir.ui.view">
+        <field name="name">geosis.inec.index.form</field>
+        <field name="model">geosis.inec.index</field>
+        <field name="arch" type="xml">
+            <form string="Índice INEC">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" class="oe_edit_only"/>
+                        <h1><field name="name" placeholder="Ej. Mano de Obra, Combustible..."/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="code"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Valores Mensuales">
+                            <field name="value_ids">
+                                <tree editable="bottom" decoration-info="year == datetime.datetime.now().year">
+                                    <field name="year"/>
+                                    <field name="month"/>
+                                    <field name="value"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_geosis_inec_indices" model="ir.actions.act_window">
+        <field name="name">Índices INEC</field>
+        <field name="res_model">geosis.inec.index</field>
+        <field name="view_mode">tree,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Registra tu primer índice del INEC
+            </p>
+            <p>
+                Estos índices se usan para el cálculo de la Fórmula Polinómica.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menú en catálogos -->
+    <menuitem
+        id="menu_geosis_inec_indices"
+        name="Índices INEC"
+        parent="geosis_base.menu_geosis_catalogs"
+        action="action_geosis_inec_indices"
+        sequence="50"
+    />
+</odoo>

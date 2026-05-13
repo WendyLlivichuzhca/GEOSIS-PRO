@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ===================== TREE ===================== -->
+    <record id="view_geosis_estimation_tree" model="ir.ui.view">
+        <field name="name">geosis.estimation.tree</field>
+        <field name="model">geosis.estimation</field>
+        <field name="arch" type="xml">
+            <tree string="Planillas de Avance"
+                  decoration-info="state == 'draft'"
+                  decoration-warning="state == 'submitted'"
+                  decoration-success="state == 'approved'"
+                  decoration-danger="state == 'rejected'">
+                <field name="code"/>
+                <field name="project_id"/>
+                <field name="budget_id" optional="show"/>
+                <field name="estimation_date"/>
+                <field name="period_start" optional="show"/>
+                <field name="period_end" optional="show"/>
+                <field name="total_executed"/>
+                <field name="total_accumulated"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'draft'"
+                       decoration-warning="state == 'submitted'"
+                       decoration-success="state == 'approved'"
+                       decoration-danger="state == 'rejected'"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- ===================== FORM ===================== -->
+    <record id="view_geosis_estimation_form" model="ir.ui.view">
+        <field name="name">geosis.estimation.form</field>
+        <field name="model">geosis.estimation</field>
+        <field name="arch" type="xml">
+            <form string="Planilla de Avance de Obra">
+                <!-- Barra de estado -->
+                <header>
+                    <button name="action_submit" string="Presentar"
+                            type="object" class="btn-primary"
+                            invisible="state != 'draft'"/>
+                    <button name="action_approve" string="Aprobar"
+                            type="object" class="btn-success"
+                            invisible="state != 'submitted'"/>
+                    <button name="action_reject" string="Rechazar"
+                            type="object" class="btn-danger"
+                            invisible="state != 'submitted'"/>
+                    <button name="action_reset_draft" string="Restablecer a Borrador"
+                            type="object"
+                            invisible="state not in ['submitted', 'rejected']"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,submitted,approved"/>
+                </header>
+
+                <sheet>
+                    <!-- Encabezado -->
+                    <group>
+                        <group string="Datos de la Planilla">
+                            <field name="code"/>
+                            <field name="project_id"/>
+                            <field name="budget_id"/>
+                            <field name="estimation_date"/>
+                        </group>
+                        <group string="Periodo de Ejecución">
+                            <field name="period_start"/>
+                            <field name="period_end"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+
+                    <!-- Totales -->
+                    <group string="Resumen Económico">
+                        <group>
+                            <field name="total_executed" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="total_accumulated" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <!-- Detalle de rubros -->
+                    <notebook>
+                        <page string="Detalle de Avance">
+                            <field name="line_ids">
+                                <tree editable="bottom" string="Avance por Rubro"
+                                      decoration-warning="percent_executed &gt; 100">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="budget_line_id"/>
+                                    <field name="apu_code" readonly="1"/>
+                                    <field name="apu_name" readonly="1"/>
+                                    <field name="uom_name" readonly="1"/>
+                                    <field name="unit_price" readonly="1"/>
+                                    <field name="quantity_budgeted" readonly="1"/>
+                                    <field name="quantity_executed"/>
+                                    <field name="subtotal_executed" readonly="1"/>
+                                    <field name="quantity_accumulated" readonly="1"/>
+                                    <field name="subtotal_accumulated" readonly="1"/>
+                                    <field name="percent_executed" readonly="1" widget="progressbar"/>
+                                    <field name="note" optional="show"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Observaciones">
+                            <field name="notes" placeholder="Notas de la planilla..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ===================== SEARCH ===================== -->
+    <record id="view_geosis_estimation_search" model="ir.ui.view">
+        <field name="name">geosis.estimation.search</field>
+        <field name="model">geosis.estimation</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Planillas">
+                <field name="code"/>
+                <field name="project_id"/>
+                <field name="budget_id"/>
+                <separator/>
+                <filter name="filter_draft" string="Borrador" domain="[('state','=','draft')]"/>
+                <filter name="filter_submitted" string="Presentadas" domain="[('state','=','submitted')]"/>
+                <filter name="filter_approved" string="Aprobadas" domain="[('state','=','approved')]"/>
+                <group expand="0" string="Agrupar por">
+                    <filter string="Proyecto" name="group_project" context="{'group_by': 'project_id'}"/>
+                    <filter string="Estado" name="group_state" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ===================== ACTION ===================== -->
+    <record id="action_geosis_estimations" model="ir.actions.act_window">
+        <field name="name">Planillas de Avance</field>
+        <field name="res_model">geosis.estimation</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_geosis_estimation_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Crea tu primera Planilla de Avance de Obra
+            </p>
+            <p>
+                Registra el avance físico de cada rubro y controla el porcentaje
+                ejecutado vs el presupuesto contratado.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menu movido a geosis_fiscalizacion -->
+</odoo>

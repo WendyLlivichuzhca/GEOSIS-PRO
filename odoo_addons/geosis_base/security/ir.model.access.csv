@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_geosis_inec_index_admin,access.geosis.inec.index.admin,model_geosis_inec_index,geosis_base.group_geosis_admin,1,1,1,1
+access_geosis_inec_index_user,access.geosis.inec.index.user,model_geosis_inec_index,geosis_base.group_geosis_user,1,1,1,0
+access_geosis_inec_index_readonly,access.geosis.inec.index.readonly,model_geosis_inec_index,geosis_base.group_geosis_readonly,1,0,0,0
+access_geosis_inec_value_admin,access.geosis.inec.index.value.admin,model_geosis_inec_index_value,geosis_base.group_geosis_admin,1,1,1,1
+access_geosis_inec_value_user,access.geosis.inec.index.value.user,model_geosis_inec_index_value,geosis_base.group_geosis_user,1,1,1,0
+access_geosis_inec_value_readonly,access.geosis.inec.index.value.readonly,model_geosis_inec_index_value,geosis_base.group_geosis_readonly,1,0,0,0

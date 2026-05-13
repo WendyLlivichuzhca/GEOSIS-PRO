@@ -9,6 +9,9 @@
                 <field name="name"/>
                 <field name="category"/>
                 <field name="uom_id"/>
+                <field name="cpc_code" optional="show"/>
+                <field name="inec_index_id" optional="show"/>
+                <field name="vae_percent" optional="show" widget="percentage"/>
                 <field name="price"/>
                 <field name="active"/>
             </tree>
@@ -29,6 +32,9 @@
                         </group>
                         <group>
                             <field name="uom_id"/>
+                            <field name="cpc_code"/>
+                            <field name="inec_index_id"/>
+                            <field name="vae_percent"/>
                             <field name="price"/>
                             <field name="active"/>
                         </group>
@@ -86,4 +92,5 @@
         sequence="10"
         groups="geosis_base.group_geosis_admin,geosis_base.group_geosis_user,geosis_base.group_geosis_readonly"
     />
+
 </odoo>

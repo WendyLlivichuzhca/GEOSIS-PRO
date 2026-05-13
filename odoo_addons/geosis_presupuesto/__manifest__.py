@@ -14,6 +14,9 @@
     'data': [
         'security/ir.model.access.csv',
         'views/geosis_budget_views.xml',
+        'wizard/geosis_budget_export_msproject_views.xml',
+        'reports/geosis_budget_reports.xml',
+        'reports/geosis_budget_templates.xml',
     ],
     'installable': True,
     'application': False,

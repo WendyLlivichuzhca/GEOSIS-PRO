@@ -22,6 +22,8 @@
                 <field name="code"/>
                 <field name="name"/>
                 <field name="uom_name"/>
+                <field name="cpc_code" optional="show"/>
+                <field name="vae_percent" widget="percentage" optional="show"/>
                 <field name="direct_cost"/>
                 <field name="indirect_percent"/>
                 <field name="total_cost"/>
@@ -47,6 +49,8 @@
                             <field name="company_id" groups="base.group_multi_company"/>
                             <field name="currency_id" invisible="1"/>
                             <field name="indirect_percent"/>
+                            <field name="cpc_code"/>
+                            <field name="vae_percent" widget="percentage" readonly="1"/>
                             <field name="direct_cost" readonly="1"/>
                             <field name="indirect_value" readonly="1"/>
                             <field name="total_cost" readonly="1"/>
@@ -55,6 +59,11 @@
 
                     <notebook>
                         <page string="Recursos">
+                            <button name="action_generate_with_ia" 
+                                    string="Sugerir Recursos (IA)" 
+                                    type="object" 
+                                    class="btn-primary mb-3"
+                                    icon="fa-magic"/>
                             <field name="line_ids">
                                 <tree editable="bottom" string="Detalle de recursos">
                                     <field name="sequence" widget="handle"/>
@@ -67,6 +76,7 @@
                                     <field name="percentage"/>
                                     <field name="distance"/>
                                     <field name="cost" readonly="1"/>
+                                    <field name="vae_percent" widget="percentage" optional="hide"/>
                                     <field name="note"/>
                                 </tree>
                             </field>

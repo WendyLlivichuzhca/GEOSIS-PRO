@@ -7,7 +7,7 @@
             <search string="Buscar Presupuestos">
                 <field name="code"/>
                 <field name="name"/>
-                <field name="customer_name"/>
+                <field name="partner_id"/>
                 <field name="location"/>
                 <field name="budget_date"/>
                 <filter name="filter_active" string="Activos" domain="[('active', '=', True)]"/>
@@ -27,11 +27,15 @@
             <tree string="Presupuestos">
                 <field name="code"/>
                 <field name="name"/>
-                <field name="customer_name"/>
+                <field name="partner_id"/>
+                <field name="offerer_id"/>
                 <field name="location"/>
                 <field name="budget_date"/>
+                <field name="currency_id" optional="show"/>
                 <field name="state"/>
+                <field name="direct_cost" optional="show"/>
                 <field name="subtotal_amount"/>
+                <field name="vae_percent" widget="percentage" optional="show"/>
                 <field name="total_amount"/>
                 <field name="active"/>
             </tree>
@@ -43,45 +47,104 @@
         <field name="model">geosis.budget</field>
         <field name="arch" type="xml">
             <form string="Presupuesto">
+                <header>
+                    <button name="action_export_msproject" 
+                            string="Exportar MS Project (XML)" 
+                            type="object" 
+                            class="btn-secondary"/>
+                </header>
                 <sheet>
+                    <!-- Encabezado principal -->
                     <group>
-                        <group>
+                        <group string="Datos Generales">
                             <field name="code"/>
                             <field name="name"/>
-                            <field name="customer_name"/>
+                            <field name="partner_id"/>
+                            <field name="offerer_id"/>
                             <field name="location"/>
                         </group>
-                        <group>
+                        <group string="Configuracion">
                             <field name="budget_date"/>
                             <field name="state"/>
+                            <field name="currency_id"/>
                             <field name="active"/>
                             <field name="company_id" groups="base.group_multi_company"/>
-                            <field name="currency_id" invisible="1"/>
                         </group>
                     </group>
 
-                    <group>
+                    <!-- Porcentajes -->
+                    <group string="Costos Indirectos e IVA">
                         <group>
+                            <field name="indirect_percent"/>
+                        </group>
+                        <group>
+                            <field name="iva_percent"/>
+                        </group>
+                    </group>
+
+                    <!-- Desglose de totales -->
+                    <group string="Resumen Economico">
+                        <group>
+                            <field name="direct_cost" readonly="1"/>
+                            <field name="indirect_value" readonly="1"/>
                             <field name="subtotal_amount" readonly="1"/>
                         </group>
                         <group>
+                            <field name="iva_value" readonly="1"/>
                             <field name="total_amount" readonly="1"/>
+                            <field name="vae_percent" widget="percentage" readonly="1"/>
                         </group>
                     </group>
 
                     <notebook>
+                        <page string="Capitulos">
+                            <field name="chapter_ids">
+                                <tree editable="bottom" string="Capitulos del presupuesto">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="code"/>
+                                    <field name="name"/>
+                                    <field name="parent_id" domain="[('budget_id', '=', parent.id)]"/>
+                                    <field name="level" readonly="1"/>
+                                    <field name="total_amount" readonly="1"/>
+                                </tree>
+                            </field>
+                        </page>
                         <page string="Rubros APU">
                             <field name="line_ids">
                                 <tree editable="bottom" string="Detalle del presupuesto">
                                     <field name="sequence" widget="handle"/>
+                                    <field name="chapter_id" domain="[('budget_id', '=', parent.id)]"/>
                                     <field name="apu_id"/>
                                     <field name="apu_code" readonly="1"/>
                                     <field name="apu_name" readonly="1"/>
                                     <field name="uom_name" readonly="1"/>
                                     <field name="quantity"/>
                                     <field name="unit_price"/>
+                                    <field name="date_start"/>
+                                    <field name="date_end"/>
+                                    <field name="duration" readonly="1"/>
+                                    <field name="vae_percent" widget="percentage" optional="hide"/>
                                     <field name="subtotal" readonly="1"/>
                                     <field name="note"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Fórmula Polinómica">
+                            <p class="text-muted">
+                                Define los coeficientes de la fórmula polinómica para el reajuste de precios (SERCOP).
+                                La suma de todos los coeficientes debe ser igual a 1.
+                            </p>
+                            <button name="action_calculate_polynomial" 
+                                    string="Calcular Fórmula (Auto)" 
+                                    type="object" 
+                                    class="oe_highlight mb-3"/>
+                            <field name="formula_line_ids">
+                                <tree editable="bottom" string="Componentes de la fórmula">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="symbol"/>
+                                    <field name="name"/>
+                                    <field name="coefficient"/>
+                                    <field name="inec_index_id"/>
                                 </tree>
                             </field>
                         </page>

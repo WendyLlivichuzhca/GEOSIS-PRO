@@ -16,7 +16,9 @@ Incluye grupos de seguridad y el menu raiz del sistema.
     'depends': ['base'],
     'data': [
         'security/geosis_security.xml',
+        'security/ir.model.access.csv',
         'views/geosis_menus.xml',
+        'views/geosis_inec_views.xml',
     ],
     'installable': True,
     'application': True,

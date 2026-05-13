@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_task_form_inherit_critical" model="ir.ui.view">
+        <field name="name">project.task.form.inherit.critical</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_form2"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='project_id']" position="after">
+                <field name="depend_on_ids" widget="many2many_tags" string="Depende de (Bloqueado por)"/>
+            </xpath>
+            <xpath expr="//field[@name='date_deadline']" position="after">
+                <field name="is_critical" widget="boolean_toggle"/>
+                <field name="slack_time" invisible="not is_critical"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Resaltar en Rojo en el Timeline -->
+    <record id="project_task_timeline_critical" model="ir.ui.view">
+        <field name="name">project.task.timeline.critical</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project_timeline.project_task_timeline"/>
+        <field name="arch" type="xml">
+            <xpath expr="//timeline" position="attributes">
+                <attribute name="colors">#e74c3c: is_critical == True; #2ecb71: state == '1_done'; #ec7063: state == '1_canceled'</attribute>
+            </xpath>
+            <xpath expr="//timeline" position="inside">
+                <field name="is_critical"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

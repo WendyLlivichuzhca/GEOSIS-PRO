@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_geosis_budget_form_inherit_tasks" model="ir.ui.view">
+        <field name="name">geosis.budget.form.inherit.tasks</field>
+        <field name="model">geosis.budget</field>
+        <field name="inherit_id" ref="geosis_presupuesto.view_geosis_budget_form"/>
+        <field name="arch" type="xml">
+            <header position="inside">
+                <button name="action_create_schedule_tasks" 
+                        string="Generar Cronograma (Gantt)" 
+                        type="object" 
+                        class="oe_highlight"
+                        groups="project.group_project_manager"/>
+            </header>
+            <xpath expr="//field[@name='location']" position="after">
+                <field name="project_id" string="Proyecto Geosis"/>
+                <field name="odoo_project_id"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

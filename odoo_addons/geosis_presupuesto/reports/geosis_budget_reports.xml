@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_geosis_budget_apus" model="ir.actions.report">
+        <field name="name">Anexo: Análisis de Precios (Todos)</field>
+        <field name="model">geosis.budget</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">geosis_presupuesto.report_budget_apus_template</field>
+        <field name="report_file">geosis_presupuesto.report_budget_apus_template</field>
+        <field name="print_report_name">'Anexo APU - %s' % (object.code)</field>
+        <field name="binding_model_id" ref="model_geosis_budget"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <record id="action_report_geosis_budget_summary" model="ir.actions.report">
+        <field name="name">Presupuesto General</field>
+        <field name="model">geosis.budget</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">geosis_presupuesto.report_budget_summary_template</field>
+        <field name="report_file">geosis_presupuesto.report_budget_summary_template</field>
+        <field name="print_report_name">'Presupuesto - %s' % (object.name)</field>
+        <field name="binding_model_id" ref="model_geosis_budget"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <record id="action_report_geosis_budget_resources" model="ir.actions.report">
+        <field name="name">Listado de Insumos (Total)</field>
+        <field name="model">geosis.budget</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">geosis_presupuesto.report_budget_resources_template</field>
+        <field name="report_file">geosis_presupuesto.report_budget_resources_template</field>
+        <field name="print_report_name">'Insumos - %s' % (object.name)</field>
+        <field name="binding_model_id" ref="model_geosis_budget"/>
+        <field name="binding_type">report</field>
+    </record>
+</odoo>
