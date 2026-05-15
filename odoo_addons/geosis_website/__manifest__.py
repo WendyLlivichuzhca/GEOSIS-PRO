@@ -13,6 +13,7 @@
         'geosis_apu',
         'geosis_presupuesto',
         'geosis_proyectos',
+        'geosis_import_excel',
     ],
     'data': [
         'views/geosis_portal_templates.xml',

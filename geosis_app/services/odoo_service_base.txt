@@ -1,0 +1,26 @@
+import http.client
+import json
+
+# Este es un script de prueba que emula cómo Flutter hablará con Odoo
+# Servirá para validar que nuestra API de Odoo responde correctamente
+
+ODOO_URL = "https://geosis.corporativoqbank.com"
+DB = "odoo-final"
+
+def login(username, password):
+    url = f"{ODOO_URL}/web/session/authenticate"
+    payload = {
+        "jsonrpc": "2.0",
+        "params": {
+            "db": DB,
+            "login": username,
+            "password": password
+        }
+    }
+    # En Flutter usaríamos el paquete 'http' o 'dio'
+    print(f"Intentando login para {username} en {ODOO_URL}...")
+    return payload
+
+# Datos de ejemplo para Flutter
+LOGIN_PAYLOAD = login("admin", "tu_password")
+print(json.dumps(LOGIN_PAYLOAD, indent=2))

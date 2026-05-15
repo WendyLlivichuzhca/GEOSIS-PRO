@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_geosis_bitacora,geosis.bitacora,model_geosis_bitacora,base.group_user,1,1,1,1
+access_geosis_bitacora_task,geosis.bitacora.task,model_geosis_bitacora_task,base.group_user,1,1,1,1
+access_geosis_bitacora_photo,geosis.bitacora.photo,model_geosis_bitacora_photo,base.group_user,1,1,1,1

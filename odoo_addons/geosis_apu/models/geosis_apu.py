@@ -28,6 +28,7 @@ class GeosisApu(models.Model):
         copy=True,
     )
     active = fields.Boolean(default=True)
+    location = fields.Char(string='Ubicación', index=True)
     company_id = fields.Many2one(
         'res.company',
         string='Compania',
@@ -69,11 +70,37 @@ class GeosisApu(models.Model):
 
     _sql_constraints = [
         (
-            'geosis_apu_code_company_uniq',
-            'unique(code, company_id)',
-            'Ya existe un rubro APU con ese codigo para esta compania.',
+            'geosis_apu_code_company_location_uniq',
+            'unique(code, company_id, location)',
+            'Ya existe un rubro APU con ese codigo para esta ubicacion.',
         ),
     ]
+
+    @api.model
+    def _get_next_apu_code(self, company_id=None, location=None):
+        domain = []
+        if company_id:
+            domain.append(('company_id', '=', company_id))
+        if location is not None:
+            domain.append(('location', '=', location))
+
+        next_number = self.search_count(domain) + 1
+        code = f"APU-{next_number:04d}"
+        while self.search_count(domain + [('code', '=', code)]):
+            next_number += 1
+            code = f"APU-{next_number:04d}"
+        return code
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if not vals.get('code'):
+                vals['code'] = self._get_next_apu_code(
+                    company_id=vals.get('company_id') or self.env.company.id,
+                    location=vals.get('location'),
+                )
+        return super().create(vals_list)
+
 
     @api.depends('line_ids.cost', 'indirect_percent')
     def _compute_totals(self):

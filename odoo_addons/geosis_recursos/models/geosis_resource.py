@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from odoo import fields, models
+from odoo import api, fields, models
 
 
 class GeosisResource(models.Model):
@@ -41,21 +41,40 @@ class GeosisResource(models.Model):
         help="Indice para la formula polinomica"
     )
     description = fields.Text(string='Observaciones')
+    location = fields.Char(string='Ubicación', index=True)
     active = fields.Boolean(string='Activo', default=True)
 
     _sql_constraints = [
-        ('geosis_resource_code_unique', 'unique(code)', 'El codigo del recurso debe ser unico.'),
+        ('geosis_resource_code_location_unique', 'unique(code, location)', 'Ya existe un recurso con este codigo para esta ubicacion.'),
     ]
+
+    @api.model
+    def _get_next_resource_code(self, category=None, location=None):
+        prefix_map = {'M': 'EQ', 'N': 'MO', 'O': 'MA', 'P': 'TR'}
+        prefix = prefix_map.get(category or 'O', 'RE')
+        domain = [('location', '=', location or False)]
+        next_number = self.search_count(domain + [('category', '=', category or 'O')]) + 1
+        code = f"{prefix}-{next_number:04d}"
+        while self.search_count(domain + [('code', '=', code)]):
+            next_number += 1
+            code = f"{prefix}-{next_number:04d}"
+        return code
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if not vals.get('code'):
+                vals['code'] = self._get_next_resource_code(
+                    category=vals.get('category'),
+                    location=vals.get('location'),
+                )
+        return super().create(vals_list)
 
 
 class GeosisInecIndex(models.Model):
-    _name = 'geosis.inec.index'
+    _inherit = 'geosis.inec.index'
     _description = 'Indice INEC GEOSIS'
     _order = 'code'
-
-    code = fields.Char(string='Codigo', required=True)
-    name = fields.Char(string='Nombre del Indice', required=True)
-    active = fields.Boolean(default=True)
 
     def name_get(self):
         result = []

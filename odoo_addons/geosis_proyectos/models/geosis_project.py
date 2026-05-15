@@ -14,6 +14,8 @@ class GeosisProject(models.Model):
         help="Socio de Odoo vinculado a este proyecto"
     )
     location = fields.Char(string='Ubicacion')
+    latitude = fields.Float(string='Latitud', digits=(10, 7))
+    longitude = fields.Float(string='Longitud', digits=(10, 7))
     start_date = fields.Date(
         string='Fecha Inicio',
         required=True,
@@ -81,3 +83,10 @@ class GeosisProject(models.Model):
             return f"{last_code}-001"
         except Exception:
             return 'PROJ-001'
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if not vals.get('code'):
+                vals['code'] = self._get_next_project_code()
+        return super().create(vals_list)

@@ -159,6 +159,8 @@ class GeosisExcelImportWizard(models.TransientModel):
     project_name = fields.Char(string='Nombre del Proyecto')
     partner_id = fields.Many2one('res.partner', string='Cliente')
     location = fields.Char(string='Ubicacion')
+    latitude = fields.Float(string='Latitud', digits=(10, 7))
+    longitude = fields.Float(string='Longitud', digits=(10, 7))
     budget_date = fields.Date(
         string='Fecha Presupuesto',
         default=fields.Date.context_today,
@@ -635,6 +637,8 @@ class GeosisExcelImportWizard(models.TransientModel):
             'name': project_name or project_code,
             'partner_id': self.partner_id.id if self.partner_id else self._resolve_partner(metadata.get('partner_id')),
             'location': self.location or metadata.get('location') or False,
+            'latitude': self.latitude or 0.0,
+            'longitude': self.longitude or 0.0,
             'start_date': self.budget_date,
             'state': 'planning',
             'company_id': company.id,
@@ -693,12 +697,15 @@ class GeosisExcelImportWizard(models.TransientModel):
         company = self.env.company
         apu_model = self.env['geosis.apu']
         code = line_data['code']
+        location = self.location or ''
 
-        if code in apu_cache:
-            return apu_cache[code]
+        # La clave del cache ahora incluye la ubicación
+        cache_key = (code, location)
+        if cache_key in apu_cache:
+            return apu_cache[cache_key]
 
         apu = apu_model.search(
-            [('company_id', '=', company.id), ('code', '=', code)],
+            [('company_id', '=', company.id), ('code', '=', code), ('location', '=', location)],
             limit=1,
         )
 
@@ -712,12 +719,13 @@ class GeosisExcelImportWizard(models.TransientModel):
                     'name': line_data['name'],
                     'uom_name': line_data['uom_name'] or 'Unit(s)',
                     'company_id': company.id,
+                    'location': location,
                     'indirect_percent': 0.0,
-                    'description': _('Creado automaticamente desde importacion Excel.'),
+                    'description': _('Creado automaticamente desde importacion Excel (%s).') % location,
                 }
             )
 
-        apu_cache[code] = apu
+        apu_cache[cache_key] = apu
         return apu
 
     def _import_apu_from_sheet(self, apu, code, workbook, sheet_name, line_data):
@@ -731,8 +739,9 @@ class GeosisExcelImportWizard(models.TransientModel):
                     'name': line_data['name'],
                     'uom_name': line_data['uom_name'] or 'Unit(s)',
                     'company_id': company.id,
+                    'location': self.location or '',
                     'indirect_percent': 0.0,
-                    'description': _('Importado desde hoja %s') % sheet_name,
+                    'description': _('Importado desde hoja %s (%s)') % (sheet_name, self.location or ''),
                 }
             )
         elif self.update_existing_apus:
@@ -851,7 +860,12 @@ class GeosisExcelImportWizard(models.TransientModel):
         return parsed_lines
 
     def _get_or_create_resource(self, resource_data):
-        resource = self.env['geosis.resource'].search([('code', '=', resource_data['code'])], limit=1)
+        location = self.location or ''
+        resource = self.env['geosis.resource'].search([
+            ('code', '=', resource_data['code']),
+            ('location', '=', location)
+        ], limit=1)
+        
         uom = self._resolve_uom(resource_data['uom_name'])
         values = {
             'code': resource_data['code'],
@@ -859,6 +873,7 @@ class GeosisExcelImportWizard(models.TransientModel):
             'category': resource_data['category'],
             'uom_id': uom.id,
             'price': resource_data['rate'],
+            'location': location,
             'description': resource_data.get('note') or False,
             'active': True,
         }
@@ -952,9 +967,10 @@ class GeosisExcelImportWizard(models.TransientModel):
         )
 
         resource_model = self.env['geosis.resource']
+        location = self.location or ''
         code = base_code
         counter = 1
-        while resource_model.search_count([('code', '=', code)]):
+        while resource_model.search_count([('code', '=', code), ('location', '=', location)]):
             counter += 1
             code = '%s-%02d' % (base_code[:20], counter)
         return code

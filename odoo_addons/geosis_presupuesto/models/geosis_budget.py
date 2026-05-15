@@ -133,6 +133,28 @@ class GeosisBudget(models.Model):
         ),
     ]
 
+    @api.model
+    def _get_next_budget_code(self, company_id=None):
+        domain = []
+        if company_id:
+            domain.append(('company_id', '=', company_id))
+
+        next_number = self.search_count(domain) + 1
+        code = f"BUD-{next_number:04d}"
+        while self.search_count(domain + [('code', '=', code)]):
+            next_number += 1
+            code = f"BUD-{next_number:04d}"
+        return code
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if not vals.get('code'):
+                vals['code'] = self._get_next_budget_code(
+                    company_id=vals.get('company_id') or self.env.company.id,
+                )
+        return super().create(vals_list)
+
     @api.depends('line_ids.subtotal', 'indirect_percent', 'iva_percent')
     def _compute_totals(self):
         for record in self:

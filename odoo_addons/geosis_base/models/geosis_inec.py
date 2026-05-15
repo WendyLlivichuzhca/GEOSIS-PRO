@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from odoo import fields, models
+from odoo import api, fields, models
 
 
 class GeosisInecIndex(models.Model):
@@ -19,6 +19,23 @@ class GeosisInecIndex(models.Model):
     _sql_constraints = [
         ('code_unique', 'unique(code)', 'El código del índice debe ser único.'),
     ]
+
+
+    @api.model
+    def _get_next_inec_code(self):
+        next_number = self.search_count([]) + 1
+        code = f"INEC-{next_number:03d}"
+        while self.search_count([('code', '=', code)]):
+            next_number += 1
+            code = f"INEC-{next_number:03d}"
+        return code
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if not vals.get('code'):
+                vals['code'] = self._get_next_inec_code()
+        return super().create(vals_list)
 
 
 class GeosisInecIndexValue(models.Model):
