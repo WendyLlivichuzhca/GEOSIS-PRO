@@ -136,8 +136,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         padding: EdgeInsets.only(left: 20),
                         itemCount: projects.length,
                         itemBuilder: (context, index) {
-                          final p = projects[index];
-                          return _buildProjectCard(p['name'], (index + 1).toString(), index);
+                          return _buildProjectCard(projects[index], (index + 1).toString(), index);
                         },
                       ),
                   ),
@@ -205,67 +204,80 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildProjectCard(String title, String num, int index) {
+  Widget _buildProjectCard(dynamic project, String num, int index) {
     List<String> images = [
       'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=400',
       'https://images.unsplash.com/photo-1503387762-592dea58ef23?q=80&w=400',
       'https://images.unsplash.com/photo-1541888946425-d81bb19480c5?q=80&w=400'
     ];
-    return Container(
-      width: 190,
-      margin: EdgeInsets.only(right: 15),
-      padding: EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(25),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            height: 100,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(15),
-              image: DecorationImage(image: NetworkImage(images[index % 3]), fit: BoxFit.cover),
-            ),
-            child: Align(
-              alignment: Alignment.topLeft,
-              child: Container(
-                margin: EdgeInsets.all(8),
-                padding: EdgeInsets.all(4),
-                decoration: BoxDecoration(color: Colors.black45, borderRadius: BorderRadius.circular(5)),
-                child: Text(num + ".", style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+    return GestureDetector(
+      onTap: () {
+        Navigator.pushNamed(
+          context, 
+          '/form', 
+          arguments: {
+            'project_id': project['id'],
+            'project_name': project['name'],
+            'tasks': project['tasks'] ?? [],
+          }
+        );
+      },
+      child: Container(
+        width: 190,
+        margin: EdgeInsets.only(right: 15),
+        padding: EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(25),
+          border: Border.all(color: Colors.white.withOpacity(0.05)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              height: 100,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(15),
+                image: DecorationImage(image: NetworkImage(images[index % 3]), fit: BoxFit.cover),
+              ),
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: Container(
+                  margin: EdgeInsets.all(8),
+                  padding: EdgeInsets.all(4),
+                  decoration: BoxDecoration(color: Colors.black45, borderRadius: BorderRadius.circular(5)),
+                  child: Text(num + ".", style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                ),
               ),
             ),
-          ),
-          SizedBox(height: 12),
-          Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.outfit(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
-          SizedBox(height: 5),
-          Row(
-            children: [
-              Text("Status: ", style: TextStyle(color: Colors.white38, fontSize: 10)),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(color: Colors.green.withOpacity(0.2), borderRadius: BorderRadius.circular(5)),
-                child: Text("Active", style: TextStyle(color: Colors.greenAccent, fontSize: 9, fontWeight: FontWeight.bold)),
-              ),
-            ],
-          ),
-          SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text("Progress:", style: TextStyle(color: Colors.white38, fontSize: 10)),
-              Text("72%", style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-            ],
-          ),
-          SizedBox(height: 5),
-          LinearProgressIndicator(value: 0.72, backgroundColor: Colors.white12, valueColor: AlwaysStoppedAnimation(Colors.cyanAccent), minHeight: 4),
-          Spacer(),
-          Text("Oct 20 - Dec 24", style: TextStyle(color: Colors.white24, fontSize: 9)),
-          Text("Foundation Work", style: TextStyle(color: Colors.white38, fontSize: 9)),
-        ],
+            SizedBox(height: 12),
+            Text(project['name'], maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.outfit(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+            SizedBox(height: 5),
+            Row(
+              children: [
+                Text("Status: ", style: TextStyle(color: Colors.white38, fontSize: 10)),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(color: Colors.green.withOpacity(0.2), borderRadius: BorderRadius.circular(5)),
+                  child: Text("Active", style: TextStyle(color: Colors.greenAccent, fontSize: 9, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+            SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text("Progress:", style: TextStyle(color: Colors.white38, fontSize: 10)),
+                Text("72%", style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+              ],
+            ),
+            SizedBox(height: 5),
+            LinearProgressIndicator(value: 0.72, backgroundColor: Colors.white12, valueColor: AlwaysStoppedAnimation(Colors.cyanAccent), minHeight: 4),
+            Spacer(),
+            Text("Code: ${project['code']}", style: TextStyle(color: Colors.white24, fontSize: 9)),
+            Text(project['location'] ?? "No location", style: TextStyle(color: Colors.white38, fontSize: 9)),
+          ],
+        ),
       ),
     );
   }

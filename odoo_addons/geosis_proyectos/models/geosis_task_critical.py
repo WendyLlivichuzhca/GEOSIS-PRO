@@ -3,6 +3,13 @@ from odoo import models, fields, api
 
 class ProjectTask(models.Model):
     _inherit = 'project.task'
+    budget_line_id = fields.Many2one(
+        'geosis.budget.line',
+        string='Linea de Presupuesto',
+        ondelete='cascade',
+        index=True,
+        help='Vincula la tarea del cronograma con la linea del presupuesto que la origino.',
+    )
 
     is_critical = fields.Boolean(
         string='Es Crítica',

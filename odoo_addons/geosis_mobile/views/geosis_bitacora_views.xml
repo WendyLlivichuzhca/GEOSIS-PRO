@@ -106,10 +106,9 @@
         </field>
     </record>
 
-    <!-- Menú -->
+    <!-- Menú (Simplificado para evitar errores de dependencia) -->
     <menuitem id="menu_geosis_bitacora_root" 
               name="Libro de Obra" 
-              parent="geosis_proyectos.menu_geosis_proyectos_root" 
               action="action_geosis_bitacora" 
               sequence="20"/>
 </odoo>
