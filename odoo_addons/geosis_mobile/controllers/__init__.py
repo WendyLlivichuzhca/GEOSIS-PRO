@@ -57,10 +57,19 @@ class GeosisMobileAPI(http.Controller):
             if not data:
                 return {'status': 'error', 'message': 'No se proporcionaron datos del reporte'}
 
+            # Obtener el usuario activo de la sesión o administrador por defecto
+            session_user_id = request.session.uid
+            if not session_user_id:
+                admin = request.env['res.users'].sudo().search([('id', '=', 2)], limit=1)
+                if not admin:
+                    admin = request.env['res.users'].sudo().search([], limit=1)
+                session_user_id = admin.id if admin else 1
+
             # 1. Crear el Asiento de Bitácora
             bitacora_vals = {
                 'project_id': int(data.get('project_id')),
                 'date': data.get('date'),
+                'user_id': session_user_id,
                 'weather': data.get('weather', 'sunny'),
                 'content': data.get('content', ''),
                 'personal_notes': data.get('personal_notes', ''),
