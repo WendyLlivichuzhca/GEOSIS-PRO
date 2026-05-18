@@ -1988,7 +1988,7 @@
                             <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                             <button type="submit" class="btn btn-link btn-sm text-info p-0">Duplicar rubro</button>
                         </form>
-                        <a t-attf-href="/my/rubros/#{apu.id}/pdf" class="geosis-open-link">Descargar ficha PDF</a>
+                        <a t-attf-href="/my/rubro/#{apu.id}/pdf" class="geosis-open-link">Descargar ficha PDF</a>
                         <form t-attf-action="/my/rubro/#{apu.id}/delete" method="post" class="d-inline" onsubmit="return confirm('Se eliminara este rubro. Deseas continuar?');">
                             <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                             <button type="submit" class="btn btn-link btn-sm geosis-delete-link p-0">Eliminar rubro</button>

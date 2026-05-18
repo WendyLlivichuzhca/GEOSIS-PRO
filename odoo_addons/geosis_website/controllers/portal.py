@@ -999,7 +999,7 @@ class GeosisCustomerPortal(CustomerPortal):
         Apu = request.env['geosis.apu'].sudo()
         domain = []
         if search:
-            domain += [('|', '|', ('name', 'ilike', search), ('code', 'ilike', search), ('uom_name', 'ilike', search))]
+            domain += ['|', '|', ('name', 'ilike', search), ('code', 'ilike', search), ('uom_name', 'ilike', search)]
         if active == 'active':
             domain += [('active', '=', True)]
         elif active == 'inactive':
@@ -1041,7 +1041,7 @@ class GeosisCustomerPortal(CustomerPortal):
             'rubro_total_count': Apu.search_count([]),
             'rubro_active_count': Apu.search_count([('active', '=', True)]),
             'rubro_inactive_count': Apu.search_count([('active', '=', False)]),
-            'rubro_avg_total': sum(rubros.mapped('total_cost')) / len(rubros) if rubros else 0.0,
+            'rubro_avg_total': (sum(Apu.search(domain).mapped('total_cost')) / Apu.search_count(domain)) if Apu.search_count(domain) else 0.0,
             'rubro_created': kw.get('success') == 'rubro_created',
             'rubro_updated': kw.get('success') == 'rubro_updated',
             'rubro_deleted': kw.get('success') == 'rubro_deleted',
