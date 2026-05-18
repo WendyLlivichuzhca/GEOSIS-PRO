@@ -28,10 +28,19 @@ class GeosisMobileAPI(http.Controller):
                     ])
                     
                     for line in budget_lines:
+                        # Buscar el último avance aprobado para este rubro/tarea en este proyecto
+                        last_approved_task = request.env['geosis.bitacora.task'].sudo().search([
+                            ('task_id', '=', line.id),
+                            ('bitacora_id.project_id', '=', p.id),
+                            ('bitacora_id.state', '=', 'approved')
+                        ], order='bitacora_id.date desc, id desc', limit=1)
+                        
+                        accumulated_progress = last_approved_task.progress if last_approved_task else 0.0
+
                         tasks.append({
                             'id': line.id,
                             'name': line.apu_name or 'Rubro sin nombre',
-                            'progress': 0.0,
+                            'progress': accumulated_progress,
                             'uom': line.uom_name or 'u',
                             'start': line.date_start,
                             'end': line.date_end,
