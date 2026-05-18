@@ -52,15 +52,15 @@ class _LoginScreenState extends State<LoginScreen> {
                   SizedBox(height: 60),
 
                   // CAMPOS DE TEXTO (Estilo Cristal con Brillo)
-                  _buildGlassInput("Work Email", Icons.email_outlined, _emailController),
+                  _buildGlassInput("Correo Electrónico", Icons.email_outlined, _emailController),
                   SizedBox(height: 20),
-                  _buildGlassInput("Password", Icons.lock_outline, _passwordController, isPass: true),
+                  _buildGlassInput("Contraseña", Icons.lock_outline, _passwordController, isPass: true),
 
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
                       onPressed: () {},
-                      child: Text("Forgot Password?", style: TextStyle(color: Colors.white38, fontSize: 13)),
+                      child: Text("¿Olvidaste tu contraseña?", style: TextStyle(color: Colors.white38, fontSize: 13)),
                     ),
                   ),
                   SizedBox(height: 30),
@@ -69,19 +69,19 @@ class _LoginScreenState extends State<LoginScreen> {
                   _buildSignInButton(),
                   
                   SizedBox(height: 20),
-                  _buildSocialButton("Sign in with Microsoft 365", Icons.grid_view_rounded, Colors.orange),
+                  _buildSocialButton("Iniciar sesión con Microsoft 365", Icons.grid_view_rounded, Colors.orange),
                   SizedBox(height: 15),
-                  _buildSocialButton("SSO", null, null),
+                  _buildSocialButton("SSO (Inicio Único)", null, null),
 
                   SizedBox(height: 40),
                   GestureDetector(
                     onTap: () {},
                     child: RichText(
                       text: TextSpan(
-                        text: "Don't have an account? ",
+                        text: "¿No tienes una cuenta? ",
                         style: TextStyle(color: Colors.white54),
                         children: [
-                          TextSpan(text: "Contact Admin.", style: TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold)),
+                          TextSpan(text: "Contacta al Admin.", style: TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold)),
                         ],
                       ),
                     ),
@@ -109,7 +109,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         SizedBox(height: 15),
         Text("GEOSIS", style: GoogleFonts.outfit(color: Colors.white, fontSize: 42, fontWeight: FontWeight.bold, letterSpacing: 3)),
-        Text("CONSTRUCTION MANAGEMENT", style: GoogleFonts.outfit(color: Colors.white54, fontSize: 11, letterSpacing: 2)),
+        Text("GESTIÓN DE CONSTRUCCIÓN", style: GoogleFonts.outfit(color: Colors.white54, fontSize: 11, letterSpacing: 2)),
       ],
     );
   }
@@ -162,7 +162,7 @@ class _LoginScreenState extends State<LoginScreen> {
           backgroundColor: Color(0xFF1B3A5E),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         ),
-        child: Text("Sign In", style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+        child: Text("Iniciar Sesión", style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
       ),
     );
   }

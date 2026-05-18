@@ -443,7 +443,10 @@ class BitacoraDetailScreen extends StatelessWidget {
                                 Icon(weatherIcon, size: 18, color: weatherColor),
                                 SizedBox(width: 6),
                                 Text(
-                                  weather.toUpperCase(),
+                                  weather == 'sunny' ? 'SOLEADO' :
+                                  weather == 'cloudy' ? 'NUBLADO' :
+                                  weather == 'rainy' ? 'LLUVIA' :
+                                  weather == 'storm' ? 'TORMENTA' : weather.toUpperCase(),
                                   style: GoogleFonts.outfit(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600),
                                 ),
                               ],
