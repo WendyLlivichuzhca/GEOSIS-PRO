@@ -155,7 +155,13 @@ class _BitacoraFormScreenState extends State<BitacoraFormScreen> {
       'signature_contractor': signatureB64,
     };
 
-    bool success = await odoo.submitReport(reportData);
+    bool success = false;
+    try {
+      success = await odoo.submitReport(reportData);
+    } catch (e) {
+      print("DEBUG: Falló el envío en submitReport: $e");
+      success = false;
+    }
     
     setState(() => _isSaving = false);
 
@@ -163,7 +169,63 @@ class _BitacoraFormScreenState extends State<BitacoraFormScreen> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("✅ Libro de Obra sincronizado correctamente en Odoo")));
       Navigator.pop(context);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("❌ Error de sincronización con Odoo")));
+      // Mostrar popup premium de Guardado Offline
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            backgroundColor: Color(0xFF0D1B2E),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              borderSide: BorderSide(color: Colors.white10),
+            ),
+            title: Row(
+              children: [
+                Icon(Icons.signal_wifi_connected_no_internet_4, color: Colors.orangeAccent),
+                SizedBox(width: 10),
+                Text(
+                  "¿Sin Conexión?",
+                  style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+                ),
+              ],
+            ),
+            content: Text(
+              "No pudimos conectar con el servidor de Odoo. ¿Deseas guardar este reporte en la memoria local de tu celular para enviarlo cuando tengas señal?",
+              style: GoogleFonts.outfit(color: Colors.white70, fontSize: 13, height: 1.4),
+            ),
+            actions: [
+              TextButton(
+                child: Text("Seguir Intentando", style: GoogleFonts.outfit(color: Colors.cyanAccent, fontWeight: FontWeight.bold)),
+                onPressed: () => Navigator.pop(context),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orangeAccent,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                child: Text("Guardar en Celular", style: GoogleFonts.outfit(color: Colors.black, fontWeight: FontWeight.bold)),
+                onPressed: () async {
+                  Navigator.pop(context); // Cerrar dialogo
+                  setState(() => _isSaving = true);
+                  await odoo.saveOfflineReport(reportData);
+                  setState(() => _isSaving = false);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      backgroundColor: Colors.orangeAccent,
+                      content: Text(
+                        "✅ Borrador guardado localmente. Sincronízalo desde el Dashboard al recuperar señal.",
+                        style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  );
+                  Navigator.pop(context); // Regresar al dashboard
+                },
+              ),
+            ],
+          );
+        },
+      );
     }
   }
 

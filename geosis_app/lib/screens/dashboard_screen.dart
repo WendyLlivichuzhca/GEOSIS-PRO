@@ -12,11 +12,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final odoo = OdooService();
   List<dynamic> projects = [];
   bool isLoading = true;
+  int offlineReportsCount = 0;
+  bool isSyncing = false;
 
   @override
   void initState() {
     super.initState();
     _loadProjects();
+    _loadOfflineCount();
+  }
+
+  Future<void> _loadOfflineCount() async {
+    try {
+      final drafts = await odoo.getOfflineReports();
+      setState(() {
+        offlineReportsCount = drafts.length;
+      });
+    } catch (e) {
+      print("DEBUG: Error al cargar cantidad offline: $e");
+    }
   }
 
   Future<void> _loadProjects() async {
@@ -26,8 +40,54 @@ class _DashboardScreenState extends State<DashboardScreen> {
         projects = data;
         isLoading = false;
       });
+      _loadOfflineCount();
     } catch (e) {
       setState(() => isLoading = false);
+    }
+  }
+
+  Future<void> _syncOffline() async {
+    setState(() => isSyncing = true);
+    try {
+      final results = await odoo.syncOfflineReports();
+      final int success = results['success'] ?? 0;
+      final int fail = results['fail'] ?? 0;
+      
+      setState(() => isSyncing = false);
+      _loadOfflineCount();
+
+      if (success > 0 && fail == 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.greenAccent,
+            content: Text("✅ Sincronizados $success reportes correctamente con Odoo.", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+          )
+        );
+      } else if (success > 0 && fail > 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.orangeAccent,
+            content: Text("⚠️ Sincronizados $success reportes, pero $fail fallaron. Inténtalo más tarde.", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+          )
+        );
+      } else if (fail > 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.redAccent,
+            content: Text("❌ Falló la sincronización. Verifica tu conexión al servidor de Odoo.", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          )
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.cyanAccent,
+            content: Text("ℹ️ No hay reportes offline pendientes por sincronizar.", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+          )
+        );
+      }
+    } catch (e) {
+      setState(() => isSyncing = false);
+      print("DEBUG: Error en _syncOffline: $e");
     }
   }
 
@@ -119,6 +179,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   // WEATHER CARD (PERFECTA)
                   _buildGlassWeatherCard(),
 
+                  if (offlineReportsCount > 0) ...[
+                    SizedBox(height: 20),
+                    _buildOfflineSyncCard(),
+                  ],
+
                   SizedBox(height: 30),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -162,11 +227,81 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
           ),
+          if (isSyncing)
+            Container(
+              color: Colors.black87,
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(color: Colors.orangeAccent),
+                    SizedBox(height: 20),
+                    Text("Sincronizando reportes...", style: GoogleFonts.outfit(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                    SizedBox(height: 5),
+                    Text("Subiendo borradores offline a Odoo...", style: GoogleFonts.outfit(color: Colors.white38, fontSize: 12)),
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
       bottomNavigationBar: _buildBottomNav(),
       floatingActionButton: _buildNeonFab(),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+    );
+  }
+
+  Widget _buildOfflineSyncCard() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+      child: GestureDetector(
+        onTap: _syncOffline,
+        child: Container(
+          padding: EdgeInsets.all(15),
+          decoration: BoxDecoration(
+            color: Colors.orangeAccent.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(25),
+            border: Border.all(color: Colors.orangeAccent.withOpacity(0.4), width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.orangeAccent.withOpacity(0.1),
+                blurRadius: 10,
+                spreadRadius: 1,
+              )
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.orangeAccent.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.signal_wifi_off_outlined, color: Colors.orangeAccent, size: 28),
+              ),
+              SizedBox(width: 15),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Tienes $offlineReportsCount Reportes sin Enviar",
+                      style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      "Te quedaste sin señal en la obra. Toca aquí para sincronizarlos con Odoo ahora.",
+                      style: GoogleFonts.outfit(color: Colors.white70, fontSize: 11, height: 1.3),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.arrow_forward_ios, color: Colors.orangeAccent, size: 16),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -211,8 +346,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       'https://images.unsplash.com/photo-1541888946425-d81bb19480c5?q=80&w=400'
     ];
     return GestureDetector(
-      onTap: () {
-        Navigator.pushNamed(
+      onTap: () async {
+        await Navigator.pushNamed(
           context, 
           '/form', 
           arguments: {
@@ -221,6 +356,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             'tasks': project['tasks'] ?? [],
           }
         );
+        _loadOfflineCount();
       },
       child: Container(
         width: 190,

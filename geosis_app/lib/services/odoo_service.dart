@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class OdooService {
   final String baseUrl = "https://geosis.corporativoqbank.com";
@@ -110,5 +111,76 @@ class OdooService {
       print("DEBUG: Error cargando historial de bitacoras: $e");
     }
     return [];
+  }
+
+  Future<void> saveOfflineReport(Map<String, dynamic> report) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? rawDrafts = prefs.getString('offline_bitacora_drafts');
+      List<dynamic> drafts = [];
+      if (rawDrafts != null) {
+        drafts = jsonDecode(rawDrafts);
+      }
+      report['offline_id'] = DateTime.now().millisecondsSinceEpoch.toString();
+      drafts.add(report);
+      await prefs.setString('offline_bitacora_drafts', jsonEncode(drafts));
+      print("DEBUG: Reporte offline guardado. Total en cola: ${drafts.length}");
+    } catch (e) {
+      print("DEBUG: Error al guardar reporte offline: $e");
+    }
+  }
+
+  Future<List<dynamic>> getOfflineReports() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? rawDrafts = prefs.getString('offline_bitacora_drafts');
+      if (rawDrafts != null) {
+        return jsonDecode(rawDrafts);
+      }
+    } catch (e) {
+      print("DEBUG: Error cargando borradores offline: $e");
+    }
+    return [];
+  }
+
+  Future<void> removeOfflineReport(String offlineId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? rawDrafts = prefs.getString('offline_bitacora_drafts');
+      if (rawDrafts != null) {
+        List<dynamic> drafts = jsonDecode(rawDrafts);
+        drafts.removeWhere((item) => item['offline_id'] == offlineId);
+        await prefs.setString('offline_bitacora_drafts', jsonEncode(drafts));
+      }
+    } catch (e) {
+      print("DEBUG: Error eliminando borrador offline: $e");
+    }
+  }
+
+  Future<Map<String, int>> syncOfflineReports() async {
+    int successCount = 0;
+    int failCount = 0;
+    try {
+      final drafts = await getOfflineReports();
+      if (drafts.isEmpty) return {'success': 0, 'fail': 0};
+
+      final List<dynamic> reportsToSync = List.from(drafts);
+      for (var report in reportsToSync) {
+        final String offlineId = report['offline_id'];
+        final Map<String, dynamic> odooData = Map.from(report);
+        odooData.remove('offline_id');
+
+        bool success = await submitReport(odooData);
+        if (success) {
+          successCount++;
+          await removeOfflineReport(offlineId);
+        } else {
+          failCount++;
+        }
+      }
+    } catch (e) {
+      print("DEBUG: Error en proceso de sincronización offline: $e");
+    }
+    return {'success': successCount, 'fail': failCount};
   }
 }
