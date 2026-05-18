@@ -616,10 +616,8 @@
                                         <td><t t-esc="task.planned_date_start or '-'"/></td>
                                         <td><t t-esc="task.date_deadline or '-'"/></td>
                                         <td class="text-center">
-                                            <t t-if="task.planned_date_start and task.date_deadline">
-                                                <t t-set="p_start" t-value="task.planned_date_start.date() if hasattr(task.planned_date_start, 'date') else task.planned_date_start"/>
-                                                <t t-set="p_end" t-value="task.date_deadline.date() if hasattr(task.date_deadline, 'date') else task.date_deadline"/>
-                                                <t t-esc="(p_end - p_start).days + 1"/> días
+                                            <t t-if="task_durations and task.id in task_durations and task_durations[task.id]">
+                                                <t t-esc="task_durations[task.id]"/> días
                                             </t>
                                             <t t-else="">
                                                 -

@@ -419,6 +419,7 @@ class GeosisCustomerPortal(CustomerPortal):
 
         open_task_count = 0
         critical_task_count = 0
+        task_durations = {}
         if project_tasks:
             open_task_count = Task.search_count(
                 [('id', 'in', project_tasks.ids)] + self._get_open_task_domain()
@@ -427,6 +428,15 @@ class GeosisCustomerPortal(CustomerPortal):
                 critical_task_count = Task.search_count(
                     [('id', 'in', project_tasks.ids), ('is_critical', '=', True)]
                 )
+            for task in project_tasks:
+                start_dt = self._get_task_start(task)
+                end_dt = self._get_task_end(task)
+                if start_dt and end_dt:
+                    sd = start_dt.date() if hasattr(start_dt, 'date') else start_dt
+                    ed = end_dt.date() if hasattr(end_dt, 'date') else end_dt
+                    task_durations[task.id] = max((ed - sd).days, 0) + 1
+                else:
+                    task_durations[task.id] = 0
 
         values.update({
             'page_name': 'gantt',
@@ -439,6 +449,7 @@ class GeosisCustomerPortal(CustomerPortal):
             'odoo_projects': odoo_projects,
             'project_tasks': project_tasks,
             'tasks_with_gantt': tasks_with_gantt,
+            'task_durations': task_durations,
             'gantt_task_count': len(project_tasks),
             'gantt_open_count': open_task_count,
             'gantt_critical_count': critical_task_count,
