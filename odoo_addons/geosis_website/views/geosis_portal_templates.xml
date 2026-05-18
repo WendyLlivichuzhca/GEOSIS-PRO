@@ -3112,6 +3112,9 @@
                     }
                 });
             </script>
+        </t>
+    </template>
+
     <template id="portal_my_bitacoras" name="Libro de Obra Portal">
         <t t-call="geosis_website.geosis_portal_layout">
             <t t-set="page_name" t-value="'bitacora'"/>
