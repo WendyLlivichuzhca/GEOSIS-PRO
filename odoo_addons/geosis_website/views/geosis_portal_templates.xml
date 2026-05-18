@@ -3118,6 +3118,62 @@
             <t t-set="page_title" t-value="'Libro de Obra'"/>
             <t t-set="page_subtitle" t-value="'Control diario, recursos, observaciones y firmas de fiscalización'"/>
 
+            <!-- Dashboard de Clima y Resumen Visual (MIDUVI) -->
+            <div class="row g-3 mb-4" t-if="dashboard_metrics">
+                <div class="col-md-3 col-sm-6">
+                    <div class="card border-0 text-white shadow-sm" style="background: linear-gradient(135deg, #1b263b, #0d1b2a); border-radius: 15px; min-height: 100px; border: 1px solid rgba(255,255,255,0.05) !important;">
+                        <div class="card-body d-flex align-items-center justify-content-between p-3">
+                            <div>
+                                <h6 class="text-white-50 small mb-1" style="font-weight: bold; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px;">Jornadas Totales</h6>
+                                <h3 class="mb-0 font-weight-bold text-white" style="font-size: 26px;"><t t-esc="dashboard_metrics['total_days']"/></h3>
+                            </div>
+                            <div class="rounded-circle p-2" style="background: rgba(255,255,255,0.05);">
+                                <i class="fa fa-calendar fa-2x text-primary" style="color: #007bff !important;"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <div class="card border-0 text-white shadow-sm" style="background: linear-gradient(135deg, #1b263b, #0d1b2a); border-radius: 15px; min-height: 100px; border: 1px solid rgba(255,255,255,0.05) !important;">
+                        <div class="card-body d-flex align-items-center justify-content-between p-3">
+                            <div>
+                                <h6 class="text-white-50 small mb-1" style="font-weight: bold; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px;">Aprobados Legal</h6>
+                                <h3 class="mb-0 font-weight-bold text-success" style="font-size: 26px; color: #28a745 !important;"><t t-esc="dashboard_metrics['approved_count']"/></h3>
+                            </div>
+                            <div class="rounded-circle p-2" style="background: rgba(40,167,69,0.1);">
+                                <i class="fa fa-check-circle fa-2x text-success" style="color: #28a745 !important;"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <div class="card border-0 text-white shadow-sm" style="background: linear-gradient(135deg, #1b263b, #0d1b2a); border-radius: 15px; min-height: 100px; border: 1px solid rgba(255,255,255,0.05) !important;">
+                        <div class="card-body d-flex align-items-center justify-content-between p-3">
+                            <div>
+                                <h6 class="text-white-50 small mb-1" style="font-weight: bold; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px;">Días con Lluvia</h6>
+                                <h3 class="mb-0 font-weight-bold text-info" style="font-size: 26px; color: #17a2b8 !important;"><t t-esc="dashboard_metrics['rainy_days']"/></h3>
+                            </div>
+                            <div class="rounded-circle p-2" style="background: rgba(23,162,184,0.1);">
+                                <i class="fa fa-umbrella fa-2x text-info" style="color: #17a2b8 !important;"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <div class="card border-0 text-white shadow-sm" style="background: linear-gradient(135deg, #1b263b, #0d1b2a); border-radius: 15px; min-height: 100px; border: 1px solid rgba(255,255,255,0.05) !important;">
+                        <div class="card-body d-flex align-items-center justify-content-between p-3">
+                            <div>
+                                <h6 class="text-white-50 small mb-1" style="font-weight: bold; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px;">Días Productivos</h6>
+                                <h3 class="mb-0 font-weight-bold text-warning" style="font-size: 26px; color: #ffc107 !important;"><t t-esc="dashboard_metrics['productive_days']"/></h3>
+                            </div>
+                            <div class="rounded-circle p-2" style="background: rgba(255,193,7,0.1);">
+                                <i class="fa fa-sun-o fa-2x text-warning" style="color: #ffc107 !important;"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <section class="geosis-panel geosis-apu-sheet mb-4">
                 <div class="geosis-panel__header d-flex justify-content-between align-items-center">
                     <h3>Reportes Diarios de Obra</h3>

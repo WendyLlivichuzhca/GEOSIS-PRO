@@ -289,6 +289,13 @@ class GeosisCustomerPortal(CustomerPortal):
         )
         bitacoras = Bitacora.search(bitacora_domain, order=order, limit=10, offset=pager['offset'])
 
+        # Calcular métricas para el Dashboard superior
+        all_bitacoras = Bitacora.search([('project_id', 'in', project_ids)])
+        total_days = len(all_bitacoras)
+        approved_count = len(all_bitacoras.filtered(lambda b: b.state == 'approved'))
+        rainy_days = len(all_bitacoras.filtered(lambda b: b.weather in ('rainy', 'storm')))
+        productive_days = len(all_bitacoras.filtered(lambda b: b.weather in ('sunny', 'cloudy')))
+
         values.update({
             'bitacoras': bitacoras,
             'page_name': 'bitacora',
@@ -298,6 +305,12 @@ class GeosisCustomerPortal(CustomerPortal):
             'sortings': sortings,
             'page_title': 'Libro de Obra',
             'page_subtitle': 'Registro diario y control de incidencias en obra',
+            'dashboard_metrics': {
+                'total_days': total_days,
+                'approved_count': approved_count,
+                'rainy_days': rainy_days,
+                'productive_days': productive_days,
+            }
         })
         return request.render("geosis_website.portal_my_bitacoras", values)
 
