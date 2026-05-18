@@ -11,6 +11,7 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   final odoo = OdooService();
   List<dynamic> projects = [];
+  List<dynamic> bitacoras = [];
   bool isLoading = true;
   int offlineReportsCount = 0;
   bool isSyncing = false;
@@ -34,6 +35,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  Future<void> _loadBitacoras() async {
+    try {
+      final data = await odoo.getBitacoras();
+      setState(() {
+        bitacoras = data;
+      });
+    } catch (e) {
+      print("DEBUG: Error al cargar bitacoras: $e");
+    }
+  }
+
   Future<void> _loadProjects() async {
     try {
       final data = await odoo.getProjects();
@@ -42,8 +54,45 @@ class _DashboardScreenState extends State<DashboardScreen> {
         isLoading = false;
       });
       _loadOfflineCount();
+      _loadBitacoras();
     } catch (e) {
       setState(() => isLoading = false);
+    }
+  }
+
+  double calculateProjectProgress(List<dynamic> tasks) {
+    if (tasks.isEmpty) return 0.0;
+    double totalProgress = 0.0;
+    for (var task in tasks) {
+      totalProgress += (task['progress'] ?? 0.0);
+    }
+    return (totalProgress / tasks.length) / 100.0;
+  }
+
+  String _translateWeather(String w) {
+    switch (w.toLowerCase()) {
+      case 'sunny':
+        return 'Soleado';
+      case 'rain':
+      case 'rainy':
+        return 'Lluvia';
+      case 'cloudy':
+        return 'Nublado';
+      case 'windy':
+        return 'Viento';
+      default:
+        return w;
+    }
+  }
+
+  String _translateState(String s) {
+    switch (s.toLowerCase()) {
+      case 'draft':
+        return 'Borrador';
+      case 'approved':
+        return 'Aprobado';
+      default:
+        return s;
     }
   }
 
@@ -547,7 +596,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text("Wendy L.", style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                    Text("Site Manager", style: GoogleFonts.outfit(color: Colors.white54, fontSize: 12)),
+                    Text("Residente de Obra", style: GoogleFonts.outfit(color: Colors.white54, fontSize: 12)),
                   ],
                 ),
               ],
@@ -558,8 +607,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Good Morning,", style: GoogleFonts.outfit(color: Colors.white70, fontSize: 24)),
-                Text("Wendy", style: GoogleFonts.outfit(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
+                Text("¡Buenos días,", style: GoogleFonts.outfit(color: Colors.white70, fontSize: 24)),
+                Text("Wendy!", style: GoogleFonts.outfit(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
               ],
             ),
           ),
@@ -571,7 +620,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           SizedBox(height: 30),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20.0),
-            child: Text("My Projects", style: GoogleFonts.outfit(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+            child: Text("Mis Proyectos", style: GoogleFonts.outfit(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
           ),
           SizedBox(height: 15),
           Container(
@@ -587,15 +636,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 },
               ),
           ),
-          _buildFeaturedProjectCard("Riverside Plaza", "3", "Milestone Due", 0.15),
+          if (projects.isNotEmpty) ...[
+            _buildFeaturedProjectCard(
+              projects[0]['name'] ?? 'Proyecto de Obra',
+              "1",
+              "Activo",
+              calculateProjectProgress(projects[0]['tasks'] ?? []),
+            ),
+          ] else ...[
+            _buildFeaturedProjectCard("Sin Proyecto Activo", "0", "Planificación", 0.0),
+          ],
           SizedBox(height: 20),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20.0),
             child: Row(
               children: [
-                Expanded(child: _buildSmallStatCard("Schedule", true)),
+                Expanded(child: _buildSmallStatCard("Cronograma", true)),
                 SizedBox(width: 15),
-                Expanded(child: _buildSmallStatCard("Safety", false)),
+                Expanded(child: _buildSmallStatCard("Seguridad", false)),
               ],
             ),
           ),
@@ -620,6 +678,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ? Center(child: CircularProgressIndicator(color: Colors.cyanAccent))
           : Column(
               children: projects.map((project) {
+                final double progressVal = calculateProjectProgress(project['tasks'] ?? []);
                 return Container(
                   margin: EdgeInsets.only(bottom: 20),
                   padding: EdgeInsets.all(20),
@@ -663,14 +722,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text("Progreso General", style: TextStyle(color: Colors.white38, fontSize: 12)),
-                          Text("35%", style: TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold, fontSize: 12)),
+                          Text("${(progressVal * 100).toInt()}%", style: TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold, fontSize: 12)),
                         ],
                       ),
                       SizedBox(height: 8),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(10),
                         child: LinearProgressIndicator(
-                          value: 0.35,
+                          value: progressVal,
                           backgroundColor: Colors.white10,
                           valueColor: AlwaysStoppedAnimation<Color>(Colors.cyanAccent),
                           minHeight: 6,
@@ -684,7 +743,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             children: [
                               Icon(Icons.calendar_today, color: Colors.white38, size: 14),
                               SizedBox(width: 5),
-                              Text("Fecha Fin: 2026-12-31", style: TextStyle(color: Colors.white38, fontSize: 11)),
+                              Text("En Ejecución", style: TextStyle(color: Colors.white38, fontSize: 11)),
                             ],
                           ),
                           ElevatedButton(
@@ -747,7 +806,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   children: [
                     Text("Total Asientos", style: TextStyle(color: Colors.white70, fontSize: 13)),
                     SizedBox(height: 5),
-                    Text("12 Reportes", style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 22)),
+                    Text("${bitacoras.length} Reportes", style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 22)),
                   ],
                 ),
                 ElevatedButton(
@@ -764,9 +823,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
           SizedBox(height: 25),
           Text("Asientos Recientes", style: GoogleFonts.outfit(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
           SizedBox(height: 15),
-          _buildReportHistoryItem("Asiento N° 4", "2026-05-18", "Soleado", "Excavación y replanteo de plazoletas", "Aprobado"),
-          _buildReportHistoryItem("Asiento N° 3", "2026-05-17", "Lluvia", "Sincronización de planilla de rubros", "Aprobado"),
-          _buildReportHistoryItem("Asiento N° 2", "2026-05-16", "Nublado", "Replanteo inicial del parque central", "Aprobado"),
+          bitacoras.isEmpty
+          ? Container(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.02),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Center(
+                child: Text(
+                  "No hay asientos de libro de obra registrados en Odoo.",
+                  style: TextStyle(color: Colors.white38, fontSize: 13),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            )
+          : Column(
+              children: bitacoras.map((b) {
+                return _buildReportHistoryItem(
+                  b['project_name'] ?? 'Obra',
+                  b['date'] ?? '',
+                  _translateWeather(b['weather'] ?? 'sunny'),
+                  b['content'] ?? 'Sin descripción de actividades',
+                  _translateState(b['state'] ?? 'draft'),
+                );
+              }).toList(),
+            ),
         ],
       ),
     );
@@ -787,16 +869,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(title, style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+              Expanded(
+                child: Text(
+                  title, 
+                  style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.greenAccent.withOpacity(0.1),
+                  color: status == "Aprobado" ? Colors.greenAccent.withOpacity(0.1) : Colors.cyanAccent.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   status,
-                  style: TextStyle(color: Colors.greenAccent, fontSize: 9, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: status == "Aprobado" ? Colors.greenAccent : Colors.cyanAccent, fontSize: 9, fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -808,13 +896,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
               SizedBox(width: 5),
               Text(date, style: TextStyle(color: Colors.white38, fontSize: 11)),
               SizedBox(width: 15),
-              Icon(Icons.wb_sunny, color: Colors.amber, size: 12),
+              Icon(weather == "Soleado" ? Icons.wb_sunny : (weather == "Lluvia" ? Icons.umbrella : Icons.cloud), color: Colors.amber, size: 12),
               SizedBox(width: 5),
               Text(weather, style: TextStyle(color: Colors.white38, fontSize: 11)),
             ],
           ),
           SizedBox(height: 10),
-          Text(summary, style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.3)),
+          Text(summary, style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.3), maxLines: 2, overflow: TextOverflow.ellipsis),
         ],
       ),
     );
@@ -832,9 +920,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           _buildSearchBar("Buscar miembro del equipo..."),
           SizedBox(height: 25),
           _buildTeamMemberCard("Wendy Llivichuzhca", "Residente de Obra / Directora", "Riverside Plaza", "https://i.pravatar.cc/150?u=wendy"),
-          _buildTeamMemberCard("Ing. Carlos Andrade", "Fiscalizador / Supervisor MIDUVI", "Fiscalización GAD", "https://i.pravatar.cc/150?u=carlos"),
-          _buildTeamMemberCard("Arq. Sofía Méndez", "Representante del Contratista", "Riverside Plaza", "https://i.pravatar.cc/150?u=sofia"),
-          _buildTeamMemberCard("Ing. Pedro Torres", "Inspector de Seguridad y SSO", "Riverside Plaza", "https://i.pravatar.cc/150?u=pedro"),
+          _buildTeamMemberCard("Ing. Carlos Andrade", "Fiscalizador / Supervisor de Obra", "Fiscalización GAD", "https://i.pravatar.cc/150?u=carlos"),
+          _buildTeamMemberCard("Arq. Sofía Méndez", "Representante de Contratista", "Riverside Plaza", "https://i.pravatar.cc/150?u=sofia"),
+          _buildTeamMemberCard("Ing. Pedro Torres", "Inspector SSO y Seguridad", "Riverside Plaza", "https://i.pravatar.cc/150?u=pedro"),
         ],
       ),
     );
@@ -1008,6 +1096,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
             Text(value, style: TextStyle(color: isStatus ? Colors.greenAccent : Colors.white70, fontSize: 13, fontWeight: FontWeight.w500)),
           ],
+        ),
+      ],
+    );
+  }
+}  ],
         ),
       ],
     );
