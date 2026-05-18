@@ -257,6 +257,109 @@ class GeosisCustomerPortal(CustomerPortal):
         })
         return request.render("geosis_website.portal_my_projects", values)
 
+    @http.route(['/my/bitacoras', '/my/bitacoras/page/<int:page>'], type='http', auth="user", website=True)
+    def portal_my_bitacoras(self, page=1, search=None, sort_by='date', **kw):
+        values = self._prepare_portal_layout_values()
+        Bitacora = request.env['geosis.bitacora'].sudo()
+        domain = self._partner_domain()
+        
+        project_ids = request.env['geosis.project'].sudo().search(domain).ids
+        bitacora_domain = [('project_id', 'in', project_ids)]
+
+        if search:
+            bitacora_domain += [('|', '|', 
+                ('project_id.name', 'ilike', search), 
+                ('content', 'ilike', search),
+                ('personal_notes', 'ilike', search)
+            )]
+
+        sortings = {
+            'date': {'label': 'Fecha Reciente', 'order': 'date desc, id desc'},
+            'project': {'label': 'Proyecto', 'order': 'project_id asc'},
+        }
+        order = sortings.get(sort_by, sortings['date'])['order']
+
+        bitacora_count = Bitacora.search_count(bitacora_domain)
+        pager = portal_pager(
+            url="/my/bitacoras",
+            url_args={'search': search, 'sort_by': sort_by},
+            total=bitacora_count,
+            page=page,
+            step=10
+        )
+        bitacoras = Bitacora.search(bitacora_domain, order=order, limit=10, offset=pager['offset'])
+
+        values.update({
+            'bitacoras': bitacoras,
+            'page_name': 'bitacora',
+            'pager': pager,
+            'search': search,
+            'sort_by': sort_by,
+            'sortings': sortings,
+            'page_title': 'Libro de Obra',
+            'page_subtitle': 'Registro diario y control de incidencias en obra',
+        })
+        return request.render("geosis_website.portal_my_bitacoras", values)
+
+    @http.route(['/my/bitacora/<int:bitacora_id>'], type='http', auth="user", website=True, methods=['GET', 'POST'])
+    def portal_my_bitacora_detail(self, bitacora_id, **kw):
+        Bitacora = request.env['geosis.bitacora'].sudo()
+        bitacora = Bitacora.browse(bitacora_id)
+        if not bitacora.exists():
+            return request.redirect('/my/bitacoras')
+
+        domain = self._partner_domain()
+        project_ids = request.env['geosis.project'].sudo().search(domain).ids
+        if bitacora.project_id.id not in project_ids:
+            return request.redirect('/my/bitacoras')
+
+        # Procesar Guardado e Instrucciones del Fiscalizador
+        if request.httprequest.method == 'POST':
+            vals = {}
+            if 'inspector_instructions' in kw:
+                vals['inspector_instructions'] = kw.get('inspector_instructions')
+            
+            signature_data = kw.get('signature_inspector')
+            if signature_data and signature_data.startswith('data:image/png;base64,'):
+                base64_str = signature_data.split(',')[1]
+                vals['signature_inspector'] = base64_str
+                vals['state'] = 'approved'
+            
+            if vals:
+                bitacora.write(vals)
+
+        values = self._prepare_portal_layout_values()
+        values.update({
+            'bitacora': bitacora,
+            'page_name': 'bitacora',
+            'page_title': 'Detalle de Libro de Obra',
+            'page_subtitle': f"{bitacora.project_id.name} - Fecha: {bitacora.date}",
+        })
+        return request.render("geosis_website.portal_my_bitacora_detail", values)
+
+    @http.route(['/my/bitacora/print/<int:bitacora_id>'], type='http', auth="user", website=True)
+    def portal_my_bitacora_print(self, bitacora_id, **kw):
+        Bitacora = request.env['geosis.bitacora'].sudo()
+        bitacora = Bitacora.browse(bitacora_id)
+        if not bitacora.exists():
+            return request.redirect('/my/bitacoras')
+
+        domain = self._partner_domain()
+        project_ids = request.env['geosis.project'].sudo().search(domain).ids
+        if bitacora.project_id.id not in project_ids:
+            return request.redirect('/my/bitacoras')
+
+        # Generar el PDF oficial del libro de obra con el motor QWeb PDF
+        pdf_content, content_type = request.env['ir.actions.report'].sudo()._render_qweb_pdf(
+            'geosis_mobile.action_report_geosis_bitacora', [bitacora_id]
+        )
+        pdfhttpheaders = [
+            ('Content-Type', 'application/pdf'),
+            ('Content-Length', len(pdf_content)),
+            ('Content-Disposition', f'attachment; filename="Libro_de_Obra_Dia_{bitacora.date}.pdf"')
+        ]
+        return request.make_response(pdf_content, headers=pdfhttpheaders)
+
     @http.route(['/my/gantt'], type='http', auth="user", website=True)
     def portal_my_gantt(self, project_id=None, **kw):
         values = self._prepare_portal_layout_values()

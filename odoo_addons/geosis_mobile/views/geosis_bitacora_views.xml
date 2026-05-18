@@ -22,21 +22,28 @@
         <field name="arch" type="xml">
             <form string="Asiento de Libro de Obra">
                 <header>
-                    <field name="weather" widget="statusbar" options="{'clickable': '1'}"/>
+                    <button name="action_approve" 
+                            string="Aprobar Libro de Obra" 
+                            type="object" 
+                            class="oe_highlight" 
+                            invisible="state == 'approved'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,approved"/>
                 </header>
                 <sheet>
                     <div class="oe_title">
+                        <label for="project_id" string="Proyecto"/>
                         <h1>
                             <field name="project_id" placeholder="Seleccione el Proyecto..."/>
                         </h1>
                     </div>
                     <group>
-                        <group>
+                        <group string="Información General">
                             <field name="date"/>
                             <field name="user_id" widget="many2one_avatar_user"/>
+                            <field name="weather" widget="selection"/>
                         </group>
-                        <group>
-                            <label for="latitude" string="Ubicación GPS"/>
+                        <group string="Ubicación y GPS">
+                            <label for="latitude" string="Coordenadas GPS"/>
                             <div class="o_row">
                                 <span>Lat:</span> <field name="latitude"/>
                                 <span>Lon:</span> <field name="longitude"/>
@@ -55,6 +62,18 @@
                                     <field name="notes"/>
                                 </tree>
                             </field>
+                        </page>
+                        <page string="Personal y Equipos" name="resources">
+                            <group>
+                                <field name="personal_notes" placeholder="Ej: 1 Residente de Obra, 4 Albañiles, 2 Peones..." class="oe_memo"/>
+                                <field name="equipment_notes" placeholder="Ej: 1 Retroexcavadora CAT 320, 2 Volquetas..." class="oe_memo"/>
+                            </group>
+                        </page>
+                        <page string="Bitácora (MIDUVI)" name="bitacora_notes">
+                            <group>
+                                <field name="contractor_queries" placeholder="Consultas o requerimientos realizados por el Contratista..." class="oe_memo"/>
+                                <field name="inspector_instructions" placeholder="Instrucciones, disposiciones o aprobaciones emitidas por la Fiscalización..." class="oe_memo"/>
+                            </group>
                         </page>
                         <page string="Fotos de Evidencia" name="photos">
                             <field name="photo_ids">
@@ -84,6 +103,16 @@
                                     </group>
                                 </form>
                             </field>
+                        </page>
+                        <page string="Firmas Digitales" name="signatures">
+                            <group>
+                                <group string="Contratista">
+                                    <field name="signature_contractor" widget="image" readonly="1" class="oe_avatar"/>
+                                </group>
+                                <group string="Fiscalizador">
+                                    <field name="signature_inspector" widget="image" readonly="1" class="oe_avatar"/>
+                                </group>
+                            </group>
                         </page>
                     </notebook>
                 </sheet>

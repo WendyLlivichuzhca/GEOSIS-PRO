@@ -8,6 +8,7 @@
     'data': [
         'security/ir.model.access.csv',
         'views/geosis_bitacora_views.xml',
+        'views/geosis_bitacora_report.xml',
     ],
     'installable': True,
     'application': True,

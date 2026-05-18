@@ -57,18 +57,58 @@ class OdooService {
     return [];
   }
   Future<bool> submitReport(Map<String, dynamic> reportData) async {
-    final response = await http.post(
-      Uri.parse("$baseUrl/geosis/mobile/submit_report"),
-      headers: {
-        "Content-Type": "application/json",
-        "Cookie": sessionId ?? ""
-      },
-      body: jsonEncode({
-        "jsonrpc": "2.0",
-        "params": {"report": reportData}
-      }),
-    );
-    
-    return response.statusCode == 200;
+    try {
+      final response = await http.post(
+        Uri.parse("$baseUrl/web/geosis/submit_report"),
+        headers: {
+          "Content-Type": "application/json",
+          "Cookie": sessionId ?? ""
+        },
+        body: jsonEncode({
+          "jsonrpc": "2.0",
+          "params": {"report": reportData}
+        }),
+      );
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['result'] != null && data['result']['status'] == 'success') {
+          print("DEBUG: Reporte subido exitosamente: ${data['result']['message']}");
+          return true;
+        } else {
+          print("DEBUG: Error de Odoo en submitReport: ${data['result'] != null ? data['result']['message'] : data['error']}");
+        }
+      }
+    } catch (e) {
+      print("DEBUG: Excepción en submitReport: $e");
+    }
+    return false;
+  }
+
+  Future<List<dynamic>> getBitacoras({int? projectId}) async {
+    try {
+      final response = await http.post(
+        Uri.parse("$baseUrl/web/geosis/bitacoras"),
+        headers: {
+          "Content-Type": "application/json",
+          "Cookie": sessionId ?? ""
+        },
+        body: jsonEncode({
+          "jsonrpc": "2.0",
+          "params": projectId != null ? {"project_id": projectId} : {}
+        }),
+      );
+
+      print("DEBUG: Status Odoo getBitacoras: ${response.statusCode}");
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['result'] != null && data['result']['status'] == 'success') {
+          return data['result']['data'];
+        }
+      }
+    } catch (e) {
+      print("DEBUG: Error cargando historial de bitacoras: $e");
+    }
+    return [];
   }
 }

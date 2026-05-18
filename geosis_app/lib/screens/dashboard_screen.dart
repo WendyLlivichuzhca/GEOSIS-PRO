@@ -361,11 +361,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _navIcon(Icons.home, "Dashboard", true),
-          _navIcon(Icons.folder, "Projects", false),
-          _navIcon(Icons.description, "Reports", false),
-          _navIcon(Icons.people, "Team", false),
-          _navIcon(Icons.person, "Profile", false),
+          GestureDetector(
+            onTap: () {},
+            child: _navIcon(Icons.home, "Dashboard", true),
+          ),
+          GestureDetector(
+            onTap: () {},
+            child: _navIcon(Icons.folder, "Projects", false),
+          ),
+          GestureDetector(
+            onTap: () => Navigator.pushNamed(context, '/history'),
+            child: _navIcon(Icons.description, "Reports", false),
+          ),
+          GestureDetector(
+            onTap: () {},
+            child: _navIcon(Icons.people, "Team", false),
+          ),
+          GestureDetector(
+            onTap: () {},
+            child: _navIcon(Icons.person, "Profile", false),
+          ),
         ],
       ),
     );

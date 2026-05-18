@@ -79,6 +79,9 @@
                             <a href="/my/estimations" t-attf-class="geosis-app-menu__item #{'is-active' if page_name == 'estimation' else ''}">
                                 <i class="fa fa-line-chart"/> Planillas de Avance
                             </a>
+                            <a href="/my/bitacoras" t-attf-class="geosis-app-menu__item #{'is-active' if page_name == 'bitacora' else ''}">
+                                <i class="fa fa-book"/> Libro de Obra
+                            </a>
                             <a href="/my/import-excel" t-attf-class="geosis-app-menu__item #{'is-active' if page_name == 'import' else ''}">
                                 <i class="fa fa-file-excel-o"/> Importar Excel
                             </a>
@@ -3109,6 +3112,335 @@
                     }
                 });
             </script>
+    <template id="portal_my_bitacoras" name="Libro de Obra Portal">
+        <t t-call="geosis_website.geosis_portal_layout">
+            <t t-set="page_name" t-value="'bitacora'"/>
+            <t t-set="page_title" t-value="'Libro de Obra'"/>
+            <t t-set="page_subtitle" t-value="'Control diario, recursos, observaciones y firmas de fiscalización'"/>
+
+            <section class="geosis-panel geosis-apu-sheet mb-4">
+                <div class="geosis-panel__header d-flex justify-content-between align-items-center">
+                    <h3>Reportes Diarios de Obra</h3>
+                    <div class="geosis-app-topbar__search d-flex gap-2">
+                        <form action="/my/bitacoras" method="get" class="d-flex gap-2">
+                            <input type="text" name="search" t-att-value="search or ''" class="form-control form-control-sm" placeholder="Buscar reporte..."/>
+                            <button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-search"/></button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table geosis-clean-table">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Proyecto</th>
+                                <th>Clima</th>
+                                <th>Personal</th>
+                                <th>Equipos</th>
+                                <th class="text-center">Estado</th>
+                                <th class="text-end">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-if="not bitacoras">
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted py-4">
+                                        <i class="fa fa-book fa-2x mb-2 d-block"/>
+                                        No se encontraron reportes de Libro de Obra.
+                                    </td>
+                                </tr>
+                            </t>
+                            <t t-foreach="bitacoras" t-as="b">
+                                <tr>
+                                    <td>
+                                        <strong>
+                                            <a t-attf-href="/my/bitacora/#{b.id}">
+                                                <span t-field="b.date"/>
+                                            </a>
+                                        </strong>
+                                    </td>
+                                    <td><t t-esc="b.project_id.name"/></td>
+                                    <td>
+                                        <span t-if="b.weather == 'sunny'"><i class="fa fa-sun-o text-warning"/> Soleado</span>
+                                        <span t-elif="b.weather == 'cloudy'"><i class="fa fa-cloud text-muted"/> Nublado</span>
+                                        <span t-elif="b.weather == 'rainy'"><i class="fa fa-umbrella text-info"/> Lluvia</span>
+                                        <span t-elif="b.weather == 'storm'"><i class="fa fa-flash text-danger"/> Tormenta</span>
+                                        <span t-else=""><t t-esc="b.weather"/></span>
+                                    </td>
+                                    <td>
+                                        <span class="text-truncate d-inline-block" style="max-width: 150px;" t-att-title="b.personal_notes">
+                                            <t t-esc="b.personal_notes or '-'"/>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="text-truncate d-inline-block" style="max-width: 150px;" t-att-title="b.equipment_notes">
+                                            <t t-esc="b.equipment_notes or '-'"/>
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span t-if="b.state == 'draft'" class="geosis-chip badge bg-warning text-dark">Borrador</span>
+                                        <span t-elif="b.state == 'approved'" class="geosis-chip badge bg-success text-white">Aprobado</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <a t-attf-href="/my/bitacora/#{b.id}" class="btn btn-outline-primary btn-sm">
+                                            <i class="fa fa-eye"/> Ver Detalle
+                                        </a>
+                                    </td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div t-if="pager" class="d-flex justify-content-center mt-3">
+                    <t t-call="geosis_website.portal_simple_pager"/>
+                </div>
+            </section>
+        </t>
+    </template>
+
+    <template id="portal_my_bitacora_detail" name="Detalle de Libro de Obra Portal">
+        <t t-call="geosis_website.geosis_portal_layout">
+            <t t-set="page_name" t-value="'bitacora'"/>
+            <t t-set="page_title" t-value="'Detalle de Libro de Obra'"/>
+            <t t-set="page_subtitle" t-value="bitacora.project_id.name"/>
+
+            <section class="geosis-panel geosis-apu-sheet mb-4">
+                <div class="geosis-panel__header d-flex justify-content-between align-items-center">
+                    <h3>Ficha Técnica MIDUVI - Día <span t-field="bitacora.date"/></h3>
+                    <div class="d-flex align-items-center gap-2">
+                        <a t-attf-href="/my/bitacora/print/#{bitacora.id}" class="btn btn-primary btn-sm me-2" style="background-color: #007bff; border-color: #007bff; font-weight: bold;">
+                            <i class="fa fa-download"/> Descargar PDF (MIDUVI)
+                        </a>
+                        <span t-if="bitacora.state == 'draft'" class="badge bg-warning text-dark fs-6 px-3 py-2">Estado: Borrador / Pendiente Aprobación</span>
+                        <span t-else="" class="badge bg-success text-white fs-6 px-3 py-2"><i class="fa fa-check-circle"/> Estado: Aprobado Legalmente</span>
+                    </div>
+                </div>
+
+                <div class="geosis-apu-sheet__grid geosis-project-form-grid mt-3">
+                    <div class="geosis-apu-sheet__column">
+                        <h4 class="mb-3 text-primary"><i class="fa fa-info-circle"/> Información General y Recursos</h4>
+                        
+                        <div class="geosis-detail-grid geosis-apu-sheet__meta mb-4">
+                            <label>
+                                <strong>Fecha de Registro</strong>
+                                <div class="form-control-plaintext"><t t-esc="bitacora.date"/></div>
+                            </label>
+                            <label>
+                                <strong>Clima en Obra</strong>
+                                <div class="form-control-plaintext">
+                                    <span t-if="bitacora.weather == 'sunny'"><i class="fa fa-sun-o text-warning"/> Soleado</span>
+                                    <span t-elif="bitacora.weather == 'cloudy'"><i class="fa fa-cloud text-muted"/> Nublado</span>
+                                    <span t-elif="bitacora.weather == 'rainy'"><i class="fa fa-umbrella text-info"/> Lluvia</span>
+                                    <span t-elif="bitacora.weather == 'storm'"><i class="fa fa-flash text-danger"/> Tormenta</span>
+                                </div>
+                            </label>
+                            <label>
+                                <strong>Ubicación GPS</strong>
+                                <div class="form-control-plaintext">
+                                    <i class="fa fa-map-marker text-danger"/> Lat: <t t-esc="'%.6f' % bitacora.latitude"/>, Lng: <t t-esc="'%.6f' % bitacora.longitude"/>
+                                </div>
+                            </label>
+                        </div>
+
+                        <div class="card bg-light border-0 mb-4" style="background: rgba(255,255,255,0.02) !important; border: 1px solid rgba(255,255,255,0.05) !important;">
+                            <div class="card-body">
+                                <h5 class="card-title text-info"><i class="fa fa-users"/> Personal en Obra (Mano de Obra)</h5>
+                                <p class="card-text text-white" style="white-space: pre-line;"><t t-esc="bitacora.personal_notes or 'No registrado'"/></p>
+                            </div>
+                        </div>
+
+                        <div class="card bg-light border-0 mb-4" style="background: rgba(255,255,255,0.02) !important; border: 1px solid rgba(255,255,255,0.05) !important;">
+                            <div class="card-body">
+                                <h5 class="card-title text-info"><i class="fa fa-truck"/> Equipos y Maquinaria Activa</h5>
+                                <p class="card-text text-white" style="white-space: pre-line;"><t t-esc="bitacora.equipment_notes or 'No registrado'"/></p>
+                            </div>
+                        </div>
+
+                        <div class="card bg-light border-0 mb-4" style="background: rgba(255,255,255,0.02) !important; border: 1px solid rgba(255,255,255,0.05) !important;">
+                            <div class="card-body">
+                                <h5 class="card-title text-info"><i class="fa fa-question-circle"/> Consultas y Requerimientos del Contratista</h5>
+                                <p class="card-text text-white" style="white-space: pre-line;"><t t-esc="bitacora.contractor_queries or 'Sin novedades o consultas'"/></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="geosis-apu-sheet__column">
+                        <h4 class="mb-3 text-primary"><i class="fa fa-tasks"/> Avance de Rubros Reportados</h4>
+                        
+                        <div class="table-responsive mb-4">
+                            <table class="table geosis-clean-table">
+                                <thead>
+                                    <tr>
+                                        <th>Rubro APU</th>
+                                        <th class="text-center">Avance</th>
+                                        <th>Observación</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-if="not bitacora.task_ids">
+                                        <tr>
+                                            <td colspan="3" class="text-center text-muted">No se reportó avance de tareas específicas.</td>
+                                        </tr>
+                                    </t>
+                                    <t t-foreach="bitacora.task_ids" t-as="t">
+                                        <tr>
+                                            <td><strong><t t-esc="t.task_id.apu_name or 'Rubro APU'"/></strong></td>
+                                            <td class="text-center">
+                                                <span class="badge bg-primary"><t t-esc="t.progress"/>%</span>
+                                            </td>
+                                            <td><t t-esc="t.notes or '-'"/></td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <h4 class="mb-3 text-primary"><i class="fa fa-camera"/> Evidencia Fotográfica</h4>
+                        <div class="row row-cols-1 row-cols-md-2 g-3 mb-4">
+                            <t t-if="not bitacora.photo_ids">
+                                <div class="col-12 text-muted small"><i class="fa fa-info-circle"/> No se subieron fotografías de evidencia.</div>
+                            </t>
+                            <t t-foreach="bitacora.photo_ids" t-as="p">
+                                <div class="col">
+                                    <div class="card bg-dark border-0">
+                                        <img t-attf-src="data:image/png;base64,#{p.image}" class="card-img-top img-fluid rounded" alt="Evidencia" style="max-height: 180px; object-fit: cover;"/>
+                                        <div class="card-body p-2" t-if="p.caption">
+                                            <p class="card-text small text-muted"><t t-esc="p.caption"/></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-4" style="border-top: 1px solid rgba(255,255,255,0.1);"/>
+
+                <div class="row g-4 mt-3">
+                    <div class="col-md-6 text-center">
+                        <h5 class="text-info mb-3"><i class="fa fa-user-circle"/> Firma del Residente (Contratista)</h5>
+                        <div class="border rounded p-3 d-flex align-items-center justify-content-center bg-white" style="height: 180px; border: 1px solid #ddd !important;">
+                            <t t-if="bitacora.signature_contractor">
+                                <img t-attf-src="data:image/png;base64,#{bitacora.signature_contractor}" class="img-fluid" style="max-height: 150px; max-width: 100%;" alt="Firma Contratista"/>
+                            </t>
+                            <t t-else="">
+                                <span class="text-muted small">No firmó al enviar el reporte</span>
+                            </t>
+                        </div>
+                        <p class="mt-2 text-white-50 small">Registrada el <span t-field="bitacora.create_date"/></p>
+                    </div>
+
+                    <div class="col-md-6">
+                        <h5 class="text-info mb-3 text-center"><i class="fa fa-pencil-square-o"/> Firma del Fiscalizador (Aprobación)</h5>
+                        
+                        <t t-if="bitacora.signature_inspector">
+                            <div class="border rounded p-3 d-flex align-items-center justify-content-center bg-white text-center" style="height: 180px; border: 1px solid #ddd !important;">
+                                <img t-attf-src="data:image/png;base64,#{bitacora.signature_inspector}" class="img-fluid" style="max-height: 150px; max-width: 100%;" alt="Firma Fiscalizador"/>
+                            </div>
+                            <div class="card bg-light border-0 mt-3" style="background: rgba(255,255,255,0.02) !important;">
+                                <div class="card-body">
+                                    <strong>Instrucciones de Fiscalización:</strong>
+                                    <p class="text-white mt-1 mb-0"><t t-esc="bitacora.inspector_instructions or 'Aprobado sin observaciones especiales.'" /></p>
+                                </div>
+                            </div>
+                        </t>
+
+                        <t t-else="">
+                            <form action="" method="post" id="form_fiscalizar_bitacora">
+                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                <input type="hidden" name="signature_inspector" id="signature_inspector_base64"/>
+
+                                <div class="form-group mb-3">
+                                    <label class="form-label text-white-50 small">Instrucciones o Autorizaciones Técnicas</label>
+                                    <textarea name="inspector_instructions" class="form-control" rows="2" placeholder="Escribe aquí las observaciones o disposiciones oficiales para el contratista..."></textarea>
+                                </div>
+
+                                <div class="form-group mb-3 text-center">
+                                    <label class="form-label text-white-50 small d-block text-start">Dibuja tu firma con tu mouse o pantalla táctil abajo:</label>
+                                    <div class="bg-white rounded" style="border: 1px solid #ddd; overflow: hidden; position: relative;">
+                                        <canvas id="fiscalizador_signature_canvas" style="width: 100%; height: 120px; cursor: crosshair; background: #ffffff;"></canvas>
+                                        <button type="button" class="btn btn-outline-danger btn-sm" id="btn_clear_web_signature" style="position: absolute; bottom: 5px; right: 5px;">
+                                            <i class="fa fa-eraser"/> Limpiar
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-success btn-lg" id="btn_submit_web_fiscalizacion">
+                                        <i class="fa fa-check-circle"/> Guardar y Aprobar Reporte
+                                    </button>
+                                </div>
+                            </form>
+
+                            <script type="text/javascript">
+                                document.addEventListener("DOMContentLoaded", function() {
+                                    var canvas = document.getElementById('fiscalizador_signature_canvas');
+                                    if (!canvas) return;
+                                    var ctx = canvas.getContext('2d');
+                                    ctx.lineWidth = 3;
+                                    ctx.strokeStyle = "#000000";
+                                    ctx.lineCap = "round";
+
+                                    canvas.width = canvas.offsetWidth;
+                                    canvas.height = canvas.offsetHeight;
+
+                                    var drawing = false;
+                                    var lastPos = { x:0, y:0 };
+
+                                    function getMousePos(canvasDom, touchOrMouseEvent) {
+                                        var rect = canvasDom.getBoundingClientRect();
+                                        var clientX = touchOrMouseEvent.touches ? touchOrMouseEvent.touches[0].clientX : touchOrMouseEvent.clientX;
+                                        var clientY = touchOrMouseEvent.touches ? touchOrMouseEvent.touches[0].clientY : touchOrMouseEvent.clientY;
+                                        return {
+                                            x: clientX - rect.left,
+                                            y: clientY - rect.top
+                                        };
+                                    }
+
+                                    function startDrawing(e) {
+                                        drawing = true;
+                                        lastPos = getMousePos(canvas, e);
+                                        ctx.beginPath();
+                                        ctx.moveTo(lastPos.x, lastPos.y);
+                                    }
+
+                                    function draw(e) {
+                                        if (!drawing) return;
+                                        e.preventDefault();
+                                        var pos = getMousePos(canvas, e);
+                                        ctx.lineTo(pos.x, pos.y);
+                                        ctx.stroke();
+                                    }
+
+                                    function stopDrawing() {
+                                        drawing = false;
+                                    }
+
+                                    canvas.addEventListener("mousedown", startDrawing);
+                                    canvas.addEventListener("mousemove", draw);
+                                    canvas.addEventListener("mouseup", stopDrawing);
+                                    canvas.addEventListener("mouseout", stopDrawing);
+
+                                    canvas.addEventListener("touchstart", startDrawing);
+                                    canvas.addEventListener("touchmove", draw);
+                                    canvas.addEventListener("touchend", stopDrawing);
+
+                                    document.getElementById('btn_clear_web_signature').addEventListener("click", function() {
+                                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                                    });
+
+                                    document.getElementById('form_fiscalizar_bitacora').addEventListener("submit", function(e) {
+                                        var dataURL = canvas.toDataURL("image/png");
+                                        document.getElementById('signature_inspector_base64').value = dataURL;
+                                    });
+                                });
+                            </script>
+                        </t>
+                    </div>
+                </div>
+            </section>
         </t>
     </template>
 </odoo>

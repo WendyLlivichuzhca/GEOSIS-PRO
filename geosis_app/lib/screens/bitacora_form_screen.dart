@@ -4,6 +4,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:location/location.dart';
 import 'dart:io';
 import 'dart:convert';
+import 'dart:ui' as ui;
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import '../services/odoo_service.dart';
 
 class BitacoraFormScreen extends StatefulWidget {
@@ -14,7 +17,14 @@ class BitacoraFormScreen extends StatefulWidget {
 class _BitacoraFormScreenState extends State<BitacoraFormScreen> {
   final odoo = OdooService();
   String selectedWeather = 'sunny';
+  
   final _resumenController = TextEditingController();
+  final _personalController = TextEditingController();
+  final _equiposController = TextEditingController();
+  final _consultasController = TextEditingController();
+  
+  final GlobalKey _signatureKey = GlobalKey();
+  final GlobalKey<SignaturePadState> _sigPadStateKey = GlobalKey<SignaturePadState>();
   
   List<Map<String, dynamic>> tasks = [];
   String projectName = "";
@@ -34,13 +44,13 @@ class _BitacoraFormScreenState extends State<BitacoraFormScreen> {
       if (args != null) {
         projectId = args['project_id'];
         projectName = args['project_name'];
-        // Convertimos las tareas de la API al formato que usa el formulario
         final rawTasks = args['tasks'] as List<dynamic>? ?? [];
         tasks = rawTasks.map((t) => {
           'id': t['id'],
           'name': t['name'],
           'progress': (t['progress'] as num).toInt(),
           'done': (t['progress'] as num) >= 100,
+          'notes': '',
         }).toList();
       }
       _isInitialized = true;
@@ -78,7 +88,7 @@ class _BitacoraFormScreenState extends State<BitacoraFormScreen> {
   Future<void> _takePhoto() async {
     final XFile? photo = await _picker.pickImage(
       source: ImageSource.camera,
-      imageQuality: 70, // Comprimimos un poco para Odoo
+      imageQuality: 70,
     );
     if (photo != null) {
       setState(() {
@@ -87,30 +97,62 @@ class _BitacoraFormScreenState extends State<BitacoraFormScreen> {
     }
   }
 
-  // 3. ENVIAR REPORTE A ODOO
+  // 3. CAPTURAR LIENZO DE FIRMA A BASE64
+  Future<String?> _getSignatureBase64() async {
+    try {
+      RenderRepaintBoundary? boundary = _signatureKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary == null) return null;
+      ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+      ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData != null) {
+        return base64Encode(byteData.buffer.asUint8List());
+      }
+    } catch (e) {
+      print("DEBUG: Error capturando lienzo de firma: $e");
+    }
+    return null;
+  }
+
+  // 4. ENVIAR REPORTE A ODOO
   Future<void> _submitReport() async {
     if (_resumenController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Por favor, escribe un resumen de actividades.")));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Por favor, escribe el resumen de actividades.")));
       return;
     }
 
     setState(() => _isSaving = true);
 
-    // Convertir fotos a Base64 para Odoo
-    List<String> fotosBase64 = [];
+    // Capturar firma táctil
+    String? signatureB64 = await _getSignatureBase64();
+
+    // Convertir fotos a Base64
+    List<Map<String, dynamic>> photosData = [];
     for (var f in _fotos) {
       final bytes = await f.readAsBytes();
-      fotosBase64.add(base64Encode(bytes));
+      photosData.add({
+        'base64_image': base64Encode(bytes),
+        'caption': 'Evidencia de obra',
+      });
     }
 
     Map<String, dynamic> reportData = {
+      'project_id': projectId,
+      'date': DateTime.now().toIso8601String().substring(0, 10),
       'weather': selectedWeather,
-      'summary': _resumenController.text,
+      'content': _resumenController.text,
+      'personal_notes': _personalController.text,
+      'equipment_notes': _equiposController.text,
+      'contractor_queries': _consultasController.text,
       'latitude': _locationData?.latitude ?? 0.0,
       'longitude': _locationData?.longitude ?? 0.0,
-      'tasks': tasks,
-      'photos': fotosBase64,
-      'date': DateTime.now().toIso8601String(),
+      'tasks': tasks.map((t) => {
+        'task_id': t['id'],
+        'progress': t['progress'],
+        'done': t['done'],
+        'notes': t['notes'] ?? '',
+      }).toList(),
+      'photos': photosData,
+      'signature_contractor': signatureB64,
     };
 
     bool success = await odoo.submitReport(reportData);
@@ -118,10 +160,10 @@ class _BitacoraFormScreenState extends State<BitacoraFormScreen> {
     setState(() => _isSaving = false);
 
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("✅ Bitácora guardada en Odoo exitosamente")));
-      Navigator.pop(context); // Regresar al dashboard
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("✅ Libro de Obra sincronizado correctamente en Odoo")));
+      Navigator.pop(context);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("❌ Error al guardar en Odoo")));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("❌ Error de sincronización con Odoo")));
     }
   }
 
@@ -142,7 +184,7 @@ class _BitacoraFormScreenState extends State<BitacoraFormScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // SECTOR DE CLIMA
+                // CLIMA
                 Text("¿Cómo está el clima hoy?", style: GoogleFonts.outfit(color: Colors.white70, fontSize: 16)),
                 SizedBox(height: 15),
                 Row(
@@ -156,35 +198,41 @@ class _BitacoraFormScreenState extends State<BitacoraFormScreen> {
                 ),
 
                 SizedBox(height: 35),
-                // RESUMEN DEL DIA
+                // RESUMEN
                 Text("Resumen de actividades", style: GoogleFonts.outfit(color: Colors.white70, fontSize: 16)),
                 SizedBox(height: 10),
-                TextField(
-                  controller: _resumenController,
-                  maxLines: 4,
-                  style: TextStyle(color: Colors.white),
-                  decoration: InputDecoration(
-                    hintText: "Escribe o dicta lo ocurrido hoy...",
-                    hintStyle: TextStyle(color: Colors.white24),
-                    fillColor: Colors.white.withOpacity(0.05),
-                    filled: true,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
-                  ),
-                ),
+                _buildTextArea(_resumenController, "Escribe o dicta lo ocurrido hoy..."),
+
+                SizedBox(height: 35),
+                // PERSONAL Y EQUIPOS (MIDUVI)
+                Text("Recursos en Obra (Personal)", style: GoogleFonts.outfit(color: Colors.white70, fontSize: 16)),
+                SizedBox(height: 10),
+                _buildTextArea(_personalController, "Ej: 1 Residente de Obra, 4 Albañiles, 2 Peones...", maxLines: 2),
+
+                SizedBox(height: 25),
+                Text("Equipos y Maquinaria Activa", style: GoogleFonts.outfit(color: Colors.white70, fontSize: 16)),
+                SizedBox(height: 10),
+                _buildTextArea(_equiposController, "Ej: 1 Retroexcavadora CAT 320, 2 Volquetas...", maxLines: 2),
+
+                SizedBox(height: 35),
+                // CONSULTAS AL FISCALIZADOR (MIDUVI)
+                Text("Consultas al Fiscalizador", style: GoogleFonts.outfit(color: Colors.white70, fontSize: 16)),
+                SizedBox(height: 10),
+                _buildTextArea(_consultasController, "Escribe aquí cualquier consulta técnica o requerimiento de aprobación..."),
 
                 SizedBox(height: 35),
                 // TAREAS / RUBROS
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text("Avance de Tareas", style: GoogleFonts.outfit(color: Colors.white70, fontSize: 16)),
-                    TextButton(onPressed: () {}, child: Text("+ Agregar Tarea", style: TextStyle(color: Colors.cyanAccent))),
+                    Text("Avance de Rubros", style: GoogleFonts.outfit(color: Colors.white70, fontSize: 16)),
+                    TextButton(onPressed: () {}, child: Text("+ Agregar Rubro", style: TextStyle(color: Colors.cyanAccent))),
                   ],
                 ),
                 ...tasks.map((task) => _buildTaskItem(task)).toList(),
 
                 SizedBox(height: 35),
-                // EVIDENCIA FOTOGRAFICA
+                // FOTOS DE EVIDENCIA
                 Text("Fotos de Evidencia", style: GoogleFonts.outfit(color: Colors.white70, fontSize: 16)),
                 SizedBox(height: 15),
                 Container(
@@ -217,6 +265,36 @@ class _BitacoraFormScreenState extends State<BitacoraFormScreen> {
                   ),
                 ),
 
+                SizedBox(height: 35),
+                // PANEL DE FIRMA (MIDUVI)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text("Firma del Residente (Contratista)", style: GoogleFonts.outfit(color: Colors.white70, fontSize: 16)),
+                    TextButton(
+                      onPressed: () => _sigPadStateKey.currentState?.clear(),
+                      child: Text("Limpiar Firma", style: TextStyle(color: Colors.redAccent, fontSize: 12)),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 10),
+                Container(
+                  height: 180,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.02),
+                    borderRadius: BorderRadius.circular(15),
+                    border: Border.all(color: Colors.white10),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(15),
+                    child: SignaturePad(
+                      key: _sigPadStateKey,
+                      boundaryKey: _signatureKey,
+                    ),
+                  ),
+                ),
+
                 SizedBox(height: 50),
                 // BOTON GUARDAR
                 SizedBox(
@@ -230,7 +308,7 @@ class _BitacoraFormScreenState extends State<BitacoraFormScreen> {
                     ),
                     child: _isSaving 
                       ? CircularProgressIndicator(color: Colors.white)
-                      : Text("GUARDAR Y SINCRONIZAR", style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white)),
+                      : Text("SINCRONIZAR LIBRO DE OBRA", style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white)),
                   ),
                 ),
                 SizedBox(height: 40),
@@ -239,19 +317,36 @@ class _BitacoraFormScreenState extends State<BitacoraFormScreen> {
           ),
           if (_isSaving)
             Container(
-              color: Colors.black54,
+              color: Colors.black87,
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     CircularProgressIndicator(color: Colors.cyanAccent),
-                    SizedBox(height: 15),
-                    Text("Subiendo a Odoo...", style: TextStyle(color: Colors.white, fontSize: 16)),
+                    SizedBox(height: 20),
+                    Text("Procesando datos y firmas...", style: TextStyle(color: Colors.white, fontSize: 16)),
+                    SizedBox(height: 5),
+                    Text("Sincronizando con Odoo ERP...", style: TextStyle(color: Colors.white38, fontSize: 12)),
                   ],
                 ),
               ),
             )
         ],
+      ),
+    );
+  }
+
+  Widget _buildTextArea(TextEditingController controller, String hint, {int maxLines = 4}) {
+    return TextField(
+      controller: controller,
+      maxLines: maxLines,
+      style: TextStyle(color: Colors.white, fontSize: 14),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: TextStyle(color: Colors.white24, fontSize: 13),
+        fillColor: Colors.white.withOpacity(0.04),
+        filled: true,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
       ),
     );
   }
@@ -284,6 +379,7 @@ class _BitacoraFormScreenState extends State<BitacoraFormScreen> {
       padding: EdgeInsets.all(15),
       decoration: BoxDecoration(color: Colors.white.withOpacity(0.03), borderRadius: BorderRadius.circular(15), border: Border.all(color: Colors.white10)),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
@@ -305,6 +401,19 @@ class _BitacoraFormScreenState extends State<BitacoraFormScreen> {
             inactiveColor: Colors.white10,
             onChanged: (val) => setState(() => task['progress'] = val.toInt()),
           ),
+          SizedBox(height: 5),
+          TextField(
+            style: TextStyle(color: Colors.white, fontSize: 12),
+            decoration: InputDecoration(
+              hintText: "Observación o nota del avance...",
+              hintStyle: TextStyle(color: Colors.white24, fontSize: 11),
+              fillColor: Colors.white.withOpacity(0.02),
+              filled: true,
+              contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+            ),
+            onChanged: (val) => task['notes'] = val,
+          )
         ],
       ),
     );
@@ -332,4 +441,67 @@ class _BitacoraFormScreenState extends State<BitacoraFormScreen> {
       ),
     );
   }
+}
+
+// LIENZO DE FIRMA TÁCTIL PERSONALIZADO
+class SignaturePad extends StatefulWidget {
+  final GlobalKey boundaryKey;
+  SignaturePad({required Key key, required this.boundaryKey}) : super(key: key);
+  @override
+  SignaturePadState createState() => SignaturePadState();
+}
+
+class SignaturePadState extends State<SignaturePad> {
+  List<Offset?> points = [];
+
+  void clear() {
+    setState(() => points.clear());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return RepaintBoundary(
+      key: widget.boundaryKey,
+      child: Container(
+        color: Colors.white.withOpacity(0.03),
+        child: GestureDetector(
+          onPanUpdate: (details) {
+            setState(() {
+              RenderBox renderBox = context.findRenderObject() as RenderBox;
+              points.add(renderBox.globalToLocal(details.globalPosition));
+            });
+          },
+          onPanEnd: (details) {
+            points.add(null);
+          },
+          child: CustomPaint(
+            painter: SignaturePainter(points: points),
+            size: Size.infinite,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class SignaturePainter extends CustomPainter {
+  final List<Offset?> points;
+  SignaturePainter({required this.points});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    Paint paint = Paint()
+      ..color = Colors.cyanAccent
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 3.0;
+
+    for (int i = 0; i < points.length - 1; i++) {
+      if (points[i] != null && points[i + 1] != null) {
+        canvas.drawLine(points[i]!, points[i + 1]!, paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(SignaturePainter oldDelegate) => true;
 }

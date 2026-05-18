@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Registro de la Acción de Reporte PDF -->
+    <record id="action_report_geosis_bitacora" model="ir.actions.report">
+        <field name="name">Libro de Obra (MIDUVI)</field>
+        <field name="model">geosis.bitacora</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">geosis_mobile.report_bitacora_template</field>
+        <field name="report_file">geosis_mobile.report_bitacora_template</field>
+        <field name="print_report_name">'Libro_de_Obra_Dia_%s' % (object.date)</field>
+        <field name="binding_model_id" ref="model_geosis_bitacora"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <!-- Plantilla QWeb del Reporte -->
+    <template id="report_bitacora_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <!-- Clases de Bootstrap integradas para Odoo -->
+                    <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333; font-size: 11px;">
+                        
+                        <!-- Cabecera Oficial Estilo MIDUVI -->
+                        <div class="row mb-3" style="border-bottom: 2px solid #000; padding-bottom: 10px;">
+                            <div class="col-3 text-center">
+                                <img t-att-src="'/web/image/website/%s/logo' % request.website.id" style="max-height: 60px; max-width: 100%;" alt="Logo"/>
+                            </div>
+                            <div class="col-6 text-center">
+                                <h5 class="mb-1" style="font-weight: bold; text-transform: uppercase;">Libro de Obra Oficial</h5>
+                                <p class="mb-0 text-muted" style="font-size: 10px;">Ministerio de Desarrollo Urbano y Vivienda (MIDUVI)</p>
+                                <strong style="font-size: 12px; color: #004085;">REGISTRO DIARIO DE OBRA</strong>
+                            </div>
+                            <div class="col-3 text-right">
+                                <div style="border: 1px solid #ddd; padding: 5px; border-radius: 5px; background-color: #f8f9fa;">
+                                    <strong>FECHA:</strong> <span t-field="doc.date" t-options='{"widget": "date", "format": "dd/MM/yyyy"}'/><br/>
+                                    <strong>ESTADO:</strong> 
+                                    <span t-if="doc.state == 'approved'" style="color: green; font-weight: bold;">APROBADO</span>
+                                    <span t-else="" style="color: orange; font-weight: bold;">BORRADOR</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Información General del Proyecto -->
+                        <div class="card mb-3 border-dark">
+                            <div class="card-header bg-dark text-white py-1">
+                                <strong style="font-size: 12px;">1. Datos del Proyecto e Identificación</strong>
+                            </div>
+                            <div class="card-body p-2">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <strong>Proyecto:</strong> <span t-field="doc.project_id.name"/><br/>
+                                        <strong>Código de Obra:</strong> <span t-field="doc.project_id.code"/><br/>
+                                        <strong>Ubicación:</strong> <span t-field="doc.project_id.location"/><br/>
+                                    </div>
+                                    <div class="col-6">
+                                        <strong>Contratista (Residente):</strong> <span t-field="doc.user_id.name"/><br/>
+                                        <strong>Clima en Obra:</strong> 
+                                        <span t-if="doc.weather == 'sunny'">Soleado / Despejado</span>
+                                        <span t-elif="doc.weather == 'cloudy'">Nublado</span>
+                                        <span t-elif="doc.weather == 'rainy'">Lluvioso</span>
+                                        <span t-elif="doc.weather == 'storm'">Tormenta / Clima Severo</span><br/>
+                                        <strong>Coordenadas GPS:</strong> Lat: <span t-esc="'%.6f' % doc.latitude"/>, Lng: <span t-esc="'%.6f' % doc.longitude"/><br/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recursos en Obra (Personal y Equipos) -->
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <div class="card border-secondary h-100">
+                                    <div class="card-header bg-secondary text-white py-1">
+                                        <strong>2. Personal en Obra (Mano de Obra)</strong>
+                                    </div>
+                                    <div class="card-body p-2" style="white-space: pre-line;">
+                                        <span t-field="doc.personal_notes"/>
+                                        <t t-if="not doc.personal_notes">No se registró reporte de personal en este día.</t>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="card border-secondary h-100">
+                                    <div class="card-header bg-secondary text-white py-1">
+                                        <strong>3. Equipos y Maquinaria Activa</strong>
+                                    </div>
+                                    <div class="card-body p-2" style="white-space: pre-line;">
+                                        <span t-field="doc.equipment_notes"/>
+                                        <t t-if="not doc.equipment_notes">No se reportó maquinaria ni equipos activos en este día.</t>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Avance de Trabajos Realizados (Rubros APU) -->
+                        <div class="card mb-3 border-dark">
+                            <div class="card-header bg-dark text-white py-1">
+                                <strong>4. Trabajos Realizados (Avance de Rubros)</strong>
+                            </div>
+                            <table class="table table-bordered mb-0" style="font-size: 10px;">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th style="width: 50%;">Descripción del Rubro Contractual</th>
+                                        <th style="width: 15%; text-align: center;">Unidad</th>
+                                        <th style="width: 15%; text-align: center;">Avance diario</th>
+                                        <th style="width: 20%;">Observación / Ubicación Exacta</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="doc.task_ids" t-as="task">
+                                        <td><strong><span t-field="task.task_id.apu_name"/></strong></td>
+                                        <td class="text-center"><span t-field="task.task_id.uom_name"/></td>
+                                        <td class="text-center"><span t-field="task.progress"/>%</td>
+                                        <td><span t-field="task.notes"/></td>
+                                    </tr>
+                                    <tr t-if="not doc.task_ids">
+                                        <td colspan="4" class="text-center text-muted">No se reportaron rubros o tareas específicas para este día.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Consultas del Contratista e Instrucciones de Fiscalización -->
+                        <div class="card mb-3 border-info">
+                            <div class="card-header bg-info text-white py-1">
+                                <strong>5. Bitácora de Observaciones y Respuestas</strong>
+                            </div>
+                            <div class="card-body p-2">
+                                <div class="row">
+                                    <div class="col-6" style="border-right: 1px solid #ddd;">
+                                        <strong class="text-info">Consultas y Requerimientos del Residente:</strong>
+                                        <p class="mt-1" style="white-space: pre-line;"><t t-esc="doc.contractor_queries or 'Sin consultas en este día.'" /></p>
+                                    </div>
+                                    <div class="col-6">
+                                        <strong class="text-success">Instrucciones y Autorizaciones de Fiscalización:</strong>
+                                        <p class="mt-1" style="white-space: pre-line;"><t t-esc="doc.inspector_instructions or 'Pendiente de revisión del Fiscalizador.'" /></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Evidencias Fotográficas -->
+                        <div class="card mb-3 border-secondary" t-if="doc.photo_ids">
+                            <div class="card-header bg-secondary text-white py-1">
+                                <strong>6. Registro Fotográfico de Evidencia de Obra</strong>
+                            </div>
+                            <div class="card-body p-2">
+                                <div class="row">
+                                    <div class="col-4 mb-2 text-center" t-foreach="doc.photo_ids" t-as="photo">
+                                        <div style="border: 1px solid #ddd; padding: 5px; border-radius: 5px; height: 160px; overflow: hidden; display: flex; align-items: center; justify-content: center; background-color: #fcfcfc;">
+                                            <img t-if="photo.image" t-att-src="image_data_uri(photo.image)" style="max-height: 140px; max-width: 100%; object-fit: contain;"/>
+                                        </div>
+                                        <div class="text-muted small mt-1 text-center" style="font-size: 9px;"><span t-field="photo.caption"/></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Firmas Digitales Oficiales (MIDUVI) -->
+                        <div class="row mt-4" style="page-break-inside: avoid;">
+                            <div class="col-6 text-center">
+                                <div style="border-top: 1px solid #333; margin-top: 50px; padding-top: 5px; width: 80%; margin-left: auto; margin-right: auto;">
+                                    <div class="mb-2" style="height: 60px;">
+                                        <img t-if="doc.signature_contractor" t-att-src="image_data_uri(doc.signature_contractor)" style="max-height: 50px; max-width: 100%; object-fit: contain;"/>
+                                    </div>
+                                    <strong>FIRMA DEL RESIDENTE</strong><br/>
+                                    <span>CONTRATISTA DE OBRA</span><br/>
+                                    <span>Fecha: <span t-field="doc.create_date" t-options='{"widget": "date", "format": "dd/MM/yyyy"}'/></span>
+                                </div>
+                            </div>
+                            <div class="col-6 text-center">
+                                <div style="border-top: 1px solid #333; margin-top: 50px; padding-top: 5px; width: 80%; margin-left: auto; margin-right: auto;">
+                                    <div class="mb-2" style="height: 60px;">
+                                        <img t-if="doc.signature_inspector" t-att-src="image_data_uri(doc.signature_inspector)" style="max-height: 50px; max-width: 100%; object-fit: contain;"/>
+                                    </div>
+                                    <strong>FIRMA DEL FISCALIZADOR</strong><br/>
+                                    <span>APROBACIÓN DE OBRA</span><br/>
+                                    <span>Fecha: <span t-field="doc.write_date" t-options='{"widget": "date", "format": "dd/MM/yyyy"}'/></span>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>
