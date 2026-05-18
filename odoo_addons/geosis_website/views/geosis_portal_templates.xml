@@ -3306,21 +3306,21 @@
                         <div class="card bg-light border-0 mb-4" style="background: rgba(255,255,255,0.02) !important; border: 1px solid rgba(255,255,255,0.05) !important;">
                             <div class="card-body">
                                 <h5 class="card-title text-info"><i class="fa fa-users"/> Personal en Obra (Mano de Obra)</h5>
-                                <p class="card-text text-white" style="white-space: pre-line;"><t t-esc="bitacora.personal_notes or 'No registrado'"/></p>
+                                <p class="card-text text-muted" style="color: #2c3e50 !important; white-space: pre-line;"><t t-esc="bitacora.personal_notes or 'No registrado'"/></p>
                             </div>
                         </div>
 
                         <div class="card bg-light border-0 mb-4" style="background: rgba(255,255,255,0.02) !important; border: 1px solid rgba(255,255,255,0.05) !important;">
                             <div class="card-body">
                                 <h5 class="card-title text-info"><i class="fa fa-truck"/> Equipos y Maquinaria Activa</h5>
-                                <p class="card-text text-white" style="white-space: pre-line;"><t t-esc="bitacora.equipment_notes or 'No registrado'"/></p>
+                                <p class="card-text text-muted" style="color: #2c3e50 !important; white-space: pre-line;"><t t-esc="bitacora.equipment_notes or 'No registrado'"/></p>
                             </div>
                         </div>
 
                         <div class="card bg-light border-0 mb-4" style="background: rgba(255,255,255,0.02) !important; border: 1px solid rgba(255,255,255,0.05) !important;">
                             <div class="card-body">
                                 <h5 class="card-title text-info"><i class="fa fa-question-circle"/> Consultas y Requerimientos del Contratista</h5>
-                                <p class="card-text text-white" style="white-space: pre-line;"><t t-esc="bitacora.contractor_queries or 'Sin novedades o consultas'"/></p>
+                                <p class="card-text text-muted" style="color: #2c3e50 !important; white-space: pre-line;"><t t-esc="bitacora.contractor_queries or 'Sin novedades o consultas'"/></p>
                             </div>
                         </div>
                     </div>
