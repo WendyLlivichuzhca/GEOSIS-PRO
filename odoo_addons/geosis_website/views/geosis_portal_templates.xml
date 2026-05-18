@@ -616,13 +616,14 @@
                                         <td><t t-esc="task.planned_date_start or '-'"/></td>
                                         <td><t t-esc="task.date_deadline or '-'"/></td>
                                         <td class="text-center">
-                                            <t t-if="'planned_hours' in task._fields">
-                                                <t t-esc="task.planned_hours or 0"/>
+                                            <t t-if="task.planned_date_start and task.date_deadline">
+                                                <t t-set="p_start" t-value="task.planned_date_start.date() if hasattr(task.planned_date_start, 'date') else task.planned_date_start"/>
+                                                <t t-set="p_end" t-value="task.date_deadline.date() if hasattr(task.date_deadline, 'date') else task.date_deadline"/>
+                                                <t t-esc="(p_end - p_start).days + 1"/> días
                                             </t>
-                                            <t t-elif="'allocated_hours' in task._fields">
-                                                <t t-esc="task.allocated_hours or 0"/>
+                                            <t t-else="">
+                                                -
                                             </t>
-                                            <t t-else="">0</t>
                                         </td>
                                         <td class="text-center">
                                             <span class="geosis-chip" t-if="task.priority == '1'">Alta</span>
@@ -788,7 +789,7 @@
                         var mapOptions = {
                             scrollWheelZoom: true,
                             touchZoom: true,
-                            trackResize: false, // Evita que Odoo lo mueva al cambiar tamaÃ±o de ventana
+                            trackResize: false, // Evita que Odoo lo mueva al cambiar tamaño de ventana
                             worldCopyJump: false
                         };
 
@@ -812,7 +813,7 @@
                             }, 100);
                         });
 
-                        // FunciÃ³n protegida
+                        // Función protegida
                         window.geosisMapLock = true; 
 
                         function updateFields(lat, lng) {
@@ -830,7 +831,7 @@
                             updateFields(e.latlng.lat, e.latlng.lng);
                         });
 
-                        // BotÃ³n detectar (CON PROTECCION DE EVENTOS)
+                        // Botón detectar (CON PROTECCION DE EVENTOS)
                         document.getElementById('btn_detect_location').addEventListener('click', function(e) {
                             e.preventDefault();
                             e.stopImmediatePropagation(); // MATAR CUALQUIER OTRO SCRIPT
@@ -879,7 +880,7 @@
                         var originalSetView = map.setView;
                         map.setView = function(center, zoom, options) {
                             if (arguments.length &gt; 0 &amp;&amp; !window.geosisMapLock) {
-                                console.log("Odoo intentÃ³ mover el mapa, pero lo bloqueamos.");
+                                console.log("Odoo intentó mover el mapa, pero lo bloqueamos.");
                                 return this;
                             }
                             window.geosisMapLock = false; // Permitir solo este movimiento
@@ -1623,9 +1624,9 @@
                             
                             <label class="geosis-form__block">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <span>UbicaciÃ³n</span>
+                                    <span>Ubicación</span>
                                     <button type="button" class="btn btn-sm btn-outline-primary" id="btn_detect_import">
-                                        <i class="fa fa-crosshairs me-1"/> Detectar ubicaciÃ³n
+                                        <i class="fa fa-crosshairs me-1"/> Detectar ubicación
                                     </button>
                                 </div>
                                 <div class="input-group mb-2">
@@ -1712,7 +1713,7 @@
                                 }
                             });
 
-                            // AUTO-DETECCIÃ“N AL CARGAR (Solo si el campo estÃ¡ vacÃ­o)
+                            // AUTO-DETECCIÓN AL CARGAR (Solo si el campo está vacío)
                             function detectImportLocationByIP() {
                                 var currentLoc = document.getElementById('import_location').value;
                                 if (!currentLoc) { // Solo si no hay nada escrito
@@ -1730,7 +1731,7 @@
                                 }
                             }
 
-                            // Solo auto-detectar si el campo de ubicaciÃ³n estÃ¡ vacÃ­o
+                            // Solo auto-detectar si el campo de ubicación está vacío
                             var initialLocation = document.getElementById('import_location').value;
                             if (!initialLocation) {
                                 if (navigator.geolocation) {
@@ -1853,7 +1854,7 @@
                                 <th>Codigo</th>
                                 <th>Nombre del rubro</th>
                                 <th>Codigo CPC</th>
-                                <th>UbicaciÃ³n</th>
+                                <th>Ubicación</th>
                                 <th>Unidad</th>
                                 <th class="text-center">VAE %</th>
                                 <th class="text-end">Costo directo</th>
@@ -1962,7 +1963,7 @@
             </div>
 
             <div t-if="ia_generated" class="alert alert-success geosis-notice" role="alert">
-                Â¡Ã‰xito! Los recursos han sido generados automÃ¡ticamente mediante IA basÃ¡ndose en el nombre del rubro.
+                ¡Éxito! Los recursos han sido generados automáticamente mediante IA basándose en el nombre del rubro.
             </div>
 
             <div t-if="resource_line_added" class="alert alert-success geosis-notice" role="alert">
@@ -2280,14 +2281,14 @@
             <t t-set="page_title" t-value="'Recursos'"/>
             <t t-set="page_subtitle" t-value="'Catalogo operativo de materiales, mano de obra y equipos'"/>
 
-            <!-- Banner de Ã©xito -->
+            <!-- Banner de éxito -->
             <t t-if="success == 'price_updated'">
                 <div class="alert alert-success geosis-notice d-flex align-items-center gap-2" role="alert">
                     <i class="fa fa-check-circle"/> Precio actualizado correctamente.
                 </div>
             </t>
 
-            <!-- EstadÃ­sticas rÃ¡pidas -->
+            <!-- Estadísticas rápidas -->
             <div class="geosis-stat-strip">
                 <article class="geosis-mini-card"><span>Total recursos</span><strong><t t-esc="resource_total_count or 0"/></strong></article>
                 <article class="geosis-mini-card"><span>Equipos</span><strong><t t-esc="resource_equipment_count or 0"/></strong></article>
@@ -2335,14 +2336,14 @@
                     </div>
                 </form>
 
-                <!-- Tabla con INEC y ediciÃ³n de precio -->
+                <!-- Tabla con INEC y edición de precio -->
                 <div class="table-responsive">
                     <table class="table geosis-clean-table">
                         <thead>
                             <tr>
                                 <th>Codigo</th>
                                 <th>Descripcion</th>
-                                <th>UbicaciÃ³n</th>
+                                <th>Ubicación</th>
                                 <th>Categoria</th>
                                 <th>Unidad</th>
                                 <th class="text-center">VAE %</th>
@@ -2718,13 +2719,13 @@
                     <div class="geosis-apu-sectionhead">
                         <div>
                             <h4>Agregar valor mensual</h4>
-                            <p>Registra el valor oficial del indice por mes y aÃ±o para usarlo despues en recursos y formulas.</p>
+                            <p>Registra el valor oficial del índice por mes y año para usarlo después en recursos y fórmulas.</p>
                         </div>
                     </div>
                     <form t-attf-action="/my/inec-indices/#{index_record.id}/values/add" method="post" class="geosis-form geosis-apu-add-form mb-4">
                         <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                         <div class="geosis-form__grid">
-                            <label><span>AÃ±o</span><input type="number" name="year" class="form-control" t-att-value="current_year" min="2000" max="2100" required="required"/></label>
+                            <label><span>Año</span><input type="number" name="year" class="form-control" t-att-value="current_year" min="2000" max="2100" required="required"/></label>
                             <label>
                                 <span>Mes</span>
                                 <select name="month" class="form-select" required="required">
@@ -2763,7 +2764,7 @@
                         <table class="table geosis-clean-table">
                             <thead>
                                 <tr>
-                                    <th>AÃ±o</th>
+                                    <th>Año</th>
                                     <th>Mes</th>
                                     <th class="text-end">Valor del indice</th>
                                     <th class="text-center">Accion</th>
@@ -2792,7 +2793,7 @@
                                                     <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                                                     <div class="row g-2 align-items-end">
                                                         <div class="col-md-3">
-                                                            <label class="small text-muted mb-1">AÃ±o</label>
+                                                            <label class="small text-muted mb-1">Año</label>
                                                             <input type="number" name="year" min="2000" max="2100" t-att-value="value_record.year" class="form-control form-control-sm"/>
                                                         </div>
                                                         <div class="col-md-4">
@@ -2842,7 +2843,7 @@
         <t t-call="geosis_website.geosis_portal_layout">
             <t t-set="page_name" t-value="'estimation'"/>
             <t t-set="page_title" t-value="'Planillas de Avance'"/>
-            <t t-set="page_subtitle" t-value="'Seguimiento y fiscalizaciÃ³n de obra'"/>
+            <t t-set="page_subtitle" t-value="'Seguimiento y fiscalización de obra'"/>
 
             <div class="geosis-stat-strip">
                 <article class="geosis-mini-card"><span>Total Planillas</span><strong><t t-esc="estimation_total_count"/></strong></article>
@@ -2905,7 +2906,7 @@
         </t>
     </template>
 
-    <!-- DETALLE DE PLANILLA / FISCALIZACIÃ“N -->
+    <!-- DETALLE DE PLANILLA / FISCALIZACIÓN -->
     <template id="portal_my_estimation_detail" name="Detalle de Planilla">
         <t t-call="geosis_website.geosis_portal_layout">
             <t t-set="page_name" t-value="'estimation'"/>
@@ -2913,7 +2914,7 @@
             <t t-set="page_subtitle" t-value="'Fiscalizacion de rubros ejecutados'"/>
 
             <div t-if="success" class="alert alert-success geosis-notice" role="alert">
-                <i class="fa fa-check-circle me-1"/> OperaciÃ³n realizada con Ã©xito.
+                <i class="fa fa-check-circle me-1"/> Operación realizada con éxito.
             </div>
 
             <div class="geosis-stat-strip">
@@ -2925,7 +2926,7 @@
 
             <section class="geosis-panel mb-4">
                 <div class="geosis-panel__header">
-                    <h3>Acciones de FiscalizaciÃ³n</h3>
+                    <h3>Acciones de Fiscalización</h3>
                     <div class="geosis-inline-actions">
                         <form t-if="estimation.state == 'draft'" t-attf-action="/my/estimations/#{estimation.id}/action/submit" method="post">
                             <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
@@ -3087,7 +3088,7 @@
                         var popupContent = `
                             &lt;div class="geosis-map-popup"&gt;
                                 &lt;h4&gt;${p.name}&lt;/h4&gt;
-                                &lt;p&gt;&lt;i class="fa fa-map-marker me-1"&gt;&lt;/i&gt; ${p.location || 'Sin ubicaciÃ³n'}&lt;/p&gt;
+                                &lt;p&gt;&lt;i class="fa fa-map-marker me-1"&gt;&lt;/i&gt; ${p.location || 'Sin ubicación'}&lt;/p&gt;
                                 &lt;hr class="my-2"/&gt;
                                 &lt;div class="d-grid gap-2"&gt;
                                     &lt;a href="/my/rubros?location=${encodeURIComponent(p.location)}" class="btn btn-primary btn-sm"&gt;
