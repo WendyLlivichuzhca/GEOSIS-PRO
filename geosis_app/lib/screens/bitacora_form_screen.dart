@@ -178,7 +178,7 @@ class _BitacoraFormScreenState extends State<BitacoraFormScreen> {
             backgroundColor: Color(0xFF0D1B2E),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
-              borderSide: BorderSide(color: Colors.white10),
+              side: BorderSide(color: Colors.white10),
             ),
             title: Row(
               children: [
