@@ -14,6 +14,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool isLoading = true;
   int offlineReportsCount = 0;
   bool isSyncing = false;
+  int _currentIndex = 0;
 
   @override
   void initState() {
@@ -91,6 +92,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  Widget _buildBody() {
+    switch (_currentIndex) {
+      case 0:
+        return _buildDashboardTab();
+      case 1:
+        return _buildProjectsTab();
+      case 2:
+        return _buildReportsTab();
+      case 3:
+        return _buildTeamTab();
+      case 4:
+        return _buildProfileTab();
+      default:
+        return _buildDashboardTab();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -117,115 +135,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
 
           SafeArea(
-            child: SingleChildScrollView(
-              physics: BouncingScrollPhysics(),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 1. TOP BAR (LOGO GEOSIS Y PERFIL)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.engineering, color: Colors.blueAccent, size: 24),
-                            SizedBox(width: 8),
-                            Text("GEOSIS", style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
-                          ],
-                        ),
-                        Row(
-                          children: [
-                            Icon(Icons.notifications_none, color: Colors.white70, size: 26),
-                            SizedBox(width: 15),
-                            Icon(Icons.menu, color: Colors.white70, size: 26),
-                          ],
-                        )
-                      ],
-                    ),
-                  ),
-
-                  // PERFIL
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10),
-                    child: Row(
-                      children: [
-                        CircleAvatar(radius: 22, backgroundImage: NetworkImage('https://i.pravatar.cc/150?u=wendy')),
-                        SizedBox(width: 12),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text("Wendy L.", style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                            Text("Site Manager", style: GoogleFonts.outfit(color: Colors.white54, fontSize: 12)),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // SALUDO
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 15),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text("Good Morning,", style: GoogleFonts.outfit(color: Colors.white70, fontSize: 24)),
-                        Text("Wendy", style: GoogleFonts.outfit(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                  ),
-
-                  // WEATHER CARD (PERFECTA)
-                  _buildGlassWeatherCard(),
-
-                  if (offlineReportsCount > 0) ...[
-                    SizedBox(height: 20),
-                    _buildOfflineSyncCard(),
-                  ],
-
-                  SizedBox(height: 30),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                    child: Text("My Projects", style: GoogleFonts.outfit(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-                  ),
-                  SizedBox(height: 15),
-
-                  // CAROUSEL DE PROYECTOS
-                  Container(
-                    height: 280,
-                    child: isLoading 
-                    ? Center(child: CircularProgressIndicator(color: Colors.cyanAccent))
-                    : ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        padding: EdgeInsets.only(left: 20),
-                        itemCount: projects.length,
-                        itemBuilder: (context, index) {
-                          return _buildProjectCard(projects[index], (index + 1).toString(), index);
-                        },
-                      ),
-                  ),
-
-                  // PROYECTO DESTACADO HORIZONTAL (Riverside Plaza)
-                  _buildFeaturedProjectCard("Riverside Plaza", "3", "Milestone Due", 0.15),
-
-                  SizedBox(height: 20),
-
-                  // SCHEDULE & SAFETY
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                    child: Row(
-                      children: [
-                        Expanded(child: _buildSmallStatCard("Schedule", true)),
-                        SizedBox(width: 15),
-                        Expanded(child: _buildSmallStatCard("Safety", false)),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: 120),
-                ],
-              ),
-            ),
+            child: _buildBody(),
           ),
           if (isSyncing)
             Container(
@@ -498,24 +408,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           GestureDetector(
-            onTap: () {},
-            child: _navIcon(Icons.home, "Dashboard", true),
+            onTap: () => setState(() => _currentIndex = 0),
+            child: _navIcon(Icons.home, "Dashboard", _currentIndex == 0),
           ),
           GestureDetector(
-            onTap: () {},
-            child: _navIcon(Icons.folder, "Projects", false),
+            onTap: () => setState(() => _currentIndex = 1),
+            child: _navIcon(Icons.folder, "Projects", _currentIndex == 1),
           ),
           GestureDetector(
-            onTap: () => Navigator.pushNamed(context, '/history'),
-            child: _navIcon(Icons.description, "Reports", false),
+            onTap: () => setState(() => _currentIndex = 2),
+            child: _navIcon(Icons.description, "Reports", _currentIndex == 2),
           ),
           GestureDetector(
-            onTap: () {},
-            child: _navIcon(Icons.people, "Team", false),
+            onTap: () => setState(() => _currentIndex = 3),
+            child: _navIcon(Icons.people, "Team", _currentIndex == 3),
           ),
           GestureDetector(
-            onTap: () {},
-            child: _navIcon(Icons.person, "Profile", false),
+            onTap: () => setState(() => _currentIndex = 4),
+            child: _navIcon(Icons.person, "Profile", _currentIndex == 4),
           ),
         ],
       ),
@@ -543,6 +453,563 @@ class _DashboardScreenState extends State<DashboardScreen> {
         backgroundColor: Colors.transparent, elevation: 0,
         child: Icon(Icons.add, color: Colors.white, size: 30),
       ),
+    );
+  }
+
+  // --- SUB-PÁGINAS GORGEOUS DE CADA TAB ---
+
+  Widget _buildTabHeader(String title, String subtitle) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.engineering, color: Colors.blueAccent, size: 24),
+                SizedBox(width: 8),
+                Text("GEOSIS", style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+              ],
+            ),
+            Row(
+              children: [
+                Icon(Icons.notifications_none, color: Colors.white70, size: 26),
+                SizedBox(width: 15),
+                Icon(Icons.menu, color: Colors.white70, size: 26),
+              ],
+            )
+          ],
+        ),
+        SizedBox(height: 25),
+        Text(title, style: GoogleFonts.outfit(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
+        SizedBox(height: 5),
+        Text(subtitle, style: GoogleFonts.outfit(color: Colors.white54, fontSize: 13)),
+      ],
+    );
+  }
+
+  Widget _buildSearchBar(String hint) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.04),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
+      ),
+      child: TextField(
+        style: TextStyle(color: Colors.white, fontSize: 14),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: TextStyle(color: Colors.white24, fontSize: 13),
+          prefixIcon: Icon(Icons.search, color: Colors.white30),
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.symmetric(vertical: 15),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDashboardTab() {
+    return SingleChildScrollView(
+      physics: BouncingScrollPhysics(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.engineering, color: Colors.blueAccent, size: 24),
+                    SizedBox(width: 8),
+                    Text("GEOSIS", style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+                  ],
+                ),
+                Row(
+                  children: [
+                    Icon(Icons.notifications_none, color: Colors.white70, size: 26),
+                    SizedBox(width: 15),
+                    Icon(Icons.menu, color: Colors.white70, size: 26),
+                  ],
+                )
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10),
+            child: Row(
+              children: [
+                CircleAvatar(radius: 22, backgroundImage: NetworkImage('https://i.pravatar.cc/150?u=wendy')),
+                SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("Wendy L.", style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                    Text("Site Manager", style: GoogleFonts.outfit(color: Colors.white54, fontSize: 12)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 15),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("Good Morning,", style: GoogleFonts.outfit(color: Colors.white70, fontSize: 24)),
+                Text("Wendy", style: GoogleFonts.outfit(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ),
+          _buildGlassWeatherCard(),
+          if (offlineReportsCount > 0) ...[
+            SizedBox(height: 20),
+            _buildOfflineSyncCard(),
+          ],
+          SizedBox(height: 30),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0),
+            child: Text("My Projects", style: GoogleFonts.outfit(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+          ),
+          SizedBox(height: 15),
+          Container(
+            height: 280,
+            child: isLoading
+            ? Center(child: CircularProgressIndicator(color: Colors.cyanAccent))
+            : ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: EdgeInsets.only(left: 20),
+                itemCount: projects.length,
+                itemBuilder: (context, index) {
+                  return _buildProjectCard(projects[index], (index + 1).toString(), index);
+                },
+              ),
+          ),
+          _buildFeaturedProjectCard("Riverside Plaza", "3", "Milestone Due", 0.15),
+          SizedBox(height: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0),
+            child: Row(
+              children: [
+                Expanded(child: _buildSmallStatCard("Schedule", true)),
+                SizedBox(width: 15),
+                Expanded(child: _buildSmallStatCard("Safety", false)),
+              ],
+            ),
+          ),
+          SizedBox(height: 120),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProjectsTab() {
+    return SingleChildScrollView(
+      physics: BouncingScrollPhysics(),
+      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildTabHeader("Proyectos Activos", "Gestión de contratos y obras asignadas"),
+          SizedBox(height: 20),
+          _buildSearchBar("Buscar proyecto contractual..."),
+          SizedBox(height: 25),
+          isLoading
+          ? Center(child: CircularProgressIndicator(color: Colors.cyanAccent))
+          : Column(
+              children: projects.map((project) {
+                return Container(
+                  margin: EdgeInsets.only(bottom: 20),
+                  padding: EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.04),
+                    borderRadius: BorderRadius.circular(25),
+                    border: Border.all(color: Colors.white.withOpacity(0.05)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              project['name'] ?? 'Proyecto sin Nombre',
+                              style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+                            ),
+                          ),
+                          Container(
+                            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: Colors.cyanAccent.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              "Activo",
+                              style: TextStyle(color: Colors.cyanAccent, fontSize: 10, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 10),
+                      Text(
+                        "${project['tasks']?.length ?? 0} Rubros Registrados",
+                        style: TextStyle(color: Colors.white54, fontSize: 13),
+                      ),
+                      SizedBox(height: 15),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text("Progreso General", style: TextStyle(color: Colors.white38, fontSize: 12)),
+                          Text("35%", style: TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold, fontSize: 12)),
+                        ],
+                      ),
+                      SizedBox(height: 8),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: LinearProgressIndicator(
+                          value: 0.35,
+                          backgroundColor: Colors.white10,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.cyanAccent),
+                          minHeight: 6,
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.calendar_today, color: Colors.white38, size: 14),
+                              SizedBox(width: 5),
+                              Text("Fecha Fin: 2026-12-31", style: TextStyle(color: Colors.white38, fontSize: 11)),
+                            ],
+                          ),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.cyanAccent,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              padding: EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+                            ),
+                            onPressed: () => Navigator.pushNamed(
+                              context,
+                              '/form',
+                              arguments: {
+                                'project_id': project['id'],
+                                'project_name': project['name'],
+                                'tasks': project['tasks'] ?? [],
+                              }
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.add, color: Colors.black, size: 16),
+                                SizedBox(width: 5),
+                                Text("Bitácora", style: GoogleFonts.outfit(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReportsTab() {
+    return SingleChildScrollView(
+      physics: BouncingScrollPhysics(),
+      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildTabHeader("Libro de Obra", "Historial de asientos y reportes diarios"),
+          SizedBox(height: 25),
+          Container(
+            padding: EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(colors: [Colors.blueAccent.withOpacity(0.15), Colors.cyanAccent.withOpacity(0.05)]),
+              borderRadius: BorderRadius.circular(25),
+              border: Border.all(color: Colors.cyanAccent.withOpacity(0.2)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("Total Asientos", style: TextStyle(color: Colors.white70, fontSize: 13)),
+                    SizedBox(height: 5),
+                    Text("12 Reportes", style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 22)),
+                  ],
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.cyanAccent,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () => Navigator.pushNamed(context, '/history'),
+                  child: Text("Ver Historial", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 12)),
+                )
+              ],
+            ),
+          ),
+          SizedBox(height: 25),
+          Text("Asientos Recientes", style: GoogleFonts.outfit(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+          SizedBox(height: 15),
+          _buildReportHistoryItem("Asiento N° 4", "2026-05-18", "Soleado", "Excavación y replanteo de plazoletas", "Aprobado"),
+          _buildReportHistoryItem("Asiento N° 3", "2026-05-17", "Lluvia", "Sincronización de planilla de rubros", "Aprobado"),
+          _buildReportHistoryItem("Asiento N° 2", "2026-05-16", "Nublado", "Replanteo inicial del parque central", "Aprobado"),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReportHistoryItem(String title, String date, String weather, String summary, String status) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 15),
+      padding: EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.03),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.04)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(title, style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.greenAccent.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  status,
+                  style: TextStyle(color: Colors.greenAccent, fontSize: 9, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 5),
+          Row(
+            children: [
+              Icon(Icons.calendar_today, color: Colors.white38, size: 12),
+              SizedBox(width: 5),
+              Text(date, style: TextStyle(color: Colors.white38, fontSize: 11)),
+              SizedBox(width: 15),
+              Icon(Icons.wb_sunny, color: Colors.amber, size: 12),
+              SizedBox(width: 5),
+              Text(weather, style: TextStyle(color: Colors.white38, fontSize: 11)),
+            ],
+          ),
+          SizedBox(height: 10),
+          Text(summary, style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.3)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTeamTab() {
+    return SingleChildScrollView(
+      physics: BouncingScrollPhysics(),
+      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildTabHeader("Equipo de Trabajo", "Personal de fiscalización, residencia y obra"),
+          SizedBox(height: 20),
+          _buildSearchBar("Buscar miembro del equipo..."),
+          SizedBox(height: 25),
+          _buildTeamMemberCard("Wendy Llivichuzhca", "Residente de Obra / Directora", "Riverside Plaza", "https://i.pravatar.cc/150?u=wendy"),
+          _buildTeamMemberCard("Ing. Carlos Andrade", "Fiscalizador / Supervisor MIDUVI", "Fiscalización GAD", "https://i.pravatar.cc/150?u=carlos"),
+          _buildTeamMemberCard("Arq. Sofía Méndez", "Representante del Contratista", "Riverside Plaza", "https://i.pravatar.cc/150?u=sofia"),
+          _buildTeamMemberCard("Ing. Pedro Torres", "Inspector de Seguridad y SSO", "Riverside Plaza", "https://i.pravatar.cc/150?u=pedro"),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTeamMemberCard(String name, String role, String project, String avatarUrl) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 15),
+      padding: EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.03),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.04)),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(radius: 26, backgroundImage: NetworkImage(avatarUrl)),
+          SizedBox(width: 15),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(name, style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+                SizedBox(height: 2),
+                Text(role, style: TextStyle(color: Colors.cyanAccent, fontSize: 11, fontWeight: FontWeight.w500)),
+                SizedBox(height: 5),
+                Row(
+                  children: [
+                    Icon(Icons.business_center_outlined, color: Colors.white38, size: 12),
+                    SizedBox(width: 5),
+                    Text(project, style: TextStyle(color: Colors.white38, fontSize: 11)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Row(
+            children: [
+              _circleActionButton(Icons.phone, Colors.blueAccent),
+              SizedBox(width: 8),
+              _circleActionButton(Icons.message, Colors.greenAccent),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _circleActionButton(IconData icon, Color color) {
+    return Container(
+      padding: EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        shape: BoxShape.circle,
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Icon(icon, color: color, size: 16),
+    );
+  }
+
+  Widget _buildProfileTab() {
+    return SingleChildScrollView(
+      physics: BouncingScrollPhysics(),
+      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildTabHeader("Mi Perfil", "Configuración de cuenta y sincronización ERP"),
+          SizedBox(height: 25),
+          Container(
+            padding: EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.03),
+              borderRadius: BorderRadius.circular(25),
+              border: Border.all(color: Colors.white.withOpacity(0.04)),
+            ),
+            child: Column(
+              children: [
+                Center(
+                  child: Stack(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.cyanAccent, width: 2),
+                        ),
+                        child: CircleAvatar(radius: 40, backgroundImage: NetworkImage('https://i.pravatar.cc/150?u=wendy')),
+                      ),
+                      Positioned(
+                        bottom: 0, right: 0,
+                        child: Container(
+                          padding: EdgeInsets.all(6),
+                          decoration: BoxDecoration(color: Colors.greenAccent, shape: BoxShape.circle),
+                          child: Icon(Icons.check, color: Colors.black, size: 12),
+                        ),
+                      )
+                    ],
+                  ),
+                ),
+                SizedBox(height: 15),
+                Text("Wendy Llivichuzhca", style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+                Text("Residente de Obra / Administradora", style: TextStyle(color: Colors.white54, fontSize: 12)),
+                SizedBox(height: 10),
+                Chip(
+                  backgroundColor: Colors.blueAccent.withOpacity(0.1),
+                  label: Text("GEOSIS-PRO ERP", style: TextStyle(color: Colors.cyanAccent, fontSize: 10, fontWeight: FontWeight.bold)),
+                )
+              ],
+            ),
+          ),
+          SizedBox(height: 25),
+          Text("Servidor Odoo ERP", style: GoogleFonts.outfit(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+          SizedBox(height: 12),
+          Container(
+            padding: EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.02),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white.withOpacity(0.03)),
+            ),
+            child: Column(
+              children: [
+                _profileDetailRow("Instancia URL", "geosis.corporativoqbank.com"),
+                Divider(color: Colors.white10, height: 25),
+                _profileDetailRow("Base de Datos", "odoo-final"),
+                Divider(color: Colors.white10, height: 25),
+                _profileDetailRow("Estado", "Conectado", isStatus: true),
+              ],
+            ),
+          ),
+          SizedBox(height: 25),
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent.withOpacity(0.1),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                side: BorderSide(color: Colors.redAccent.withOpacity(0.5)),
+              ),
+              onPressed: () {
+                Navigator.pushReplacementNamed(context, '/login');
+              },
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.logout, color: Colors.redAccent, size: 18),
+                  SizedBox(width: 8),
+                  Text("CERRAR SESIÓN", style: GoogleFonts.outfit(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 14)),
+                ],
+              ),
+            ),
+          ),
+          SizedBox(height: 30),
+        ],
+      ),
+    );
+  }
+
+  Widget _profileDetailRow(String label, String value, {bool isStatus = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: TextStyle(color: Colors.white38, fontSize: 13)),
+        Row(
+          children: [
+            if (isStatus) ...[
+              Container(width: 8, height: 8, decoration: BoxDecoration(color: Colors.greenAccent, shape: BoxShape.circle)),
+              SizedBox(width: 8),
+            ],
+            Text(value, style: TextStyle(color: isStatus ? Colors.greenAccent : Colors.white70, fontSize: 13, fontWeight: FontWeight.w500)),
+          ],
+        ),
+      ],
     );
   }
 }
