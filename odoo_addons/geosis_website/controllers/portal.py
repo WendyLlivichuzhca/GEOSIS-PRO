@@ -624,6 +624,23 @@ class GeosisCustomerPortal(CustomerPortal):
             except Exception:
                 pass
         return request.redirect('/my/project/%s?success=metadata_updated' % project_id)
+        
+    @http.route(['/my/project/<int:project_id>/budget/new'], type='http', auth="user", website=True, methods=['POST'])
+    def portal_my_project_budget_new(self, project_id, **kw):
+        project = self._get_accessible_project(project_id)
+        if not project:
+            return request.redirect('/my/projects?error=project_access')
+        
+        Budget = request.env['geosis.budget'].sudo()
+        new_budget = Budget.create({
+            'name': f"Presupuesto Manual - {project.name}",
+            'project_id': project.id,
+            'location': project.location,
+            'partner_id': request.env.user.partner_id.commercial_partner_id.id,
+            'budget_date': fields.Date.context_today(request.env.user),
+            'state': 'draft',
+        })
+        return request.redirect('/my/budgets/%s?success=created' % new_budget.id)
 
     @http.route(['/my/budgets', '/my/budgets/page/<int:page>'], type='http', auth="user", website=True)
     def portal_my_budgets(self, page=1, search=None, state='all', sort_by='date', **kw):
@@ -686,11 +703,18 @@ class GeosisCustomerPortal(CustomerPortal):
         partner_tree_domain = [('id', 'child_of', request.env.user.partner_id.commercial_partner_id.id)]
         available_partners = request.env['res.partner'].sudo().search(partner_tree_domain, order='name asc')
         available_offerers = request.env['res.partner'].sudo().search([('active', '=', True)], order='name asc')
+        apu_domain = [('active', '=', True)]
+        budget_loc = budget.location or (budget.project_id.location if budget.project_id else False)
+        if budget_loc:
+            apu_domain += [('location', '=', budget_loc)]
+        else:
+            apu_domain += [('location', 'in', [False, ''])]
+
         values = {
             'budget': budget,
             'page_name': 'budget',
             'success': kw.get('success'),
-            'available_apus': request.env['geosis.apu'].sudo().search([]),
+            'available_apus': request.env['geosis.apu'].sudo().search(apu_domain, order='name asc'),
             'available_odoo_projects': request.env['project.project'].sudo().search([], order='name asc'),
             'available_projects': my_projects,
             'available_partners': available_partners,
