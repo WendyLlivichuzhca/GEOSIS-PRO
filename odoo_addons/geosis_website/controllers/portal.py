@@ -219,7 +219,7 @@ class GeosisCustomerPortal(CustomerPortal):
         domain = self._partner_domain()
 
         if search:
-            domain += [('|', '|', ('name', 'ilike', search), ('code', 'ilike', search), ('location', 'ilike', search))]
+            domain += ['|', '|', ('name', 'ilike', search), ('code', 'ilike', search), ('location', 'ilike', search)]
         if state and state != 'all':
             domain += [('state', '=', state)]
 
@@ -267,11 +267,11 @@ class GeosisCustomerPortal(CustomerPortal):
         bitacora_domain = [('project_id', 'in', project_ids)]
 
         if search:
-            bitacora_domain += [('|', '|', 
+            bitacora_domain += ['|', '|', 
                 ('project_id.name', 'ilike', search), 
                 ('content', 'ilike', search),
                 ('personal_notes', 'ilike', search)
-            )]
+            ]
 
         sortings = {
             'date': {'label': 'Fecha Reciente', 'order': 'date desc, id desc'},
@@ -636,7 +636,7 @@ class GeosisCustomerPortal(CustomerPortal):
         
         domain = [('project_id', 'in', my_projects.ids)]
         if search:
-            domain += [('|', ('code', 'ilike', search), ('name', 'ilike', search))]
+            domain += ['|', ('code', 'ilike', search), ('name', 'ilike', search)]
         if state and state != 'all':
             domain += [('state', '=', state)]
 
@@ -1641,7 +1641,7 @@ class GeosisCustomerPortal(CustomerPortal):
         
         domain = [('project_id', 'in', my_projects.ids)]
         if search:
-            domain += [('|', ('code', 'ilike', search), ('notes', 'ilike', search))]
+            domain += ['|', ('code', 'ilike', search), ('notes', 'ilike', search)]
         if state and state != 'all':
             domain += [('state', '=', state)]
 
