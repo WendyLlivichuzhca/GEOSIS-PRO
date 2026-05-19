@@ -889,10 +889,16 @@
             <section class="geosis-panel geosis-apu-sheet mb-4">
                 <div class="geosis-panel__header">
                     <h3>Ficha del proyecto</h3>
-                    <div class="d-flex gap-2">
+                    <div class="d-flex gap-2 align-items-center">
                         <a t-attf-href="/my/import-excel?project_code=#{project.code}&amp;project_name=#{project.name}" class="btn btn-success btn-sm">
                             <i class="fa fa-file-excel-o me-1"/> Importar Presupuesto
                         </a>
+                        <form t-attf-action="/my/project/#{project.id}/budget/new" method="post" class="d-inline m-0 p-0">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <button type="submit" class="btn btn-outline-secondary btn-sm">
+                                <i class="fa fa-plus me-1"/> Crear Presupuesto Vacío
+                            </button>
+                        </form>
                         <a t-attf-href="/my/project/#{project.id}/edit" class="btn btn-outline-primary btn-sm">Editar proyecto</a>
                         <a t-if="editable_budget" t-attf-href="/my/budgets/#{editable_budget.id}" class="btn btn-outline-secondary btn-sm">Abrir presupuesto</a>
                     </div>
@@ -966,11 +972,19 @@
                                         <tr>
                                             <td colspan="8" class="text-center py-4">
                                                 <div class="my-3">
-                                                    <i class="fa fa-file-excel-o fa-3x text-muted mb-3 d-block"></i>
+                                                    <i class="fa fa-folder-open-o fa-3x text-muted mb-3 d-block"></i>
                                                     <p class="text-muted mb-3">Este proyecto todavía no tiene presupuestos cargados.</p>
-                                                    <a t-attf-href="/my/import-excel?project_code=#{project.code}&amp;project_name=#{project.name}" class="btn btn-success btn-sm">
-                                                        <i class="fa fa-file-excel-o me-1"/> Importar Presupuesto para este Proyecto
-                                                    </a>
+                                                    <div class="d-flex justify-content-center gap-2">
+                                                        <a t-attf-href="/my/import-excel?project_code=#{project.code}&amp;project_name=#{project.name}" class="btn btn-success btn-sm">
+                                                            <i class="fa fa-file-excel-o me-1"/> Importar Presupuesto (Excel)
+                                                        </a>
+                                                        <form t-attf-action="/my/project/#{project.id}/budget/new" method="post" class="d-inline">
+                                                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                                            <button type="submit" class="btn btn-primary btn-sm">
+                                                                <i class="fa fa-plus me-1"/> Crear Presupuesto Vacío
+                                                            </button>
+                                                        </form>
+                                                    </div>
                                                 </div>
                                             </td>
                                         </tr>
