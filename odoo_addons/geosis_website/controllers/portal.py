@@ -918,7 +918,7 @@ class GeosisCustomerPortal(CustomerPortal):
         ]
         return request.make_response(pdf_content, headers=pdfhttpheaders)
 
-    @http.route(['/my/rubros/<int:apu_id>/pdf'], type='http', auth="user", website=True)
+    @http.route(['/my/rubro/<int:apu_id>/pdf', '/my/rubros/<int:apu_id>/pdf'], type='http', auth="user", website=True)
     def portal_my_rubro_pdf(self, apu_id, **kw):
         apu = request.env['geosis.apu'].sudo().browse(apu_id)
         if not apu.exists():
@@ -979,20 +979,14 @@ class GeosisCustomerPortal(CustomerPortal):
         line = request.env['geosis.apu.line'].sudo().browse(line_id)
         if line.exists() and line.apu_id.id == apu_id:
             line.write({
-                'quantity': float(kw.get('quantity', line.quantity)),
-                'performance': float(kw.get('performance', line.performance)),
-                'rate': float(kw.get('rate', line.rate)),
-                'percentage': float(kw.get('percentage', line.percentage)),
-                'distance': float(kw.get('distance', line.distance)),
+                'quantity': self._parse_portal_float(kw.get('quantity'), line.quantity),
+                'performance': self._parse_portal_float(kw.get('performance'), line.performance),
+                'rate': self._parse_portal_float(kw.get('rate'), line.rate),
+                'percentage': self._parse_portal_float(kw.get('percentage'), line.percentage),
+                'distance': self._parse_portal_float(kw.get('distance'), line.distance),
                 'note': kw.get('note', line.note),
             })
         return request.redirect('/my/rubro/%s?line_updated=1' % apu_id)
-
-    @http.route(['/my/rubro/<int:apu_id>/generate-ia'], type='http', auth="user", website=True, methods=['POST'])
-    def portal_my_rubro_generate_ia(self, apu_id, **kw):
-        apu = request.env['geosis.apu'].sudo().browse(apu_id)
-        apu.action_generate_with_ia()
-        return request.redirect('/my/rubro/%s?ia_generated=1' % apu_id)
 
     @http.route(['/my/rubros', '/my/rubros/page/<int:page>'], type='http', auth="user", website=True)
     def portal_my_rubros(self, page=1, search=None, active='active', sort_by='name', location='all', **kw):
@@ -1105,7 +1099,7 @@ class GeosisCustomerPortal(CustomerPortal):
                     'code': kw.get('code') or apu.code,
                     'name': kw.get('name'),
                     'uom_name': kw.get('uom_name'),
-                    'indirect_percent': float(kw.get('indirect_percent', 0)),
+                    'indirect_percent': self._parse_portal_float(kw.get('indirect_percent'), 0.0),
                     'cpc_code': kw.get('cpc_code'),
                     'description': kw.get('description'),
                     'active': bool(kw.get('active')),
@@ -1131,7 +1125,7 @@ class GeosisCustomerPortal(CustomerPortal):
                     'code': kw.get('code') or False,
                     'name': kw.get('name'),
                     'uom_name': kw.get('uom_name'),
-                    'indirect_percent': float(kw.get('indirect_percent', 0)),
+                    'indirect_percent': self._parse_portal_float(kw.get('indirect_percent'), 0.0),
                     'cpc_code': kw.get('cpc_code'),
                     'description': kw.get('description'),
                     'active': bool(kw.get('active')),
@@ -1209,11 +1203,11 @@ class GeosisCustomerPortal(CustomerPortal):
         apu = request.env['geosis.apu'].sudo().browse(apu_id)
         if apu.exists():
             try:
-                new_indirect = float(kw.get('indirect_percent', apu.indirect_percent))
+                new_indirect = self._parse_portal_float(kw.get('indirect_percent'), apu.indirect_percent)
                 apu.sudo().write({'indirect_percent': new_indirect})
             except (ValueError, TypeError):
                 pass
-        return request.redirect('/my/rubros/%s?success=indirects_updated' % apu_id)
+        return request.redirect('/my/rubro/%s?success=indirects_updated' % apu_id)
 
     @http.route(['/my/import-excel'], type='http', auth="user", website=True, methods=['GET', 'POST'])
     def portal_my_import_excel(self, **kw):
@@ -1339,9 +1333,9 @@ class GeosisCustomerPortal(CustomerPortal):
                     'name': kw.get('name'),
                     'category': kw.get('category') or 'O',
                     'uom_id': int(kw.get('uom_id')) if kw.get('uom_id') else False,
-                    'price': float(kw.get('price', 0) or 0),
+                    'price': self._parse_portal_float(kw.get('price'), 0.0),
                     'cpc_code': kw.get('cpc_code') or False,
-                    'vae_percent': float(kw.get('vae_percent', 0) or 0),
+                    'vae_percent': self._parse_portal_float(kw.get('vae_percent'), 0.0),
                     'inec_index_id': int(kw.get('inec_index_id')) if kw.get('inec_index_id') else False,
                     'location': kw.get('location') or False,
                     'description': kw.get('description') or False,
@@ -1403,9 +1397,9 @@ class GeosisCustomerPortal(CustomerPortal):
                     'name': kw.get('name'),
                     'category': kw.get('category') or resource.category or 'O',
                     'uom_id': int(kw.get('uom_id')) if kw.get('uom_id') else False,
-                    'price': float(kw.get('price', resource.price) or 0),
+                    'price': self._parse_portal_float(kw.get('price'), resource.price),
                     'cpc_code': kw.get('cpc_code') or False,
-                    'vae_percent': float(kw.get('vae_percent', resource.vae_percent) or 0),
+                    'vae_percent': self._parse_portal_float(kw.get('vae_percent'), resource.vae_percent),
                     'inec_index_id': int(kw.get('inec_index_id')) if kw.get('inec_index_id') else False,
                     'location': kw.get('location') or False,
                     'description': kw.get('description') or False,
@@ -1445,7 +1439,7 @@ class GeosisCustomerPortal(CustomerPortal):
         resource = request.env['geosis.resource'].sudo().browse(resource_id)
         if resource.exists():
             try:
-                new_price = float(kw.get('price', resource.price))
+                new_price = self._parse_portal_float(kw.get('price'), resource.price)
                 resource.sudo().write({'price': new_price})
             except (ValueError, TypeError):
                 pass

@@ -131,29 +131,38 @@ class GeosisApu(models.Model):
         name_lower = self.name.lower()
         suggestions = []
 
-        # Reglas de sugerencia basadas en palabras clave (Simulación de IA)
+        # Reglas de sugerencia basadas en palabras clave con fallbacks de nombres (Simulación de IA)
         if 'excavacion' in name_lower or 'excavación' in name_lower:
-            suggestions = [
-                ('M', 'Excavadora', 0.02), # Categoría, Nombre aprox, Rendimiento
-                ('N', 'Peon', 1.0),
-                ('N', 'Operador de Equipo Pesado', 1.0),
-            ]
+            if 'mano' in name_lower or 'manual' in name_lower:
+                suggestions = [
+                    ('N', ['Peón', 'Peon', 'Jornalero', 'Obrero', 'Mano de Obra'], 1.0),
+                    ('M', ['Herramienta menor', 'Herramientas menores', 'Herramienta', 'Herramientas'], 0.05),
+                ]
+            else:
+                suggestions = [
+                    ('M', ['Excavadora', 'Retroexcavadora', 'Cargadora', 'Tractor', 'Equipo pesado'], 0.02),
+                    ('N', ['Operador de equipo', 'Operador de retroexcavadora', 'Operador', 'Chofer'], 1.0),
+                    ('N', ['Peón', 'Peon', 'Jornalero', 'Obrero'], 1.0),
+                    ('M', ['Herramienta menor', 'Herramientas menores', 'Herramienta', 'Herramientas'], 0.05),
+                ]
         elif 'hormigon' in name_lower or 'hormigón' in name_lower:
             suggestions = [
-                ('O', 'Cemento Portand', 7.5),
-                ('O', 'Arena', 0.5),
-                ('O', 'Ripio', 0.8),
-                ('O', 'Agua', 0.2),
-                ('N', 'Albañil', 1.5),
-                ('N', 'Peon', 3.0),
-                ('M', 'Mezcladora', 0.05),
+                ('O', ['Cemento Portland', 'Cemento', 'Portland'], 7.5),
+                ('O', ['Arena', 'Arena fina', 'Arena gruesa'], 0.5),
+                ('O', ['Ripio', 'Grava', 'Piedra chispa', 'Piedra'], 0.8),
+                ('O', ['Agua'], 0.2),
+                ('N', ['Albañil', 'Maestro de obra'], 1.5),
+                ('N', ['Peón', 'Peon', 'Jornalero'], 3.0),
+                ('M', ['Mezcladora', 'Concretera', 'Mezclador'], 0.05),
+                ('M', ['Herramienta menor', 'Herramientas menores', 'Herramienta'], 0.05),
             ]
         elif 'acero' in name_lower or 'hierro' in name_lower:
             suggestions = [
-                ('O', 'Acero de refuerzo', 1.05),
-                ('O', 'Alambre galvanizado', 0.05),
-                ('N', 'Fierrero', 0.08),
-                ('N', 'Ayudante', 0.08),
+                ('O', ['Acero de refuerzo', 'Acero', 'Varilla'], 1.05),
+                ('O', ['Alambre galvanizado', 'Alambre', 'Alambre recocido'], 0.05),
+                ('N', ['Fierrero', 'Albañil'], 0.08),
+                ('N', ['Ayudante', 'Peón', 'Peon', 'Jornalero'], 0.08),
+                ('M', ['Herramienta menor', 'Herramientas menores', 'Herramienta'], 0.05),
             ]
 
         if not suggestions:
@@ -168,13 +177,17 @@ class GeosisApu(models.Model):
             }
 
         # Insertar los recursos encontrados (buscando en el catálogo)
-        resource_obj = self.env['geosis.resource']
-        for cat, res_name, qty in suggestions:
-            # Buscar el recurso más parecido en el catálogo
-            resource = resource_obj.search([
-                ('name', 'ilike', res_name),
-                ('category', '=', cat)
-            ], limit=1)
+        resource_obj = self.env['geosis.resource'].sudo()
+        for cat, name_list, qty in suggestions:
+            resource = resource_obj.browse()
+            # Buscar el recurso más parecido en el catálogo usando fallbacks
+            for name in name_list:
+                resource = resource_obj.search([
+                    ('category', '=', cat),
+                    ('name', 'ilike', name)
+                ], limit=1)
+                if resource:
+                    break
             
             if resource:
                 self.env['geosis.apu.line'].create({
@@ -248,6 +261,52 @@ class GeosisApuLine(models.Model):
         store=True,
         currency_field='currency_id',
     )
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if vals.get('resource_id'):
+                resource = self.env['geosis.resource'].sudo().browse(vals['resource_id'])
+                if resource.exists():
+                    field_names = resource._fields
+                    if 'price' in field_names and not vals.get('rate'):
+                        vals['rate'] = resource.price or 0.0
+                    if 'category' in field_names and not vals.get('category'):
+                        vals['category'] = resource.category
+                    if 'vae_percent' in field_names and not vals.get('vae_percent'):
+                        vals['vae_percent'] = resource.vae_percent
+                    if not vals.get('uom_name'):
+                        for candidate in ('uom_name', 'uom_id', 'uom', 'unit', 'unit_name'):
+                            if candidate in field_names:
+                                value = resource[candidate]
+                                if hasattr(value, 'display_name'):
+                                    vals['uom_name'] = value.display_name
+                                else:
+                                    vals['uom_name'] = value or False
+                                break
+        return super().create(vals_list)
+
+    def write(self, vals):
+        if 'resource_id' in vals:
+            resource = self.env['geosis.resource'].sudo().browse(vals['resource_id'])
+            if resource.exists():
+                field_names = resource._fields
+                if 'price' in field_names and 'rate' not in vals:
+                    vals['rate'] = resource.price or 0.0
+                if 'category' in field_names and 'category' not in vals:
+                    vals['category'] = resource.category
+                if 'vae_percent' in field_names and 'vae_percent' not in vals:
+                    vals['vae_percent'] = resource.vae_percent
+                if 'uom_name' not in vals:
+                    for candidate in ('uom_name', 'uom_id', 'uom', 'unit', 'unit_name'):
+                        if candidate in field_names:
+                            value = resource[candidate]
+                            if hasattr(value, 'display_name'):
+                                vals['uom_name'] = value.display_name
+                            else:
+                                vals['uom_name'] = value or False
+                            break
+        return super().write(vals)
 
     @api.onchange('resource_id')
     def _onchange_resource_id(self):

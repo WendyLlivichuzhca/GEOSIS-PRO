@@ -5,3 +5,7 @@ access_geosis_apu_readonly,access.geosis.apu.readonly,model_geosis_apu,geosis_ba
 access_geosis_apu_line_admin,access.geosis.apu.line.admin,model_geosis_apu_line,geosis_base.group_geosis_admin,1,1,1,1
 access_geosis_apu_line_user,access.geosis.apu.line.user,model_geosis_apu_line,geosis_base.group_geosis_user,1,1,1,0
 access_geosis_apu_line_readonly,access.geosis.apu.line.readonly,model_geosis_apu_line,geosis_base.group_geosis_readonly,1,0,0,0
+access_geosis_apu_portal,access.geosis.apu.portal,model_geosis_apu,base.group_portal,1,1,1,1
+access_geosis_apu_line_portal,access.geosis.apu.line.portal,model_geosis_apu_line,base.group_portal,1,1,1,1
+access_geosis_apu_internal,access.geosis.apu.internal,model_geosis_apu,base.group_user,1,1,1,1
+access_geosis_apu_line_internal,access.geosis.apu.line.internal,model_geosis_apu_line,base.group_user,1,1,1,1
