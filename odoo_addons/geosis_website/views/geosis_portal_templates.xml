@@ -1094,6 +1094,9 @@
             <t t-set="page_title" t-value="budget.project_id.name or budget.name"/>
             <t t-set="page_subtitle" t-value="'Detalle operativo del presupuesto'"/>
 
+            <div t-if="success == 'created'" class="alert alert-success geosis-notice" role="alert">
+                <i class="fa fa-plus-circle me-1"/> El presupuesto vacío se creó correctamente. ¡Ya puedes empezar a añadir rubros!
+            </div>
             <div t-if="success == 'metadata_updated'" class="alert alert-success geosis-notice" role="alert">
                 <i class="fa fa-check-circle me-1"/> Los metadatos del presupuesto fueron actualizados.
             </div>
