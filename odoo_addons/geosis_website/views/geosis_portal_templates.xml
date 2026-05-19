@@ -4581,11 +4581,12 @@
                     projectsData.forEach(function(p) {
                         var markerColor = getStateColor(p.state);
                         
-                        var customHtml = 
-                            '<' + 'div class="geosis-marker-pin" style="--marker-color: ' + markerColor + '"&gt;' +
-                            '<' + 'i class="fa fa-building-o"&gt;&lt;' + '/i&gt;' +
-                            '<' + '/div&gt;' +
-                            '<' + 'div class="geosis-marker-pulse" style="--marker-color: ' + markerColor + '"&gt;&lt;' + '/div&gt;';
+                        var customHtml = `
+                            &lt;div class="geosis-marker-pin" style="--marker-color: ${markerColor}"&gt;
+                                &lt;i class="fa fa-building-o"&gt;&lt;/i&gt;
+                            &lt;/div&gt;
+                            &lt;div class="geosis-marker-pulse" style="--marker-color: ${markerColor}"&gt;&lt;/div&gt;
+                        `;
 
                         var customIcon = L.divIcon({
                             className: 'geosis-custom-marker',
@@ -4595,35 +4596,36 @@
                             popupAnchor: [0, -40]
                         });
 
-                        var popupHtml = 
-                            '<' + 'div class="geosis-popup-card"&gt;' +
-                            '<' + 'div class="geosis-popup-header"&gt;' +
-                            '<' + 'span&gt;' + p.code + ' &amp;bull; ' + p.state_label + '&lt;' + '/span&gt;' +
-                            '<' + 'h4&gt;' + p.name + '&lt;' + '/h4&gt;' +
-                            '<' + '/div&gt;' +
-                            '<' + 'div class="geosis-popup-body"&gt;' +
-                            '<' + 'div class="geosis-popup-info-row"&gt;' +
-                            '<' + 'i class="fa fa-map-marker"&gt;&lt;' + '/i&gt;' +
-                            '<' + 'span&gt;' + (p.location || 'Sin ubicación') + '&lt;' + '/span&gt;' +
-                            '<' + '/div&gt;' +
-                            '<' + 'div class="geosis-popup-info-row"&gt;' +
-                            '<' + 'i class="fa fa-user"&gt;&lt;' + '/i&gt;' +
-                            '<' + 'span&gt;Socio: &lt;' + 'strong&gt;' + p.partner + '&lt;' + '/strong&gt;&lt;' + '/span&gt;' +
-                            '<' + '/div&gt;' +
-                            '<' + 'div class="geosis-popup-info-row"&gt;' +
-                            '<' + 'i class="fa fa-calculator"&gt;&lt;' + '/i&gt;' +
-                            '<' + 'span&gt;' + p.budget_count + ' Presupuesto(s) &amp;bull; &lt;' + 'strong&gt;' + p.currency + ' ' + p.budget_amount + '&lt;' + '/strong&gt;&lt;' + '/span&gt;' +
-                            '<' + '/div&gt;' +
-                            '<' + '/div&gt;' +
-                            '<' + 'div class="geosis-popup-footer"&gt;' +
-                            '<' + 'a href="/my/rubros?location=' + encodeURIComponent(p.location) + '" class="btn btn-primary btn-sm w-100 py-1" style="font-size: 0.65rem;"&gt;' +
-                            '<' + 'i class="fa fa-database me-1"&gt;&lt;' + '/i&gt; Base de Datos' +
-                            '<' + '/a&gt;' +
-                            '<' + 'a href="/my/projects/' + p.id + '" class="btn btn-outline-primary btn-sm w-100 py-1" style="font-size: 0.65rem;"&gt;' +
-                            '<' + 'i class="fa fa-building me-1"&gt;&lt;' + '/i&gt; Ver Proyecto' +
-                            '<' + '/a&gt;' +
-                            '<' + '/div&gt;' +
-                            '<' + '/div&gt;';
+                        var popupHtml = `
+                            &lt;div class="geosis-popup-card"&gt;
+                                &lt;div class="geosis-popup-header"&gt;
+                                    &lt;span&gt;${p.code} &amp;bull; ${p.state_label}&lt;/span&gt;
+                                    &lt;h4&gt;${p.name}&lt;/h4&gt;
+                                &lt;/div&gt;
+                                &lt;div class="geosis-popup-body"&gt;
+                                    &lt;div class="geosis-popup-info-row"&gt;
+                                        &lt;i class="fa fa-map-marker"&gt;&lt;/i&gt;
+                                        &lt;span&gt;${p.location || 'Sin ubicación'}&lt;/span&gt;
+                                    &lt;/div&gt;
+                                    &lt;div class="geosis-popup-info-row"&gt;
+                                        &lt;i class="fa fa-user"&gt;&lt;/i&gt;
+                                        &lt;span&gt;Socio: &lt;strong&gt;${p.partner}&lt;/strong&gt;&lt;/span&gt;
+                                    &lt;/div&gt;
+                                    &lt;div class="geosis-popup-info-row"&gt;
+                                        &lt;i class="fa fa-calculator"&gt;&lt;/i&gt;
+                                        &lt;span&gt;${p.budget_count} Presupuesto(s) &amp;bull; &lt;strong&gt;${p.currency} ${p.budget_amount}&lt;/strong&gt;&lt;/span&gt;
+                                    &lt;/div&gt;
+                                &lt;/div&gt;
+                                &lt;div class="geosis-popup-footer"&gt;
+                                    &lt;a href="/my/rubros?location=${encodeURIComponent(p.location)}" class="btn btn-primary btn-sm w-100 py-1" style="font-size: 0.65rem;"&gt;
+                                        &lt;i class="fa fa-database me-1"&gt;&lt;/i&gt; Base de Datos
+                                    &lt;/a&gt;
+                                    &lt;a href="/my/projects/${p.id}" class="btn btn-outline-primary btn-sm w-100 py-1" style="font-size: 0.65rem;"&gt;
+                                        &lt;i class="fa fa-building me-1"&gt;&lt;/i&gt; Ver Proyecto
+                                    &lt;/a&gt;
+                                &lt;/div&gt;
+                            &lt;/div&gt;
+                        `;
 
                         var marker = L.marker([p.lat, p.lng], {icon: customIcon})
                             .addTo(map)
