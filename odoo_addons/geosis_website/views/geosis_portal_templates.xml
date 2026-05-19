@@ -885,126 +885,227 @@
             <div t-if="success == 'metadata_updated'" class="alert alert-success geosis-notice" role="alert">
                 Datos del proyecto actualizados correctamente.
             </div>
-
-            <section class="geosis-panel geosis-apu-sheet mb-4">
-                <div class="geosis-panel__header">
-                    <h3>Ficha del proyecto</h3>
-                    <div class="d-flex gap-2 align-items-center">
-                        <a t-attf-href="/my/import-excel?project_code=#{project.code}&amp;project_name=#{project.name}" class="btn btn-success btn-sm">
-                            <i class="fa fa-file-excel-o me-1"/> Importar Presupuesto
-                        </a>
-                        <form t-attf-action="/my/project/#{project.id}/budget/new" method="post" class="d-inline m-0 p-0">
-                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                            <button type="submit" class="btn btn-outline-secondary btn-sm">
-                                <i class="fa fa-plus me-1"/> Crear Presupuesto Vacío
-                            </button>
-                        </form>
-                        <a t-attf-href="/my/project/#{project.id}/edit" class="btn btn-outline-primary btn-sm">Editar proyecto</a>
-                        <a t-if="editable_budget" t-attf-href="/my/budgets/#{editable_budget.id}" class="btn btn-outline-secondary btn-sm">Abrir presupuesto</a>
-                    </div>
-                </div>
-                <div class="geosis-apu-sheet__grid">
-                    <div class="geosis-apu-sheet__column">
-                        <div class="geosis-detail-grid geosis-apu-sheet__meta">
-                            <div><strong>Codigo</strong><span><t t-esc="project.code or '-'"/></span></div>
-                            <div><strong>Fecha Inicio</strong><span><t t-esc="project.start_date or '-'"/></span></div>
-                            <div><strong>Nombre del Proyecto</strong><span><t t-esc="project.name"/></span></div>
-                            <div><strong>Fecha Fin</strong><span><t t-esc="project.end_date or '-'"/></span></div>
-                            <div><strong>Cliente</strong><span><t t-esc="project.partner_id.name or '-'"/></span></div>
-                            <div><strong>Estado</strong><span><t t-esc="dict(project._fields['state'].selection).get(project.state)"/></span></div>
-                            <div><strong>Ubicacion</strong><span><t t-esc="project.location or '-'"/></span></div>
-                            <div><strong>Active</strong><span><t t-esc="'Si' if project.active else 'No'"/></span></div>
-                            <div><strong>Nro. Presupuestos</strong><span><t t-esc="project.budget_count or 0"/></span></div>
-                            <div><strong>Monto Total Presupuestos</strong><span>$<t t-esc="'%.2f' % (project.total_budget_amount or 0.0)"/></span></div>
+            <div class="row">
+                <!-- Columna Izquierda: Información Principal y Tablas -->
+                <div class="col-lg-8 col-md-12 mb-4">
+                    <section class="geosis-panel mb-4">
+                        <div class="geosis-panel__header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <h3 class="m-0"><i class="fa fa-folder-open text-primary me-2"/>Detalles del Proyecto</h3>
+                            <div class="d-flex gap-2">
+                                <a t-attf-href="/my/project/#{project.id}/edit" class="btn btn-outline-primary btn-sm">
+                                    <i class="fa fa-edit me-1"/> Editar Datos
+                                </a>
+                            </div>
                         </div>
-                    </div>
-                </div>
-            </section>
+                        <div class="p-3">
+                            <div class="mb-3">
+                                <label class="text-muted small fw-bold">Nombre del Proyecto</label>
+                                <h4 class="text-primary fw-bold mb-1"><t t-esc="project.name"/></h4>
+                                <span class="badge text-bg-light border text-muted"><i class="fa fa-key me-1"/> Código: <t t-esc="project.code or '-'"/></span>
+                            </div>
+                            <hr class="my-3" style="opacity: 0.1;"/>
+                            <div class="row g-3">
+                                <div class="col-sm-6">
+                                    <label class="text-muted small fw-bold d-block mb-1">Cliente</label>
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px; font-weight: bold; font-size: 0.9rem;">
+                                            <t t-esc="(project.partner_id.name or 'C')[0].upper()"/>
+                                        </div>
+                                        <div>
+                                            <span class="fw-semibold text-dark"><t t-esc="project.partner_id.name or '-'"/></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="text-muted small fw-bold d-block mb-1">Estado del Proyecto</label>
+                                    <t t-set="status_badge" t-value="'bg-warning-subtle text-warning'"/>
+                                    <t t-if="project.state == 'active'" t-set="status_badge" t-value="'bg-success-subtle text-success'"/>
+                                    <t t-if="project.state == 'completed'" t-set="status_badge" t-value="'bg-info-subtle text-info'"/>
+                                    <span t-attf-class="badge px-3 py-2 fw-semibold rounded-pill #{status_badge}">
+                                        <i class="fa fa-circle me-1 small"/>
+                                        <t t-esc="dict(project._fields['state'].selection).get(project.state)"/>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
 
-            <section class="geosis-panel geosis-apu-workspace mb-4">
-                <ul class="nav nav-tabs geosis-apu-tabs" id="projectDetailTabs" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="project-budgets-tab" data-bs-toggle="tab" data-bs-target="#project-budgets-pane" type="button" role="tab">Presupuestos</button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="project-notes-tab" data-bs-toggle="tab" data-bs-target="#project-notes-pane" type="button" role="tab">Observaciones</button>
-                    </li>
-                </ul>
-                <div class="tab-content">
-                    <div class="tab-pane fade show active" id="project-budgets-pane" role="tabpanel" aria-labelledby="project-budgets-tab">
-                        <div class="table-responsive">
-                            <table class="table geosis-clean-table">
-                                <thead>
-                                    <tr>
-                                        <th>Codigo</th>
-                                        <th>Descripcion</th>
-                                        <th>Cliente</th>
-                                        <th>Ubicacion</th>
-                                        <th>Fecha de Oferta</th>
-                                        <th>Estado</th>
-                                        <th class="text-end">Total General</th>
-                                        <th class="text-center">Accion</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <t t-if="budgets">
-                                        <t t-foreach="budgets" t-as="budget">
+                    <!-- Workspace Pestañas -->
+                    <section class="geosis-panel geosis-apu-workspace mb-4">
+                        <ul class="nav nav-tabs geosis-apu-tabs" id="projectDetailTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="project-budgets-tab" data-bs-toggle="tab" data-bs-target="#project-budgets-pane" type="button" role="tab">
+                                    <i class="fa fa-calculator me-1"/> Presupuestos
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="project-notes-tab" data-bs-toggle="tab" data-bs-target="#project-notes-pane" type="button" role="tab">
+                                    <i class="fa fa-comment-o me-1"/> Observaciones
+                                </button>
+                            </li>
+                        </ul>
+                        <div class="tab-content p-3">
+                            <div class="tab-pane fade show active" id="project-budgets-pane" role="tabpanel" aria-labelledby="project-budgets-tab">
+                                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                                    <h5 class="m-0 fw-bold text-dark">Ofertas y Presupuestos Vinculados</h5>
+                                    <div class="d-flex gap-2">
+                                        <a t-attf-href="/my/import-excel?project_code=#{project.code}&amp;project_name=#{project.name}" class="btn btn-success btn-sm">
+                                            <i class="fa fa-file-excel-o me-1"/> Importar Excel
+                                        </a>
+                                        <form t-attf-action="/my/project/#{project.id}/budget/new" method="post" class="d-inline m-0 p-0">
+                                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                            <button type="submit" class="btn btn-outline-secondary btn-sm">
+                                                <i class="fa fa-plus me-1"/> Crear Presupuesto Vacío
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table geosis-clean-table align-middle">
+                                        <thead>
                                             <tr>
-                                                <td><t t-esc="budget.code or '-'"/></td>
-                                                <td><t t-esc="budget.name or '-'"/></td>
-                                                <td><t t-esc="budget.partner_id.name or '-'"/></td>
-                                                <td><t t-esc="budget.location or '-'"/></td>
-                                                <td><t t-esc="budget.budget_date or '-'"/></td>
-                                                <td><t t-esc="dict(budget._fields['state'].selection).get(budget.state)"/></td>
-                                                <td class="text-end">$<t t-esc="'%.2f' % (budget.total_amount or 0.0)"/></td>
-                                                <td class="text-center">
-                                                    <a t-attf-href="/my/budgets/#{budget.id}" class="geosis-open-link">Abrir</a>
-                                                </td>
+                                                <th>Código</th>
+                                                <th>Descripción</th>
+                                                <th>Fecha Oferta</th>
+                                                <th>Estado</th>
+                                                <th class="text-end">Total General</th>
+                                                <th class="text-center">Acciones</th>
                                             </tr>
-                                        </t>
-                                        <tr t-if="editable_budget">
-                                            <td colspan="8">
-                                                <a t-attf-href="/my/budgets/#{editable_budget.id}" class="geosis-open-link">Add a line</a>
-                                            </td>
-                                        </tr>
-                                    </t>
-                                    <t t-else="">
-                                        <tr>
-                                            <td colspan="8" class="text-center py-4">
-                                                <div class="my-3">
-                                                    <i class="fa fa-folder-open-o fa-3x text-muted mb-3 d-block"></i>
-                                                    <p class="text-muted mb-3">Este proyecto todavía no tiene presupuestos cargados.</p>
-                                                    <div class="d-flex justify-content-center gap-2">
-                                                        <a t-attf-href="/my/import-excel?project_code=#{project.code}&amp;project_name=#{project.name}" class="btn btn-success btn-sm">
-                                                            <i class="fa fa-file-excel-o me-1"/> Importar Presupuesto (Excel)
-                                                        </a>
-                                                        <form t-attf-action="/my/project/#{project.id}/budget/new" method="post" class="d-inline">
-                                                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                                                            <button type="submit" class="btn btn-primary btn-sm">
-                                                                <i class="fa fa-plus me-1"/> Crear Presupuesto Vacío
-                                                            </button>
-                                                        </form>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    </t>
-                                </tbody>
-                            </table>
+                                        </thead>
+                                        <tbody>
+                                            <t t-if="budgets">
+                                                <t t-foreach="budgets" t-as="budget">
+                                                    <tr>
+                                                        <td><span class="badge text-bg-light border fw-mono"><t t-esc="budget.code or '-'"/></span></td>
+                                                        <td><strong class="text-dark"><t t-esc="budget.name or '-'"/></strong></td>
+                                                        <td><t t-esc="budget.budget_date or '-'"/></td>
+                                                        <td>
+                                                            <t t-set="b_badge" t-value="'text-bg-warning'"/>
+                                                            <t t-if="budget.state == 'approved'" t-set="b_badge" t-value="'text-bg-success'"/>
+                                                            <t t-if="budget.state == 'archived'" t-set="b_badge" t-value="'text-bg-secondary'"/>
+                                                            <span t-attf-class="badge rounded-pill #{b_badge}"><t t-esc="dict(budget._fields['state'].selection).get(budget.state)"/></span>
+                                                        </td>
+                                                        <td class="text-end fw-bold text-primary">$<t t-esc="'%.2f' % (budget.total_amount or 0.0)"/></td>
+                                                        <td class="text-center">
+                                                            <a t-attf-href="/my/budgets/#{budget.id}" class="btn btn-primary btn-xs px-2 py-1" style="font-size: 0.75rem;">
+                                                                <i class="fa fa-folder-open me-1"/> Abrir
+                                                            </a>
+                                                        </td>
+                                                    </tr>
+                                                </t>
+                                            </t>
+                                            <t t-else="">
+                                                <tr>
+                                                    <td colspan="6" class="text-center py-5">
+                                                        <div class="my-4">
+                                                            <i class="fa fa-folder-open-o fa-3x text-muted mb-3 d-block"></i>
+                                                            <h5 class="text-dark">Sin Presupuestos Cargados</h5>
+                                                            <p class="text-muted small mb-4">Puedes importar un archivo Excel o bien crear un presupuesto vacío para armarlo a mano.</p>
+                                                            <div class="d-flex justify-content-center gap-2">
+                                                                <a t-attf-href="/my/import-excel?project_code=#{project.code}&amp;project_name=#{project.name}" class="btn btn-success btn-sm">
+                                                                    <i class="fa fa-file-excel-o me-1"/> Importar Excel (.xlsx)
+                                                                </a>
+                                                                <form t-attf-action="/my/project/#{project.id}/budget/new" method="post" class="d-inline">
+                                                                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                                                    <button type="submit" class="btn btn-primary btn-sm">
+                                                                        <i class="fa fa-plus me-1"/> Crear Presupuesto Vacío
+                                                                    </button>
+                                                                </form>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </t>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="project-notes-pane" role="tabpanel" aria-labelledby="project-notes-tab">
+                                <div class="p-2">
+                                    <h5 class="fw-bold mb-3">Observaciones del Proyecto</h5>
+                                    <div class="border rounded p-3 bg-light">
+                                        <p class="mb-0 text-dark" style="white-space: pre-wrap;"><t t-esc="project.description or 'No se han registrado observaciones para este proyecto.'" /></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Columna Derecha: Métricas, Ubicación y Mapa -->
+                <div class="col-lg-4 col-md-12">
+                    <!-- Tarjeta de Resumen Financiero -->
+                    <div class="card border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, #2A3B4C 0%, #15202B 100%); color: #fff; border-radius: 16px;">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; background: rgba(255,255,255,0.1);">
+                                    <i class="fa fa-money fa-lg text-success"/>
+                                </div>
+                                <div>
+                                    <h6 class="card-subtitle text-white-50 mb-0 small uppercase fw-bold" style="font-size: 0.65rem; letter-spacing: 0.05em;">MONTO TOTAL PRESUPUESTOS</h6>
+                                    <h2 class="card-title text-success fw-bold mb-0 mt-1" style="font-size: 1.8rem;">
+                                        $<t t-esc="'%.2f' % (project.total_budget_amount or 0.0)"/>
+                                    </h2>
+                                </div>
+                            </div>
+                            <hr style="opacity: 0.15;" class="my-3"/>
+                            <div class="d-flex justify-content-between align-items-center text-white-50 small">
+                                <span>Presupuestos vinculados:</span>
+                                <span class="badge bg-light text-dark fw-bold px-2.5"><t t-esc="project.budget_count or 0"/></span>
+                            </div>
                         </div>
                     </div>
-                    <div class="tab-pane fade" id="project-notes-pane" role="tabpanel" aria-labelledby="project-notes-tab">
-                        <section class="geosis-panel">
-                            <div class="geosis-panel__header">
-                                <h3>Observaciones</h3>
+
+                    <!-- Detalles del Sitio & Fechas -->
+                    <section class="geosis-panel mb-4" style="border-radius: 16px;">
+                        <div class="geosis-panel__header">
+                            <h5 class="m-0 fw-bold text-dark"><i class="fa fa-calendar text-primary me-2"/>Fechas y Ubicación</h5>
+                        </div>
+                        <div class="p-3">
+                            <div class="mb-3">
+                                <span class="text-muted small d-block">Ubicación del Proyecto</span>
+                                <strong class="text-dark"><i class="fa fa-map-marker text-danger me-1"/> <t t-esc="project.location or 'Sin ubicación'"/></strong>
                             </div>
-                            <div class="p-3 text-muted">
-                                <t t-esc="project.description or 'Notas del proyecto...'"/>
+                            <div class="row g-2">
+                                <div class="col-6 border-end">
+                                    <span class="text-muted small d-block">Fecha Inicio</span>
+                                    <strong class="text-dark"><t t-esc="project.start_date or '-'"/></strong>
+                                </div>
+                                <div class="col-6 ps-3">
+                                    <span class="text-muted small d-block">Fecha Fin</span>
+                                    <strong class="text-dark"><t t-esc="project.end_date or '-'"/></strong>
+                                </div>
                             </div>
+                        </div>
+                    </section>
+
+                    <!-- Mapa de Ubicación -->
+                    <t t-if="project.latitude and project.longitude">
+                        <section class="geosis-panel mb-4 p-0 overflow-hidden" style="border-radius: 16px;">
+                            <div class="p-3 border-bottom">
+                                <h5 class="m-0 fw-bold text-dark"><i class="fa fa-map text-primary me-2"/>Mapa de Ubicación</h5>
+                            </div>
+                            <!-- Leaflet CSS/JS -->
+                            <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+                            <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+                            <div id="project_detail_map" style="height: 250px; z-index: 1;"></div>
+                            <script type="text/javascript">
+                                document.addEventListener('DOMContentLoaded', function() {
+                                    var lat = parseFloat("<t t-esc='project.latitude'/>");
+                                    var lng = parseFloat("<t t-esc='project.longitude'/>");
+                                    var map = L.map('project_detail_map').setView([lat, lng], 14);
+                                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                                        attribution: '&amp;copy; OpenStreetMap'
+                                    }).addTo(map);
+                                    L.marker([lat, lng]).addTo(map)
+                                        .bindPopup("<strong><t t-esc='project.name'/></strong><br/><t t-esc='project.location'/>")
+                                        .openPopup();
+                                });
+                            </script>
                         </section>
-                    </div>
+                    </t>
                 </div>
-            </section>
+            </div>
         </t>
     </template>
 
