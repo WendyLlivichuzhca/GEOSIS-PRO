@@ -890,6 +890,9 @@
                 <div class="geosis-panel__header">
                     <h3>Ficha del proyecto</h3>
                     <div class="d-flex gap-2">
+                        <a t-attf-href="/my/import-excel?project_code=#{project.code}&amp;project_name=#{project.name}" class="btn btn-success btn-sm">
+                            <i class="fa fa-file-excel-o me-1"/> Importar Presupuesto
+                        </a>
                         <a t-attf-href="/my/project/#{project.id}/edit" class="btn btn-outline-primary btn-sm">Editar proyecto</a>
                         <a t-if="editable_budget" t-attf-href="/my/budgets/#{editable_budget.id}" class="btn btn-outline-secondary btn-sm">Abrir presupuesto</a>
                     </div>
@@ -961,7 +964,15 @@
                                     </t>
                                     <t t-else="">
                                         <tr>
-                                            <td colspan="8" class="text-center text-muted py-4">Este proyecto todavia no tiene presupuestos cargados.</td>
+                                            <td colspan="8" class="text-center py-4">
+                                                <div class="my-3">
+                                                    <i class="fa fa-file-excel-o fa-3x text-muted mb-3 d-block"></i>
+                                                    <p class="text-muted mb-3">Este proyecto todavía no tiene presupuestos cargados.</p>
+                                                    <a t-attf-href="/my/import-excel?project_code=#{project.code}&amp;project_name=#{project.name}" class="btn btn-success btn-sm">
+                                                        <i class="fa fa-file-excel-o me-1"/> Importar Presupuesto para este Proyecto
+                                                    </a>
+                                                </div>
+                                            </td>
                                         </tr>
                                     </t>
                                 </tbody>
