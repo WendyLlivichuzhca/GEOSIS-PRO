@@ -4203,61 +4203,360 @@
             <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
             <style>
+                /* Layout Split Screen */
+                .geosis-map-layout {
+                    display: flex;
+                    gap: 1.25rem;
+                    min-height: calc(100vh - 140px);
+                    margin-top: 0.5rem;
+                }
+                .geosis-map-sidebar {
+                    width: 320px;
+                    flex-shrink: 0;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 0.8rem;
+                }
+                .geosis-map-main-panel {
+                    flex-grow: 1;
+                    position: relative;
+                }
+                
                 #geosis-main-map {
-                    height: 600px;
+                    height: 100%;
+                    min-height: 580px;
                     width: 100%;
-                    border-radius: 12px;
-                    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+                    border-radius: 16px;
                     z-index: 1;
                 }
-                .geosis-map-popup {
-                    padding: 5px;
+
+                /* Sidebar Card Styles */
+                .geosis-map-sidebar-card {
+                    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+                    border: 1px solid rgba(39, 53, 68, 0.06);
+                    border-radius: 12px;
+                    background: #fff;
+                    cursor: pointer;
+                    padding: 0.9rem;
+                    position: relative;
+                    margin-bottom: 0.6rem;
+                    box-shadow: 0 2px 6px rgba(31, 45, 61, 0.02);
                 }
-                .geosis-map-popup h4 {
-                    margin: 0 0 5px 0;
-                    color: #1e293b;
-                    font-size: 1rem;
+                .geosis-map-sidebar-card:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 6px 18px rgba(31, 45, 61, 0.08);
+                    border-color: var(--geosis-blue);
                 }
-                .geosis-map-popup p {
-                    margin: 0 0 10px 0;
-                    color: #64748b;
-                    font-size: 0.85rem;
+                .geosis-map-sidebar-card.is-active {
+                    border-color: var(--geosis-blue);
+                    background: rgba(109, 135, 157, 0.04);
+                    box-shadow: inset 4px 0 0 var(--geosis-blue), 0 4px 12px rgba(31, 45, 61, 0.04);
                 }
-                .geosis-map-popup .btn {
-                    display: block;
+
+                /* Layer Control overlay */
+                .geosis-map-style-ctrl {
+                    position: absolute;
+                    top: 12px;
+                    right: 12px;
+                    z-index: 1000;
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+                    background: rgba(255,255,255,0.92);
+                    backdrop-filter: blur(8px);
+                    border-radius: 12px;
+                    padding: 4px;
+                    display: flex;
+                    gap: 2px;
+                    border: 1px solid rgba(0,0,0,0.05);
+                }
+                .geosis-map-style-btn {
+                    border: none;
+                    background: transparent;
+                    padding: 6px 12px;
+                    font-size: 0.7rem;
+                    font-weight: 700;
+                    color: var(--geosis-ink-soft);
+                    border-radius: 8px;
+                    transition: all 0.15s ease;
+                    cursor: pointer;
+                }
+                .geosis-map-style-btn:hover {
+                    background: rgba(0,0,0,0.04);
+                    color: var(--geosis-ink);
+                }
+                .geosis-map-style-btn.is-active {
+                    background: var(--geosis-blue);
+                    color: white !important;
+                }
+
+                /* Custom Animated Pulse Marker */
+                .geosis-custom-marker {
+                    background: transparent !important;
+                    border: none !important;
+                }
+                .geosis-marker-pin {
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 50% 50% 50% 0;
+                    background: var(--marker-color, #6d879d);
+                    position: absolute;
+                    transform: rotate(-45deg);
+                    left: 50%;
+                    top: 50%;
+                    margin: -16px 0 0 -16px;
+                    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    transition: transform 0.2s ease, background-color 0.2s ease;
+                }
+                .geosis-marker-pin::after {
+                    content: '';
+                    width: 22px;
+                    height: 22px;
+                    border-radius: 50%;
+                    background: white;
+                    position: absolute;
+                    z-index: 1;
+                }
+                .geosis-marker-pin i {
+                    transform: rotate(45deg);
+                    font-size: 11px;
+                    color: var(--marker-color, #6d879d);
+                    z-index: 10;
+                }
+                .geosis-marker-pulse {
+                    background: rgba(0, 0, 0, 0.2);
+                    border-radius: 50%;
+                    height: 14px;
+                    width: 14px;
+                    position: absolute;
+                    left: 50%;
+                    top: 50%;
+                    margin: 11px 0 0 -7px;
+                    transform: rotateX(55deg);
+                    z-index: -2;
+                }
+                .geosis-marker-pulse::after {
+                    content: "";
+                    border-radius: 50%;
+                    height: 40px;
+                    width: 40px;
+                    position: absolute;
+                    margin: -13px 0 0 -13px;
+                    animation: geosisPulse 1.5s ease-out infinite;
+                    opacity: 0;
+                    box-shadow: 0 0 1px 2px var(--marker-color, #6d879d);
+                }
+                @keyframes geosisPulse {
+                    0% {
+                        transform: scale(0.1, 0.1);
+                        opacity: 0;
+                    }
+                    50% {
+                        opacity: 0.8;
+                    }
+                    100% {
+                        transform: scale(1.2, 1.2);
+                        opacity: 0;
+                    }
+                }
+
+                /* Popup Custom Cards style */
+                .leaflet-popup-content-wrapper {
+                    border-radius: 16px;
+                    padding: 0;
+                    overflow: hidden;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+                    border: 1px solid rgba(0,0,0,0.04);
+                }
+                .leaflet-popup-content {
+                    margin: 0 !important;
+                    width: 290px !important;
+                }
+                .leaflet-popup-close-button {
+                    color: white !important;
+                    font-size: 16px !important;
+                    padding: 8px !important;
+                    top: 6px !important;
+                    right: 6px !important;
+                    z-index: 100;
+                }
+                .geosis-popup-card {
+                    display: flex;
+                    flex-direction: column;
+                }
+                .geosis-popup-header {
+                    background: linear-gradient(135deg, var(--geosis-blue) 0%, var(--geosis-blue-deep) 100%);
+                    color: white;
+                    padding: 12px 16px;
+                }
+                .geosis-popup-header h4 {
+                    margin: 0;
+                    color: white;
+                    font-size: 0.86rem;
+                    font-weight: 800;
+                    line-height: 1.3;
+                }
+                .geosis-popup-header span {
+                    font-size: 0.6rem;
+                    opacity: 0.85;
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
+                    font-weight: 700;
+                }
+                .geosis-popup-body {
+                    padding: 14px 16px;
+                    background: white;
+                    font-size: 0.76rem;
+                }
+                .geosis-popup-info-row {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    margin-bottom: 6px;
+                    color: var(--geosis-ink-soft);
+                }
+                .geosis-popup-info-row i {
+                    width: 14px;
                     text-align: center;
+                    color: var(--geosis-blue);
+                }
+                .geosis-popup-info-row strong {
+                    color: var(--geosis-ink);
+                }
+                .geosis-popup-footer {
+                    padding: 10px 16px;
+                    background: #f8f9fa;
+                    border-top: 1px solid rgba(0,0,0,0.04);
+                    display: flex;
+                    gap: 8px;
                 }
             </style>
 
-            <section class="geosis-panel p-0 overflow-hidden">
-                <div id="geosis-main-map"></div>
-            </section>
+            <div class="geosis-map-layout">
+                <!-- PANEL SIDEBAR: Buscador, Filtros y Lista de Proyectos -->
+                <div class="geosis-map-sidebar">
+                    <!-- Buscador e Info de Bases -->
+                    <div class="geosis-panel p-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="geosis-pill m-0" style="background: rgba(109, 135, 157, 0.1); color: var(--geosis-blue); font-size: 0.65rem; font-weight: 700; border: none;">Consolidado</span>
+                            <span class="text-muted small"><strong id="total-projects-badge"><t t-esc="len(projects)"/></strong> bases</span>
+                        </div>
+                        
+                        <!-- Presupuesto consolidado dinámico -->
+                        <div class="mb-3 p-2 bg-light rounded-3 d-flex justify-content-between align-items-center" style="border: 1px solid rgba(0,0,0,0.03);">
+                            <span class="text-muted" style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Total Presupuestado:</span>
+                            <strong id="total-budget-sum-badge" class="text-dark" style="font-size: 0.8rem; font-weight: 800;">$ 0.00</strong>
+                        </div>
+                        
+                        <h4 class="mb-2 text-dark font-weight-bold" style="font-size: 0.82rem;">Filtros de Ubicación</h4>
+                        
+                        <div class="input-group input-group-sm mb-2" style="border: 1px solid rgba(39, 53, 68, 0.08); border-radius: 8px; overflow: hidden; background: white;">
+                            <span class="input-group-text bg-white border-0" style="padding-right: 0;"><i class="fa fa-search text-muted"></i></span>
+                            <input type="text" id="map-search" class="form-control border-0 form-control-sm" placeholder="Buscar por código o nombre..."/>
+                        </div>
+                        
+                        <select id="map-status-filter" class="form-select form-select-sm" style="border-radius: 8px; border: 1px solid rgba(39, 53, 68, 0.08); font-size: 0.72rem;">
+                            <option value="all">Todos los estados</option>
+                            <option value="planning">Planificación</option>
+                            <option value="active">Activo</option>
+                            <option value="completed">Terminado</option>
+                        </select>
+                    </div>
+
+                    <!-- Lista Scrollable de Proyectos -->
+                    <div class="flex-grow-1 overflow-auto" id="project-list-container" style="max-height: 420px; padding-right: 4px;">
+                        <t t-if="projects">
+                            <t t-foreach="projects" t-as="p">
+                                <t t-if="p.latitude and p.longitude">
+                                    <div class="geosis-map-sidebar-card project-sidebar-card" 
+                                         t-att-data-project-id="p.id"
+                                         t-att-data-lat="p.latitude"
+                                         t-att-data-lng="p.longitude"
+                                         t-att-data-state="p.state">
+                                        
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span class="badge bg-light text-dark px-2 py-1" style="font-size: 0.65rem; border-radius: 6px; border: 1px solid rgba(0,0,0,0.04);">
+                                                <t t-esc="p.code"/>
+                                            </span>
+                                            <span t-attf-class="badge #{'bg-info' if p.state == 'planning' else 'bg-success' if p.state == 'active' else 'bg-cyan' if p.state == 'completed' else 'bg-secondary'} text-white px-2 py-0.5" style="font-size: 0.62rem; border-radius: 6px;">
+                                                <t t-esc="dict(p._fields['state'].selection).get(p.state)"/>
+                                            </span>
+                                        </div>
+                                        
+                                        <h5 class="mb-1 text-dark" style="font-size: 0.8rem; font-weight: 800; line-height: 1.3;"><t t-esc="p.name"/></h5>
+                                        <p class="mb-2 text-muted small" style="font-size: 0.7rem;"><i class="fa fa-map-marker text-danger me-1"></i> <t t-esc="p.location or 'Sin ubicación registrada'"/></p>
+                                        
+                                        <div class="d-flex justify-content-between align-items-center pt-2 border-top" style="border-top-color: rgba(0,0,0,0.03) !important;">
+                                            <span class="text-muted" style="font-size: 0.65rem;">Monto Presupuestado:</span>
+                                            <strong class="text-dark" style="font-size: 0.75rem;"><t t-esc="p.currency_id.symbol"/> <t t-esc="'{:,.2f}'.format(p.total_budget_amount)"/></strong>
+                                        </div>
+                                    </div>
+                                </t>
+                            </t>
+                        </t>
+                        <t t-else="">
+                            <div class="text-center text-muted py-4">No hay bases registradas.</div>
+                        </t>
+                    </div>
+                </div>
+
+                <!-- PANEL MAPA: Mapa e Interruptor de Capas -->
+                <div class="geosis-map-main-panel geosis-panel p-0 overflow-hidden">
+                    <!-- Layer Selector overlay -->
+                    <div class="geosis-map-style-ctrl">
+                        <button type="button" class="geosis-map-style-btn is-active" data-layer-type="streets">Mapa Claro</button>
+                        <button type="button" class="geosis-map-style-btn" data-layer-type="satellite">Satélite</button>
+                        <button type="button" class="geosis-map-style-btn" data-layer-type="terrain">Relieve</button>
+                        <button type="button" class="geosis-map-style-btn" data-layer-type="dark">Mapa Oscuro</button>
+                    </div>
+
+                    <!-- El mapa Leaflet -->
+                    <div id="geosis-main-map"></div>
+                </div>
+            </div>
 
             <script type="text/javascript">
                 document.addEventListener('DOMContentLoaded', function() {
-                    var map = L.map('geosis-main-map').setView([-1.8312, -78.1834], 7);
+                    // 1. Definición de Capas del Mapa
+                    var layers = {
+                        streets: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                            attribution: '&amp;copy; &lt;a href="https://www.openstreetmap.org/copyright"&gt;OpenStreetMap&lt;/a&gt; contributors &amp;copy; &lt;a href="https://carto.com/attributions"&gt;CARTO&lt;/a&gt;'
+                        }),
+                        satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                            attribution: 'Tiles &amp;copy; Esri &amp;mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+                        }),
+                        terrain: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
+                            attribution: 'Tiles &amp;copy; Esri &amp;mdash; Esri, DeLorme, NAVTEQ, TomTom, Intermap, iPC, USGS, FAO, NPS, NRCAN, GeoBase, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), and the GIS User Community'
+                        }),
+                        dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                            attribution: '&amp;copy; &lt;a href="https://www.openstreetmap.org/copyright"&gt;OpenStreetMap&lt;/a&gt; contributors &amp;copy; &lt;a href="https://carto.com/attributions"&gt;CARTO&lt;/a&gt;'
+                        })
+                    };
 
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        attribution: '&amp;copy; &lt;a href="https://www.openstreetmap.org/copyright"&gt;OpenStreetMap&lt;/a&gt; contributors'
-                    }).addTo(map);
-
-                    var customIcon = L.icon({
-                        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-                        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-                        iconSize: [25, 41],
-                        iconAnchor: [12, 41],
-                        popupAnchor: [1, -34],
-                        shadowSize: [41, 41]
+                    // 2. Inicialización del Mapa
+                    var map = L.map('geosis-main-map', {
+                        center: [-1.8312, -78.1834],
+                        zoom: 7,
+                        layers: [layers.streets]
                     });
 
-                    // Datos de proyectos desde Odoo
+                    // 3. Datos de Odoo
                     var projectsData = [
                         <t t-foreach="projects" t-as="p">
                             <t t-if="p.latitude and p.longitude">
                                 {
                                     id: <t t-esc="p.id"/>,
                                     name: "<t t-esc="p.name"/>",
+                                    code: "<t t-esc="p.code"/>",
                                     location: "<t t-esc="p.location or ''"/>",
+                                    partner: "<t t-esc="p.partner_id.name or 'Sin cliente'"/>",
+                                    state: "<t t-esc="p.state"/>",
+                                    state_label: "<t t-esc="dict(p._fields['state'].selection).get(p.state)"/>",
+                                    budget_count: <t t-esc="p.budget_count"/>,
+                                    budget_amount: "<t t-esc="'{:,.2f}'.format(p.total_budget_amount)"/>",
+                                    currency: "<t t-esc="p.currency_id.symbol"/>",
+                                    start_date: "<t t-esc="p.start_date.strftime('%d/%m/%Y') if p.start_date else ''"/>",
                                     lat: <t t-esc="p.latitude"/>,
                                     lng: <t t-esc="p.longitude"/>
                                 },
@@ -4265,35 +4564,173 @@
                         </t>
                     ];
 
+                    var markersMap = {};
                     var group = new L.featureGroup();
 
+                    // Función para obtener color de estado
+                    function getStateColor(state) {
+                        switch(state) {
+                            case 'planning': return '#536d83';
+                            case 'active': return '#7a9282';
+                            case 'completed': return '#78aeb1';
+                            default: return '#8a8178';
+                        }
+                    }
+
+                    // 4. Renderizado de Marcadores Personalizados
                     projectsData.forEach(function(p) {
-                        var popupContent = `
-                            &lt;div class="geosis-map-popup"&gt;
-                                &lt;h4&gt;${p.name}&lt;/h4&gt;
-                                &lt;p&gt;&lt;i class="fa fa-map-marker me-1"&gt;&lt;/i&gt; ${p.location || 'Sin ubicación'}&lt;/p&gt;
-                                &lt;hr class="my-2"/&gt;
-                                &lt;div class="d-grid gap-2"&gt;
-                                    &lt;a href="/my/rubros?location=${encodeURIComponent(p.location)}" class="btn btn-primary btn-sm"&gt;
-                                        &lt;i class="fa fa-list-alt me-1"&gt;&lt;/i&gt; Ver Base de Datos
-                                    &lt;/a&gt;
-                                    &lt;a href="/my/projects/${p.id}" class="btn btn-outline-secondary btn-sm"&gt;
-                                        &lt;i class="fa fa-building me-1"&gt;&lt;/i&gt; Ver Proyecto
-                                    &lt;/a&gt;
-                                &lt;/div&gt;
-                            &lt;/div&gt;
-                        `;
+                        var markerColor = getStateColor(p.state);
+                        
+                        var customHtml = 
+                            '<' + 'div class="geosis-marker-pin" style="--marker-color: ' + markerColor + '"&gt;' +
+                            '<' + 'i class="fa fa-building-o"&gt;&lt;' + '/i&gt;' +
+                            '<' + '/div&gt;' +
+                            '<' + 'div class="geosis-marker-pulse" style="--marker-color: ' + markerColor + '"&gt;&lt;' + '/div&gt;';
+
+                        var customIcon = L.divIcon({
+                            className: 'geosis-custom-marker',
+                            html: customHtml,
+                            iconSize: [30, 42],
+                            iconAnchor: [15, 42],
+                            popupAnchor: [0, -40]
+                        });
+
+                        var popupHtml = 
+                            '<' + 'div class="geosis-popup-card"&gt;' +
+                            '<' + 'div class="geosis-popup-header"&gt;' +
+                            '<' + 'span&gt;' + p.code + ' &amp;bull; ' + p.state_label + '&lt;' + '/span&gt;' +
+                            '<' + 'h4&gt;' + p.name + '&lt;' + '/h4&gt;' +
+                            '<' + '/div&gt;' +
+                            '<' + 'div class="geosis-popup-body"&gt;' +
+                            '<' + 'div class="geosis-popup-info-row"&gt;' +
+                            '<' + 'i class="fa fa-map-marker"&gt;&lt;' + '/i&gt;' +
+                            '<' + 'span&gt;' + (p.location || 'Sin ubicación') + '&lt;' + '/span&gt;' +
+                            '<' + '/div&gt;' +
+                            '<' + 'div class="geosis-popup-info-row"&gt;' +
+                            '<' + 'i class="fa fa-user"&gt;&lt;' + '/i&gt;' +
+                            '<' + 'span&gt;Socio: &lt;' + 'strong&gt;' + p.partner + '&lt;' + '/strong&gt;&lt;' + '/span&gt;' +
+                            '<' + '/div&gt;' +
+                            '<' + 'div class="geosis-popup-info-row"&gt;' +
+                            '<' + 'i class="fa fa-calculator"&gt;&lt;' + '/i&gt;' +
+                            '<' + 'span&gt;' + p.budget_count + ' Presupuesto(s) &amp;bull; &lt;' + 'strong&gt;' + p.currency + ' ' + p.budget_amount + '&lt;' + '/strong&gt;&lt;' + '/span&gt;' +
+                            '<' + '/div&gt;' +
+                            '<' + '/div&gt;' +
+                            '<' + 'div class="geosis-popup-footer"&gt;' +
+                            '<' + 'a href="/my/rubros?location=' + encodeURIComponent(p.location) + '" class="btn btn-primary btn-sm w-100 py-1" style="font-size: 0.65rem;"&gt;' +
+                            '<' + 'i class="fa fa-database me-1"&gt;&lt;' + '/i&gt; Base de Datos' +
+                            '<' + '/a&gt;' +
+                            '<' + 'a href="/my/projects/' + p.id + '" class="btn btn-outline-primary btn-sm w-100 py-1" style="font-size: 0.65rem;"&gt;' +
+                            '<' + 'i class="fa fa-building me-1"&gt;&lt;' + '/i&gt; Ver Proyecto' +
+                            '<' + '/a&gt;' +
+                            '<' + '/div&gt;' +
+                            '<' + '/div&gt;';
 
                         var marker = L.marker([p.lat, p.lng], {icon: customIcon})
                             .addTo(map)
-                            .bindPopup(popupContent);
-                        
+                            .bindPopup(popupHtml);
+
+                        markersMap[p.id] = marker;
                         group.addLayer(marker);
                     });
 
                     if (group.getLayers().length > 0) {
                         map.fitBounds(group.getBounds().pad(0.1));
                     }
+
+                    // 5. Interactividad del Selector de Capas
+                    document.querySelectorAll('.geosis-map-style-btn').forEach(function(btn) {
+                        btn.addEventListener('click', function() {
+                            document.querySelectorAll('.geosis-map-style-btn').forEach(function(b) {
+                                b.classList.remove('is-active');
+                            });
+                            btn.classList.add('is-active');
+                            
+                            var layerType = btn.getAttribute('data-layer-type');
+                            // Remover capas anteriores
+                            Object.keys(layers).forEach(function(k) {
+                                map.removeLayer(layers[k]);
+                            });
+                            // Añadir capa seleccionada
+                            map.addLayer(layers[layerType]);
+                        });
+                    });
+
+                    // 6. Sincronización entre Lista y Mapa al Hacer Clic en Sidebar Card
+                    document.querySelectorAll('.project-sidebar-card').forEach(function(card) {
+                        card.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            
+                            document.querySelectorAll('.project-sidebar-card').forEach(function(c) {
+                                c.classList.remove('is-active');
+                            });
+                            card.classList.add('is-active');
+
+                            var lat = parseFloat(card.getAttribute('data-lat'));
+                            var lng = parseFloat(card.getAttribute('data-lng'));
+                            var pId = card.getAttribute('data-project-id');
+
+                            map.flyTo([lat, lng], 13, {
+                                animate: true,
+                                duration: 1.5
+                            });
+
+                            if (markersMap[pId]) {
+                                setTimeout(function() {
+                                    markersMap[pId].openPopup();
+                                }, 1500);
+                            }
+                        });
+                    });
+
+                    // 7. Filtrado Dinámico de Tarjetas y Marcadores (Buscador y Selector de Estado)
+                    var searchInput = document.getElementById('map-search');
+                    var statusFilter = document.getElementById('map-status-filter');
+
+                    function filterData() {
+                        var query = searchInput.value.toLowerCase().trim();
+                        var selectedStatus = statusFilter.value;
+                        var visibleCount = 0;
+                        var totalBudget = 0;
+
+                        projectsData.forEach(function(p) {
+                            var matchesSearch = p.name.toLowerCase().includes(query) || p.code.toLowerCase().includes(query) || p.location.toLowerCase().includes(query);
+                            var matchesStatus = selectedStatus === 'all' || p.state === selectedStatus;
+                            var show = matchesSearch &amp;&amp; matchesStatus;
+
+                            var card = document.querySelector('.project-sidebar-card[data-project-id="' + p.id + '"]');
+                            var marker = markersMap[p.id];
+
+                            if (show) {
+                                if (card) card.style.display = 'block';
+                                if (marker) {
+                                    if (!map.hasLayer(marker)) map.addLayer(marker);
+                                }
+                                visibleCount++;
+                                var amount = parseFloat(p.budget_amount.replace(/,/g, ''));
+                                if (!isNaN(amount)) {
+                                    totalBudget += amount;
+                                }
+                            } else {
+                                if (card) card.style.display = 'none';
+                                if (marker) {
+                                    if (map.hasLayer(marker)) map.removeLayer(marker);
+                                }
+                            }
+                        });
+
+                        document.getElementById('total-projects-badge').innerText = visibleCount;
+                        var formattedBudget = totalBudget.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                        var totalBudgetEl = document.getElementById('total-budget-sum-badge');
+                        if (totalBudgetEl) {
+                            totalBudgetEl.innerText = '$ ' + formattedBudget;
+                        }
+                    }
+
+                    // Inicializar el total al cargar
+                    filterData();
+
+                    searchInput.addEventListener('input', filterData);
+                    statusFilter.addEventListener('change', filterData);
                 });
             </script>
         </t>
