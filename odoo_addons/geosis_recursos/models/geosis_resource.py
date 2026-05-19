@@ -70,6 +70,20 @@ class GeosisResource(models.Model):
                 )
         return super().create(vals_list)
 
+    def write(self, vals):
+        res = super(GeosisResource, self).write(vals)
+        if 'price' in vals:
+            for record in self:
+                # Buscar todas las líneas de APU asociadas a este recurso y actualizar su tarifa
+                lines = self.env['geosis.apu.line'].sudo().search([('resource_id', '=', record.id)])
+                if lines:
+                    lines.write({'rate': vals['price']})
+                    # Forzar el recálculo y guardado de los totales de los rubros
+                    apus = lines.mapped('apu_id')
+                    apus._compute_totals()
+        return res
+
+
 
 class GeosisInecIndex(models.Model):
     _inherit = 'geosis.inec.index'

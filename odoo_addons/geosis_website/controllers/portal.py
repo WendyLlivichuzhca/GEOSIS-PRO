@@ -1302,8 +1302,19 @@ class GeosisCustomerPortal(CustomerPortal):
         available_locations = Resource.read_group([], ['location'], ['location'])
         locations = [l['location'] for l in available_locations if l['location']]
 
+        # Obtener un conteo de cuántos APUs usan cada recurso cargado en esta página
+        ApuLine = request.env['geosis.apu.line'].sudo()
+        resource_apu_counts = {}
+        if resources:
+            for line in ApuLine.search([('resource_id', 'in', resources.ids)]):
+                if line.apu_id and line.apu_id.active:
+                    resource_apu_counts.setdefault(line.resource_id.id, set()).add(line.apu_id.id)
+        
+        resource_counts = {r_id: len(apu_ids) for r_id, apu_ids in resource_apu_counts.items()}
+
         values = {
             'resources': resources,
+            'resource_counts': resource_counts,
             'resource_total_count': resource_count,
             'resource_equipment_count': Resource.search_count([('active', '=', True), ('category', '=', 'M')]),
             'resource_labor_count':     Resource.search_count([('active', '=', True), ('category', '=', 'N')]),
@@ -1374,10 +1385,15 @@ class GeosisCustomerPortal(CustomerPortal):
         if not resource.exists():
             return request.redirect('/my/resources')
 
+        # Buscar todos los APUs que utilicen este recurso
+        apu_lines = request.env['geosis.apu.line'].sudo().search([('resource_id', '=', resource.id)])
+        apus = apu_lines.mapped('apu_id').filtered(lambda a: a.active)
+
         values = {
             'page_name': 'resource',
             'resource': resource,
             'success': kw.get('success'),
+            'related_apus': apus,
         }
         return request.render("geosis_website.portal_my_resource_detail", values)
 

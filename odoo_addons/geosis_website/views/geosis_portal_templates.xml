@@ -31,6 +31,11 @@
 
     <template id="geosis_portal_layout" name="GEOSIS Portal Layout">
         <t t-call="website.layout">
+            <!-- Google Font: Inter loaded safely via HTML links instead of SCSS HTTP imports -->
+            <link rel="preconnect" href="https://fonts.googleapis.com"/>
+            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
+            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+
             <t t-set="no_header" t-value="True"/>
             <t t-set="no_footer" t-value="True"/>
             <div id="wrap" class="oe_structure">
@@ -103,29 +108,7 @@
                     </aside>
 
                     <main class="geosis-app-main">
-                        <header class="geosis-app-topbar">
-                            <div class="geosis-app-topbar__intro">
-                                <div class="geosis-app-topbar__eyebrow">Workspace GEOSIS</div>
-                                <h1><t t-esc="page_title or 'Dashboard'"/></h1>
-                                <p><t t-esc="page_subtitle or 'Operacion del cliente'"/></p>
-                            </div>
-                            <div class="geosis-app-topbar__actions">
-                                <form action="/geosis/search" method="get" class="geosis-app-topbar__search">
-                                    <input type="text" name="q" t-att-value="request.params.get('search') or request.params.get('q') or ''" class="form-control" placeholder="Buscar en el workspace"/>
-                                    <select name="scope" class="form-select">
-                                        <option value="projects" t-att-selected="'selected' if (request.params.get('scope') or 'projects') == 'projects' else None">Proyectos</option>
-                                        <option value="budgets" t-att-selected="'selected' if request.params.get('scope') == 'budgets' else None">Presupuestos</option>
-                                        <option value="rubros" t-att-selected="'selected' if request.params.get('scope') == 'rubros' else None">Rubros</option>
-                                        <option value="resources" t-att-selected="'selected' if request.params.get('scope') == 'resources' else None">Recursos</option>
-                                    </select>
-                                    <button type="submit" class="btn btn-outline-primary btn-sm">Buscar</button>
-                                </form>
-                                <div class="geosis-app-topbar__quick">
-                                    <a href="/my/import-excel" class="btn btn-outline-primary btn-sm">Importar Excel</a>
-                                    <a href="/my/projects/new" class="btn btn-primary btn-sm">Nuevo proyecto</a>
-                                </div>
-                            </div>
-                        </header>
+
 
                         <section class="geosis-app-content">
                             <t t-out="0"/>
@@ -1798,6 +1781,166 @@
             <t t-set="page_name" t-value="'rubro'"/>
             <t t-set="page_title" t-value="'Rubros APU'"/>
             <t t-set="page_subtitle" t-value="'Catalogo tecnico de analisis unitarios'"/>
+            
+            <style>
+                .geosis-app-shell table.geosis-clean-table {
+                    margin: 0 !important;
+                    width: 100% !important;
+                    border-collapse: separate !important;
+                    border-spacing: 0 !important;
+                    background: transparent !important;
+                }
+
+                .geosis-app-shell table.geosis-clean-table thead, 
+                .geosis-app-shell table.geosis-clean-table tbody, 
+                .geosis-app-shell table.geosis-clean-table tfoot, 
+                .geosis-app-shell table.geosis-clean-table tr, 
+                .geosis-app-shell table.geosis-clean-table td, 
+                .geosis-app-shell table.geosis-clean-table th {
+                    border-color: transparent !important;
+                    border-style: none !important;
+                    border-width: 0 !important;
+                    background: transparent !important;
+                }
+
+                .geosis-app-shell table.geosis-clean-table thead th {
+                    padding: 0.95rem 1.15rem !important;
+                    background: rgba(245, 241, 235, 0.6) !important;
+                    border-bottom: 2px solid rgba(39, 53, 68, 0.08) !important;
+                    color: #5d7c99 !important;
+                    font-size: 0.68rem !important;
+                    font-weight: 800 !important;
+                    text-transform: uppercase !important;
+                    letter-spacing: 0.09em !important;
+                    vertical-align: middle !important;
+                    box-shadow: none !important;
+                }
+
+                .geosis-app-shell table.geosis-clean-table tbody tr {
+                    background: #ffffff !important;
+                    transition: background-color 0.2s ease, box-shadow 0.2s ease !important;
+                }
+
+                .geosis-app-shell table.geosis-clean-table tbody tr:hover {
+                    background-color: #faf9f6 !important;
+                }
+
+                .geosis-app-shell table.geosis-clean-table tbody td {
+                    padding: 1.15rem 1.15rem !important;
+                    border-bottom: 1px solid rgba(39, 53, 68, 0.06) !important;
+                    vertical-align: middle !important;
+                    color: #273544 !important;
+                    font-size: 0.82rem !important;
+                    font-weight: 500 !important;
+                    font-family: inherit !important;
+                }
+
+                .geosis-app-shell table.geosis-clean-table tbody tr:last-child td {
+                    border-bottom: none !important;
+                }
+
+                .geosis-app-shell table.geosis-clean-table td strong {
+                    font-weight: 700 !important;
+                    color: #273544 !important;
+                }
+
+                .geosis-app-shell table.geosis-clean-table .text-end {
+                    font-variant-numeric: tabular-nums !important;
+                    text-align: right !important;
+                }
+
+                .geosis-app-shell table.geosis-clean-table .text-center {
+                    text-align: center !important;
+                }
+
+                .geosis-app-shell table.geosis-clean-table a {
+                    color: #0f75bc !important;
+                    text-decoration: none !important;
+                    font-weight: 700 !important;
+                    transition: color 0.15s ease !important;
+                }
+
+                .geosis-app-shell table.geosis-clean-table a:hover {
+                    color: #0e649f !important;
+                }
+
+                .geosis-chip {
+                    display: inline-flex !important;
+                    align-items: center !important;
+                    padding: 0.25rem 0.55rem !important;
+                    border-radius: 8px !important;
+                    background: rgba(109, 135, 157, 0.08) !important;
+                    color: #0f75bc !important;
+                    font-size: 0.7rem !important;
+                    font-weight: 700 !important;
+                    border: 1px solid rgba(109, 135, 157, 0.15) !important;
+                }
+
+                .geosis-vae-badge {
+                    display: inline-flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    padding: 0.28rem 0.58rem !important;
+                    border-radius: 999px !important;
+                    font-size: 0.7rem !important;
+                    font-weight: 700 !important;
+                }
+
+                .geosis-vae-badge.is-high {
+                    background-color: rgba(122, 146, 130, 0.12) !important;
+                    color: #28a745 !important;
+                    border: 1px solid rgba(122, 146, 130, 0.22) !important;
+                }
+
+                .geosis-vae-badge.is-medium {
+                    background-color: rgba(197, 139, 107, 0.12) !important;
+                    color: #fd7e14 !important;
+                    border: 1px solid rgba(197, 139, 107, 0.22) !important;
+                }
+
+                .geosis-vae-badge.is-low {
+                    background-color: rgba(107, 122, 141, 0.08) !important;
+                    color: #5d7c99 !important;
+                    border: 1px solid rgba(107, 122, 141, 0.15) !important;
+                }
+
+                .geosis-state {
+                    display: inline-flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    padding: 0.28rem 0.58rem !important;
+                    border-radius: 999px !important;
+                    font-size: 0.7rem !important;
+                    font-weight: 700 !important;
+                    text-transform: capitalize !important;
+                    border-width: 1px !important;
+                    border-style: solid !important;
+                    line-height: 1 !important;
+                }
+
+                .geosis-state.active,
+                .geosis-state.approved {
+                    background-color: rgba(122, 146, 130, 0.12) !important;
+                    color: #28a745 !important;
+                    border-color: rgba(122, 146, 130, 0.25) !important;
+                }
+
+                .geosis-state.planning,
+                .geosis-state.draft {
+                    background-color: rgba(197, 139, 107, 0.12) !important;
+                    color: #fd7e14 !important;
+                    border-color: rgba(197, 139, 107, 0.25) !important;
+                }
+
+                .geosis-state.completed,
+                .geosis-state.archived,
+                .geosis-state.cancelled {
+                    background-color: rgba(107, 122, 141, 0.08) !important;
+                    color: #5d7c99 !important;
+                    border-color: rgba(107, 122, 141, 0.18) !important;
+                }
+            </style>
+
             <div t-if="rubro_created" class="alert alert-success geosis-notice" role="alert">
                 El rubro se creo correctamente.
             </div>
@@ -1807,20 +1950,52 @@
             <div t-if="rubro_deleted" class="alert alert-warning geosis-notice" role="alert">
                 El rubro se elimino del catalogo.
             </div>
-            <div class="geosis-stat-strip">
-                <article class="geosis-mini-card"><span>Total rubros</span><strong><t t-esc="rubro_total_count or 0"/></strong></article>
-                <article class="geosis-mini-card"><span>Activos</span><strong><t t-esc="rubro_active_count or 0"/></strong></article>
-                <article class="geosis-mini-card"><span>Inactivos</span><strong><t t-esc="rubro_inactive_count or 0"/></strong></article>
-                <article class="geosis-mini-card"><span>Prom. costo total</span><strong>$<t t-esc="'%.2f' % (rubro_avg_total or 0.0)"/></strong></article>
+            <div class="geosis-stat-strip mb-4">
+                <article class="geosis-mini-card is-blue d-flex align-items-center gap-3">
+                    <div class="geosis-metric-card__icon text-primary bg-light rounded p-2" style="font-size: 1.25rem;">
+                        <i class="fa fa-folder-open"/>
+                    </div>
+                    <div>
+                        <span class="text-muted small d-block">Total rubros</span>
+                        <strong class="h4 mb-0 font-weight-bold text-dark"><t t-esc="rubro_total_count or 0"/></strong>
+                    </div>
+                </article>
+                <article class="geosis-mini-card is-green d-flex align-items-center gap-3">
+                    <div class="geosis-metric-card__icon text-success bg-light rounded p-2" style="font-size: 1.25rem;">
+                        <i class="fa fa-check-circle"/>
+                    </div>
+                    <div>
+                        <span class="text-muted small d-block">Activos</span>
+                        <strong class="h4 mb-0 font-weight-bold text-success"><t t-esc="rubro_active_count or 0"/></strong>
+                    </div>
+                </article>
+                <article class="geosis-mini-card is-orange d-flex align-items-center gap-3">
+                    <div class="geosis-metric-card__icon text-danger bg-light rounded p-2" style="font-size: 1.25rem;">
+                        <i class="fa fa-times-circle"/>
+                    </div>
+                    <div>
+                        <span class="text-muted small d-block">Inactivos</span>
+                        <strong class="h4 mb-0 font-weight-bold text-danger"><t t-esc="rubro_inactive_count or 0"/></strong>
+                    </div>
+                </article>
+                <article class="geosis-mini-card is-cyan d-flex align-items-center gap-3">
+                    <div class="geosis-metric-card__icon text-info bg-light rounded p-2" style="font-size: 1.25rem;">
+                        <i class="fa fa-dollar"/>
+                    </div>
+                    <div>
+                        <span class="text-muted small d-block">Prom. costo total</span>
+                        <strong class="h4 mb-0 font-weight-bold text-info">$<t t-esc="'%.2f' % (rubro_avg_total or 0.0)"/></strong>
+                    </div>
+                </article>
             </div>
             <section class="geosis-panel">
-                <div class="geosis-panel__header">
-                    <h3>Catalogo de rubros</h3>
-                    <a href="/my/rubros/new" class="btn btn-primary btn-sm">Nuevo rubro</a>
+                <div class="geosis-panel__header py-3 px-4 d-flex justify-content-between align-items-center">
+                    <h3 class="mb-0 font-weight-bold text-dark">Catálogo de rubros</h3>
+                    <a href="/my/rubros/new" class="btn btn-primary btn-sm px-3 rounded-pill"><i class="fa fa-plus me-1"/> Nuevo rubro</a>
                 </div>
-                <form action="/my/rubros" method="get" class="geosis-filterbar">
+                <form action="/my/rubros" method="get" class="geosis-filterbar py-3 px-4 align-items-center">
                     <div class="geosis-filterbar__search">
-                        <input type="text" name="search" class="form-control" t-att-value="search or ''" placeholder="Buscar por codigo, descripcion o unidad"/>
+                        <input type="text" name="search" class="form-control" t-att-value="search or ''" placeholder="Buscar por código, descripción o unidad..."/>
                     </div>
                     <select name="active" class="form-select">
                         <option value="active" t-att-selected="'selected' if selected_active == 'active' else None">Activos</option>
@@ -1840,57 +2015,63 @@
                             <option t-att-value="sort_item[0]" t-att-selected="'selected' if sort_by == sort_item[0] else None"><t t-esc="sort_item[1]['label']"/></option>
                         </t>
                     </select>
-                    <div class="geosis-filterbar__actions">
-                        <button type="submit" class="btn btn-outline-primary btn-sm">Aplicar</button>
-                        <a href="/my/rubros" class="btn btn-outline-secondary btn-sm">Limpiar</a>
+                    <div class="geosis-filterbar__actions d-flex gap-2">
+                        <button type="submit" class="btn btn-primary btn-sm px-3"><i class="fa fa-filter me-1"/> Filtrar</button>
+                        <a href="/my/rubros" class="btn btn-outline-secondary btn-sm px-3"><i class="fa fa-eraser me-1"/> Limpiar</a>
                     </div>
                 </form>
                 <div class="table-responsive">
-                    <table class="table geosis-clean-table">
+                    <table class="table geosis-clean-table align-middle">
                         <thead>
                             <tr>
-                                <th>Codigo</th>
+                                <th>Código</th>
                                 <th>Nombre del rubro</th>
-                                <th>Codigo CPC</th>
+                                <th>Código CPC</th>
                                 <th>Ubicación</th>
                                 <th>Unidad</th>
                                 <th class="text-center">VAE %</th>
                                 <th class="text-end">Costo directo</th>
                                 <th class="text-end">Indirectos</th>
                                 <th class="text-end">Costo total</th>
-                                <th class="text-center">Activo</th>
-                                <th class="text-center">Acciones</th>
+                                <th class="text-center">Estado</th>
+                                <th class="text-center" style="width: 130px;">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             <t t-if="rubros">
                                 <t t-foreach="rubros" t-as="rubro">
                                     <tr>
-                                        <td><t t-esc="rubro.code"/></td>
+                                        <td><strong><t t-esc="rubro.code"/></strong></td>
                                         <td><t t-esc="rubro.name"/></td>
                                         <td><t t-esc="rubro.cpc_code or '-'"/></td>
                                         <td><t t-esc="rubro.location or 'Global'"/></td>
                                         <td><span class="geosis-chip"><t t-esc="rubro.uom_name"/></span></td>
                                         <td class="text-center">
-                                            <span t-attf-class="badge #{'bg-success' if rubro.vae_percent >= 40 else 'bg-warning' if rubro.vae_percent > 0 else 'bg-secondary'}" style="font-size: 0.75rem;">
+                                            <span t-attf-class="geosis-vae-badge #{'is-high' if rubro.vae_percent >= 40 else 'is-medium' if rubro.vae_percent > 0 else 'is-low'}">
                                                 <t t-esc="'%.1f' % rubro.vae_percent"/>%
                                             </span>
                                         </td>
                                         <td class="text-end">$<t t-esc="'%.2f' % rubro.direct_cost"/></td>
                                         <td class="text-end"><t t-esc="'%.2f' % rubro.indirect_percent"/>%</td>
-                                        <td class="text-end">$<t t-esc="'%.2f' % rubro.total_cost"/></td>
+                                        <td class="text-end font-weight-bold text-primary"><strong>$<t t-esc="'%.2f' % rubro.total_cost"/></strong></td>
                                         <td class="text-center">
-                                            <span t-attf-class="badge #{'bg-success' if rubro.active else 'bg-secondary'}">
-                                                <t t-esc="'Si' if rubro.active else 'No'"/>
+                                            <span t-attf-class="geosis-state #{'active' if rubro.active else 'cancelled'}">
+                                                <t t-esc="'Activo' if rubro.active else 'Inactivo'"/>
                                             </span>
                                         </td>
                                         <td class="text-center">
-                                            <div class="geosis-inline-actions">
-                                                <a t-attf-href="/my/rubro/#{rubro.id}" class="geosis-open-link">Ver</a>
-                                                <a t-attf-href="/my/rubro/#{rubro.id}/edit" class="geosis-open-link">Editar</a>
+                                            <div class="d-flex justify-content-center align-items-center gap-1">
+                                                <a t-attf-href="/my/rubro/#{rubro.id}" class="btn btn-outline-info btn-sm p-1 d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; border-radius: 8px;" title="Ver Rubro">
+                                                    <i class="fa fa-eye"/>
+                                                </a>
+                                                <a t-attf-href="/my/rubro/#{rubro.id}/edit" class="btn btn-outline-primary btn-sm p-1 d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; border-radius: 8px;" title="Editar Rubro">
+                                                    <i class="fa fa-edit"/>
+                                                </a>
                                                 <form t-attf-action="/my/rubro/#{rubro.id}/delete" method="post" class="d-inline" onsubmit="return confirm('Se eliminara este rubro. Deseas continuar?');">
                                                     <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                                                    <button type="submit" class="btn btn-link btn-sm geosis-delete-link">Eliminar</button>
+                                                    <button type="submit" class="btn btn-outline-danger btn-sm p-1 d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; border-radius: 8px;" title="Eliminar Rubro">
+                                                        <i class="fa fa-trash-o"/>
+                                                    </button>
                                                 </form>
                                             </div>
                                         </td>
@@ -1914,36 +2095,69 @@
         <t t-call="geosis_website.geosis_portal_layout">
             <t t-set="page_name" t-value="'rubro'"/>
             <t t-set="page_title" t-value="'Editar Rubro' if apu else 'Nuevo Rubro'"/>
-            <t t-set="page_subtitle" t-value="'Inicio / Rubros / Editar' if apu else 'Inicio / Rubros / Nuevo'"/>
-            <section class="geosis-panel">
-                <div class="geosis-panel__header">
-                    <h3><t t-esc="'Editar rubro' if apu else 'Crear rubro'"/></h3>
+            <t t-set="page_subtitle" t-value="'Catálogo / Rubros / Editar' if apu else 'Catálogo / Rubros / Nuevo'"/>
+            
+            <div class="mb-4">
+                <a t-att-href="'/my/rubro/%s' % apu.id if apu else '/my/rubros'" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                    <i class="fa fa-arrow-left me-1"/> Volver
+                </a>
+            </div>
+
+            <section class="geosis-apu-header-card">
+                <div class="border-bottom pb-3 mb-4 d-flex align-items-center gap-3">
+                    <div class="geosis-meta-item__icon is-blue">
+                        <i class="fa fa-folder-open"/>
+                    </div>
+                    <div>
+                        <span class="geosis-pill mb-1">Formulario Técnico</span>
+                        <h2 class="h4 mb-0 font-weight-bold text-dark"><t t-esc="'Editar rubro' if apu else 'Crear nuevo rubro'"/></h2>
+                    </div>
                 </div>
+
                 <div t-if="error_message" class="alert alert-danger" role="alert"><t t-esc="error_message"/></div>
+                
                 <form t-att-action="'/my/rubro/%s/edit' % apu.id if apu else '/my/rubros/new'" method="post" class="geosis-form">
                     <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                     <input type="hidden" name="code" t-att-value="form_data.get('code', '')"/>
-                    <div class="geosis-form__grid">
+                    
+                    <div class="geosis-form__grid mb-4">
                         <label>
-                            <span>Codigo</span>
-                            <input type="text" class="form-control" t-att-value="form_data.get('code') or 'Se genera automaticamente al guardar'" readonly="readonly"/>
+                            <span class="text-uppercase small font-weight-bold text-muted mb-1 d-block"><i class="fa fa-lock me-1"/> Código (Automático)</span>
+                            <input type="text" class="form-control bg-light text-muted font-weight-bold border-dashed" t-att-value="form_data.get('code') or 'Se genera automáticamente al guardar'" readonly="readonly" style="cursor: not-allowed; border-style: dashed;"/>
                         </label>
-                        <label><span>Nombre del rubro</span><input type="text" name="name" t-att-value="form_data.get('name', '')" class="form-control" required="required"/></label>
-                        <label><span>Unidad</span><input type="text" name="uom_name" t-att-value="form_data.get('uom_name', 'U')" class="form-control" required="required"/></label>
-                        <label><span>Indirectos (%)</span><input type="number" step="0.0001" min="0" name="indirect_percent" t-att-value="form_data.get('indirect_percent', 0.0)" class="form-control"/></label>
-                        <label><span>Codigo CPC</span><input type="text" name="cpc_code" t-att-value="form_data.get('cpc_code', '')" class="form-control"/></label>
+                        <label>
+                            <span class="text-uppercase small font-weight-bold text-muted mb-1 d-block">Nombre del rubro</span>
+                            <input type="text" name="name" t-att-value="form_data.get('name', '')" class="form-control form-control-lg font-weight-bold" required="required" placeholder="Ej: Excavación de zanjas a mano..."/>
+                        </label>
+                        <label>
+                            <span class="text-uppercase small font-weight-bold text-muted mb-1 d-block">Unidad de Medida</span>
+                            <input type="text" name="uom_name" t-att-value="form_data.get('uom_name', 'U')" class="form-control" required="required" placeholder="m3, m2, kg, U, etc..."/>
+                        </label>
+                        <label>
+                            <span class="text-uppercase small font-weight-bold text-muted mb-1 d-block">Costos Indirectos (%)</span>
+                            <input type="number" step="0.01" min="0" max="100" name="indirect_percent" t-att-value="form_data.get('indirect_percent', 0.0)" class="form-control text-end font-weight-bold" placeholder="15.00"/>
+                        </label>
+                        <label>
+                            <span class="text-uppercase small font-weight-bold text-muted mb-1 d-block">Código CPC</span>
+                            <input type="text" name="cpc_code" t-att-value="form_data.get('cpc_code', '')" class="form-control" placeholder="Ej: 54110..."/>
+                        </label>
                     </div>
-                    <label class="geosis-form__block">
-                        <span>Observaciones</span>
-                        <textarea name="description" class="form-control" rows="4"><t t-esc="form_data.get('description', '')"/></textarea>
+
+                    <label class="geosis-form__block mb-4">
+                        <span class="text-uppercase small font-weight-bold text-muted mb-1 d-block">Observaciones y Especificaciones</span>
+                        <textarea name="description" class="form-control" rows="4" placeholder="Escribe aquí las especificaciones técnicas o notas especiales de este rubro..."><t t-esc="form_data.get('description', '')"/></textarea>
                     </label>
-                    <label class="geosis-form__check">
-                        <input type="checkbox" name="active" value="1" t-att-checked="'checked' if form_data.get('active') else None"/>
-                        <span>Rubro activo</span>
-                    </label>
-                    <div class="geosis-form__actions">
-                        <button type="submit" class="btn btn-primary"><t t-esc="'Guardar cambios' if apu else 'Guardar rubro'"/></button>
-                        <a t-att-href="'/my/rubro/%s' % apu.id if apu else '/my/rubros'" class="btn btn-outline-secondary">Cancelar</a>
+
+                    <div class="mb-4 p-3 bg-light rounded border d-inline-block">
+                        <label class="geosis-form__check m-0 d-flex align-items-center gap-2" style="cursor: pointer;">
+                            <input type="checkbox" name="active" value="1" t-att-checked="'checked' if form_data.get('active') else None" style="width: 18px; height: 18px;"/>
+                            <span class="font-weight-bold text-dark">Habilitar este rubro en el catálogo (Activo)</span>
+                        </label>
+                    </div>
+
+                    <div class="geosis-form__actions border-top pt-3 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary px-4"><i class="fa fa-save me-1"/> <t t-esc="'Guardar cambios' if apu else 'Guardar rubro'"/></button>
+                        <a t-att-href="'/my/rubro/%s' % apu.id if apu else '/my/rubros'" class="btn btn-outline-secondary px-4"><i class="fa fa-times me-1"/> Cancelar</a>
                     </div>
                 </form>
             </section>
@@ -1979,48 +2193,102 @@
             <div t-if="rubro_updated" class="alert alert-success geosis-notice" role="alert">
                 El rubro se actualizo correctamente.
             </div>
-            <section class="geosis-panel geosis-apu-sheet mb-4">
-                <div class="geosis-panel__header">
-                    <h3>Ficha del rubro</h3>
-                    <div class="geosis-inline-actions geosis-apu-sheet__actions">
-                        <a t-attf-href="/my/rubro/#{apu.id}/edit" class="geosis-open-link">Editar rubro</a>
+            <section class="geosis-apu-header-card mb-4">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4 pb-3 border-bottom">
+                    <div>
+                        <span class="geosis-pill mb-1">Ficha del rubro</span>
+                        <h2 class="h4 mb-0 font-weight-bold text-dark"><t t-esc="(apu.name or '').replace('**', '').strip()"/></h2>
+                    </div>
+                    <div class="geosis-btn-group">
+                        <a t-attf-href="/my/rubro/#{apu.id}/edit" class="btn btn-outline-primary btn-sm">
+                            <i class="fa fa-edit"/> Editar rubro
+                        </a>
                         <form t-attf-action="/my/rubro/#{apu.id}/duplicate" method="post" class="d-inline">
                             <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                            <button type="submit" class="btn btn-link btn-sm text-info p-0">Duplicar rubro</button>
+                            <button type="submit" class="btn btn-outline-warning btn-sm">
+                                <i class="fa fa-copy"/> Duplicar rubro
+                            </button>
                         </form>
-                        <a t-attf-href="/my/rubro/#{apu.id}/pdf" class="geosis-open-link">Descargar ficha PDF</a>
+                        <a t-attf-href="/my/rubro/#{apu.id}/pdf" target="_blank" class="btn btn-danger btn-sm text-white">
+                            <i class="fa fa-file-pdf-o"/> Descargar ficha PDF
+                        </a>
                         <form t-attf-action="/my/rubro/#{apu.id}/delete" method="post" class="d-inline" onsubmit="return confirm('Se eliminara este rubro. Deseas continuar?');">
                             <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                            <button type="submit" class="btn btn-link btn-sm geosis-delete-link p-0">Eliminar rubro</button>
+                            <button type="submit" class="btn btn-outline-danger btn-sm">
+                                <i class="fa fa-trash-o"/> Eliminar rubro
+                            </button>
                         </form>
                     </div>
                 </div>
-                <div class="geosis-apu-sheet__grid">
-                    <div class="geosis-apu-sheet__column">
-                        <div class="geosis-detail-grid geosis-apu-sheet__meta">
-                            <div><strong>Codigo</strong><span><t t-esc="apu.code"/></span></div>
-                            <div><strong>Descripcion</strong><span><t t-esc="(apu.name or '').replace('**', '').strip()"/></span></div>
-                            <div><strong>Unidad de Medida</strong><span><t t-esc="apu.uom_name"/></span></div>
-                            <div><strong>Activo</strong><span><t t-esc="'Si' if apu.active else 'No'"/></span></div>
+                
+                <div class="row g-4">
+                    <!-- Grid de metadatos del rubro -->
+                    <div class="col-lg-8">
+                        <div class="geosis-apu-meta-grid">
+                            <div class="geosis-meta-item">
+                                <div class="geosis-meta-item__icon is-blue">
+                                    <i class="fa fa-hashtag"/>
+                                </div>
+                                <div class="geosis-meta-item__content">
+                                    <span>Código</span>
+                                    <strong><t t-esc="apu.code"/></strong>
+                                </div>
+                            </div>
+                            <div class="geosis-meta-item">
+                                <div class="geosis-meta-item__icon is-cyan">
+                                    <i class="fa fa-balance-scale"/>
+                                </div>
+                                <div class="geosis-meta-item__content">
+                                    <span>Unidad</span>
+                                    <strong><t t-esc="apu.uom_name"/></strong>
+                                </div>
+                            </div>
+                            <div class="geosis-meta-item">
+                                <div class="geosis-meta-item__icon is-orange">
+                                    <i class="fa fa-barcode"/>
+                                </div>
+                                <div class="geosis-meta-item__content">
+                                    <span>Código CPC</span>
+                                    <strong><t t-esc="apu.cpc_code or '-'"/></strong>
+                                </div>
+                            </div>
+                            <div class="geosis-meta-item">
+                                <div class="geosis-meta-item__icon is-green">
+                                    <i class="fa fa-shield"/>
+                                </div>
+                                <div class="geosis-meta-item__content">
+                                    <span>VAE Total</span>
+                                    <strong><t t-esc="'%.2f' % apu.vae_percent"/>%</strong>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="geosis-apu-sheet__column">
-                        <div class="geosis-detail-grid geosis-apu-sheet__meta geosis-apu-sheet__meta--costs">
+                    
+                    <!-- Resumen financiero destacado -->
+                    <div class="col-lg-4">
+                        <div class="geosis-financial-card">
                             <div>
-                                <strong>Indirectos %</strong>
-                                <span>
-                                    <form t-attf-action="/my/rubro/#{apu.id}/update-indirects" method="post" class="geosis-apu-inline-form d-inline-flex align-items-center gap-2">
-                                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                                        <input type="number" name="indirect_percent" step="0.01" t-att-value="apu.indirect_percent" class="form-control form-control-sm text-end" style="width: 90px;"/>
-                                        <button type="submit" class="btn btn-link btn-sm p-0"><i class="fa fa-save"/></button>
-                                    </form>
-                                </span>
+                                <div class="geosis-financial-card__title">Precio Unitario</div>
+                                <div class="geosis-financial-card__amount">$<t t-esc="'%.2f' % apu.total_cost"/></div>
                             </div>
-                            <div><strong>Codigo CPC</strong><span><t t-esc="apu.cpc_code or '-'"/></span></div>
-                            <div><strong>VAE % Total</strong><span><t t-esc="'%.2f' % apu.vae_percent"/>%</span></div>
-                            <div><strong>Costo Directo</strong><span>$<t t-esc="'%.2f' % apu.direct_cost"/></span></div>
-                            <div><strong>Valor Indirectos</strong><span>$<t t-esc="'%.2f' % apu.indirect_value"/></span></div>
-                            <div><strong>Precio Unitario</strong><span>$<t t-esc="'%.2f' % apu.total_cost"/></span></div>
+                            <div class="geosis-financial-card__breakdown">
+                                <div>
+                                    <span>Costo Directo</span>
+                                    <strong>$<t t-esc="'%.2f' % apu.direct_cost"/></strong>
+                                </div>
+                                <div>
+                                    <span>Indirectos</span>
+                                    <form t-attf-action="/my/rubro/#{apu.id}/update-indirects" method="post" class="geosis-apu-inline-form d-inline-flex align-items-center gap-1">
+                                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                        <input type="number" name="indirect_percent" step="0.01" t-att-value="apu.indirect_percent" class="form-control form-control-sm text-end bg-transparent text-white border-0" style="width: 54px; height: 24px; padding: 2px; font-size: 0.75rem; font-weight: bold; outline: none; border-bottom: 1px dashed rgba(255,255,255,0.6) !important; border-radius: 0; box-shadow: none;"/>
+                                        <button type="submit" class="btn btn-link btn-sm p-0 text-white"><i class="fa fa-save"/></button>
+                                    </form>
+                                </div>
+                                <div>
+                                    <span>Val. Ind.</span>
+                                    <strong>$<t t-esc="'%.2f' % apu.indirect_value"/></strong>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2037,16 +2305,16 @@
                 </ul>
                 <div class="tab-content pt-4">
                     <div class="tab-pane fade show active" id="apu-resources-tab" role="tabpanel">
-                        <div class="geosis-apu-toolbar">
-                            <form t-attf-action="/my/rubro/#{apu.id}/generate-ia" method="post" class="d-inline">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4 p-3 rounded bg-light border">
+                            <form t-attf-action="/my/rubro/#{apu.id}/generate-ia" method="post" class="m-0">
                                 <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                                <button type="submit" class="btn btn-primary btn-sm">
+                                <button type="submit" class="btn geosis-sparkle-btn btn-sm">
                                     <i class="fa fa-magic me-1"/> Sugerir Recursos (IA)
                                 </button>
                             </form>
-                            <div class="geosis-inline-actions geosis-apu-toolbar__links">
-                                <a t-attf-href="/my/rubro/#{apu.id}" class="geosis-open-link">Refrescar</a>
-                                <a href="/my/rubros" class="geosis-open-link">Volver al catalogo</a>
+                            <div class="d-flex align-items-center gap-2">
+                                <a t-attf-href="/my/rubro/#{apu.id}" class="btn btn-outline-secondary btn-sm"><i class="fa fa-refresh"/> Refrescar</a>
+                                <a href="/my/rubros" class="btn btn-outline-secondary btn-sm"><i class="fa fa-arrow-left"/> Volver al catálogo</a>
                             </div>
                         </div>
 
@@ -2133,7 +2401,16 @@
                                         <t t-foreach="apu.line_ids.sorted(lambda l: (l.sequence, l.id))" t-as="line">
                                             <tr>
                                                 <td><t t-esc="line.resource_id.name or '-'"/></td>
-                                                <td><t t-esc="dict(line._fields['category'].selection).get(line.category) or '-'"/></td>
+                                                <td>
+                                                    <span t-attf-class="geosis-category-badge #{
+                                                        'is-equipos' if line.category == 'M' else
+                                                        'is-mano' if line.category == 'N' else
+                                                        'is-materiales' if line.category == 'O' else
+                                                        'is-transporte' if line.category == 'P' else ''
+                                                    }">
+                                                        <t t-esc="dict(line._fields['category'].selection).get(line.category) or '-'"/>
+                                                    </span>
+                                                </td>
                                                 <td><t t-esc="line.uom_name or '-'"/></td>
                                                 <td class="text-end"><t t-esc="'%.4f' % line.quantity"/></td>
                                                 <td class="text-end"><t t-esc="'%.4f' % line.rate"/></td>
@@ -2143,47 +2420,51 @@
                                                 <td class="text-end"><t t-esc="'%.2f' % line.cost"/></td>
                                                 <td><t t-esc="line.note or '-'"/></td>
                                                 <td class="text-center">
-                                                    <div class="geosis-inline-actions">
-                                                        <button class="btn btn-link btn-sm p-0 me-2" t-attf-onclick="geosisToggleEditLine(#{line.id})">Editar</button>
+                                                    <div class="d-flex justify-content-center align-items-center gap-1">
+                                                        <button class="btn btn-outline-primary btn-sm p-1 d-flex align-items-center justify-content-center" style="width: 26px; height: 26px; border-radius: 6px;" t-attf-onclick="geosisToggleEditLine(#{line.id})" title="Editar Línea">
+                                                            <i class="fa fa-edit"/>
+                                                        </button>
                                                         <form t-attf-action="/my/rubro/#{apu.id}/line/#{line.id}/delete" method="post" class="d-inline">
                                                             <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                                                            <button type="submit" class="btn btn-link btn-sm geosis-delete-link p-0">Quitar</button>
+                                                            <button type="submit" class="btn btn-outline-danger btn-sm p-1 d-flex align-items-center justify-content-center" style="width: 26px; height: 26px; border-radius: 6px;" title="Quitar Recurso">
+                                                                <i class="fa fa-trash-o"/>
+                                                             </button>
                                                         </form>
                                                     </div>
                                                 </td>
                                             </tr>
-                                            <tr t-attf-id="edit-line-#{line.id}" class="d-none bg-light">
-                                                <td colspan="11" class="p-3">
-                                                    <form t-attf-action="/my/rubro/#{apu.id}/line/#{line.id}/update" method="post">
+                                            <tr t-attf-id="edit-line-#{line.id}" class="d-none bg-light border-bottom">
+                                                <td colspan="11" class="p-3 bg-light">
+                                                    <form t-attf-action="/my/rubro/#{apu.id}/line/#{line.id}/update" method="post" class="m-0">
                                                         <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                                                         <div class="row g-2 align-items-end">
-                                                            <div class="col-md-2">
-                                                                <label class="small text-muted mb-1">Cant.</label>
-                                                                <input type="number" name="quantity" step="0.0001" t-att-value="line.quantity" class="form-control form-control-sm"/>
+                                                            <div class="col-md-1">
+                                                                <label class="small font-weight-bold text-muted mb-1 text-uppercase" style="font-size: 0.65rem;">Cant.</label>
+                                                                <input type="number" name="quantity" step="0.0001" t-att-value="line.quantity" class="form-control form-control-sm text-end font-weight-bold"/>
                                                             </div>
-                                                            <div class="col-md-2">
-                                                                <label class="small text-muted mb-1">Tarifa</label>
-                                                                <input type="number" name="rate" step="0.0001" t-att-value="line.rate" class="form-control form-control-sm"/>
+                                                            <div class="col-md-1">
+                                                                <label class="small font-weight-bold text-muted mb-1 text-uppercase" style="font-size: 0.65rem;">Tarifa</label>
+                                                                <input type="number" name="rate" step="0.0001" t-att-value="line.rate" class="form-control form-control-sm text-end font-weight-bold"/>
                                                             </div>
-                                                            <div class="col-md-2">
-                                                                <label class="small text-muted mb-1">Rend.</label>
-                                                                <input type="number" name="performance" step="0.0001" t-att-value="line.performance" class="form-control form-control-sm"/>
+                                                            <div class="col-md-1">
+                                                                <label class="small font-weight-bold text-muted mb-1 text-uppercase" style="font-size: 0.65rem;">Rend.</label>
+                                                                <input type="number" name="performance" step="0.0001" t-att-value="line.performance" class="form-control form-control-sm text-end font-weight-bold"/>
                                                             </div>
-                                                            <div class="col-md-2">
-                                                                <label class="small text-muted mb-1">%</label>
-                                                                <input type="number" name="percentage" step="0.0001" t-att-value="line.percentage" class="form-control form-control-sm"/>
+                                                            <div class="col-md-1">
+                                                                <label class="small font-weight-bold text-muted mb-1 text-uppercase" style="font-size: 0.65rem;">%</label>
+                                                                <input type="number" name="percentage" step="0.0001" t-att-value="line.percentage" class="form-control form-control-sm text-end"/>
                                                             </div>
-                                                            <div class="col-md-2">
-                                                                <label class="small text-muted mb-1">Dist.</label>
-                                                                <input type="number" name="distance" step="0.0001" t-att-value="line.distance" class="form-control form-control-sm"/>
+                                                            <div class="col-md-1">
+                                                                <label class="small font-weight-bold text-muted mb-1 text-uppercase" style="font-size: 0.65rem;">Dist.</label>
+                                                                <input type="number" name="distance" step="0.0001" t-att-value="line.distance" class="form-control form-control-sm text-end"/>
                                                             </div>
-                                                            <div class="col-md-2">
-                                                                <label class="small text-muted mb-1">Nota</label>
-                                                                <input type="text" name="note" t-att-value="line.note" class="form-control form-control-sm"/>
+                                                            <div class="col-md-4">
+                                                                <label class="small font-weight-bold text-muted mb-1 text-uppercase" style="font-size: 0.65rem;">Observación / Nota</label>
+                                                                <input type="text" name="note" t-att-value="line.note" class="form-control form-control-sm" placeholder="Nota descriptiva de esta línea..."/>
                                                             </div>
-                                                            <div class="col-md-2">
-                                                                <button type="submit" class="btn btn-primary btn-sm w-100 mb-1">Guardar</button>
-                                                                <button type="button" class="btn btn-outline-secondary btn-sm w-100" t-attf-onclick="geosisToggleEditLine(#{line.id})">Cancelar</button>
+                                                            <div class="col-md-3 d-flex gap-2 justify-content-end">
+                                                                <button type="submit" class="btn btn-primary btn-sm px-3 flex-grow-1"><i class="fa fa-save me-1"/> Guardar</button>
+                                                                <button type="button" class="btn btn-outline-secondary btn-sm px-3 flex-grow-1" t-attf-onclick="geosisToggleEditLine(#{line.id})"><i class="fa fa-times me-1"/> Cancelar</button>
                                                             </div>
                                                         </div>
                                                     </form>
@@ -2279,6 +2560,169 @@
             <t t-set="page_title" t-value="'Recursos'"/>
             <t t-set="page_subtitle" t-value="'Catalogo operativo de materiales, mano de obra y equipos'"/>
 
+            <style>
+                .geosis-app-shell table.geosis-clean-table {
+                    margin: 0 !important;
+                    width: 100% !important;
+                    border-collapse: separate !important;
+                    border-spacing: 0 !important;
+                    background: transparent !important;
+                }
+
+                .geosis-app-shell table.geosis-clean-table thead, 
+                .geosis-app-shell table.geosis-clean-table tbody, 
+                .geosis-app-shell table.geosis-clean-table tfoot, 
+                .geosis-app-shell table.geosis-clean-table tr, 
+                .geosis-app-shell table.geosis-clean-table td, 
+                .geosis-app-shell table.geosis-clean-table th {
+                    border-color: transparent !important;
+                    border-style: none !important;
+                    border-width: 0 !important;
+                    background: transparent !important;
+                }
+
+                .geosis-app-shell table.geosis-clean-table thead th {
+                    padding: 0.95rem 1.15rem !important;
+                    background: rgba(245, 241, 235, 0.6) !important;
+                    border-bottom: 2px solid rgba(39, 53, 68, 0.08) !important;
+                    color: #5d7c99 !important;
+                    font-size: 0.68rem !important;
+                    font-weight: 800 !important;
+                    text-transform: uppercase !important;
+                    letter-spacing: 0.09em !important;
+                    vertical-align: middle !important;
+                    box-shadow: none !important;
+                }
+
+                .geosis-app-shell table.geosis-clean-table tbody tr {
+                    background: #ffffff !important;
+                    transition: background-color 0.2s ease, box-shadow 0.2s ease !important;
+                }
+
+                .geosis-app-shell table.geosis-clean-table tbody tr:hover {
+                    background-color: #faf9f6 !important;
+                }
+
+                .geosis-app-shell table.geosis-clean-table tbody td {
+                    padding: 1.15rem 1.15rem !important;
+                    border-bottom: 1px solid rgba(39, 53, 68, 0.06) !important;
+                    vertical-align: middle !important;
+                    color: #273544 !important;
+                    font-size: 0.82rem !important;
+                    font-weight: 500 !important;
+                    font-family: inherit !important;
+                }
+
+                .geosis-app-shell table.geosis-clean-table tbody tr:last-child td {
+                    border-bottom: none !important;
+                }
+
+                .geosis-app-shell table.geosis-clean-table td strong {
+                    font-weight: 700 !important;
+                    color: #273544 !important;
+                }
+
+                .geosis-app-shell table.geosis-clean-table .text-end {
+                    font-variant-numeric: tabular-nums !important;
+                    text-align: right !important;
+                }
+
+                .geosis-app-shell table.geosis-clean-table .text-center {
+                    text-align: center !important;
+                }
+
+                .geosis-app-shell table.geosis-clean-table a {
+                    color: #0f75bc !important;
+                    text-decoration: none !important;
+                    font-weight: 700 !important;
+                    transition: color 0.15s ease !important;
+                }
+
+                .geosis-app-shell table.geosis-clean-table a:hover {
+                    color: #0e649f !important;
+                }
+
+                .geosis-chip {
+                    display: inline-flex !important;
+                    align-items: center !important;
+                    padding: 0.25rem 0.55rem !important;
+                    border-radius: 8px !important;
+                    font-size: 0.7rem !important;
+                    font-weight: 700 !important;
+                    border: 1px solid transparent !important;
+                }
+                .geosis-chip.is-equipos {
+                    background: rgba(15, 117, 188, 0.08) !important;
+                    color: #0f75bc !important;
+                    border-color: rgba(15, 117, 188, 0.15) !important;
+                }
+                .geosis-chip.is-mano-de-obra {
+                    background: rgba(40, 167, 69, 0.08) !important;
+                    color: #28a745 !important;
+                    border-color: rgba(40, 167, 69, 0.15) !important;
+                }
+                .geosis-chip.is-materiales {
+                    background: rgba(253, 126, 20, 0.08) !important;
+                    color: #fd7e14 !important;
+                    border-color: rgba(253, 126, 20, 0.15) !important;
+                }
+                .geosis-chip.is-transporte {
+                    background: rgba(93, 124, 153, 0.08) !important;
+                    color: #5d7c99 !important;
+                    border-color: rgba(93, 124, 153, 0.15) !important;
+                }
+                .geosis-chip.is-info {
+                    background: rgba(109, 135, 157, 0.05) !important;
+                    color: #5d7c99 !important;
+                    border-color: rgba(109, 135, 157, 0.10) !important;
+                }
+
+                .geosis-vae-badge {
+                    display: inline-flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    padding: 0.28rem 0.58rem !important;
+                    border-radius: 999px !important;
+                    font-size: 0.7rem !important;
+                    font-weight: 700 !important;
+                }
+
+                .geosis-vae-badge.is-high {
+                    background-color: rgba(122, 146, 130, 0.12) !important;
+                    color: #28a745 !important;
+                    border: 1px solid rgba(122, 146, 130, 0.22) !important;
+                }
+
+                .geosis-vae-badge.is-medium {
+                    background-color: rgba(197, 139, 107, 0.12) !important;
+                    color: #fd7e14 !important;
+                    border: 1px solid rgba(197, 139, 107, 0.22) !important;
+                }
+
+                .geosis-vae-badge.is-low {
+                    background-color: rgba(107, 122, 141, 0.08) !important;
+                    color: #5d7c99 !important;
+                    border: 1px solid rgba(107, 122, 141, 0.15) !important;
+                }
+
+                .geosis-inline-price-input {
+                    border: 1px solid rgba(39, 53, 68, 0.12) !important;
+                    border-radius: 8px !important;
+                    padding: 0.3rem 0.6rem !important;
+                    font-weight: 700 !important;
+                    color: #273544 !important;
+                    background: #ffffff !important;
+                    font-family: inherit !important;
+                    font-size: 0.8rem !important;
+                    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out !important;
+                }
+                .geosis-inline-price-input:focus {
+                    border-color: #0f75bc !important;
+                    outline: none !important;
+                    box-shadow: 0 0 0 3px rgba(15, 117, 188, 0.1) !important;
+                }
+            </style>
+
             <!-- Banner de éxito -->
             <t t-if="success == 'price_updated'">
                 <div class="alert alert-success geosis-notice d-flex align-items-center gap-2" role="alert">
@@ -2295,16 +2739,18 @@
             </div>
 
             <section class="geosis-panel">
-                <div class="geosis-panel__header">
-                    <h3>Catalogo de recursos</h3>
-                    <div class="geosis-inline-actions">
-                        <span class="geosis-panel__lead text-muted small">Haz clic en el precio para editarlo directamente</span>
-                        <a href="/my/resources/new" class="btn btn-primary btn-sm">Nuevo recurso</a>
+                <div class="geosis-panel__header py-3 px-4 d-flex justify-content-between align-items-center">
+                    <h3 class="mb-0 font-weight-bold text-dark">Catálogo de recursos</h3>
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="text-muted small d-none d-md-inline"><i class="fa fa-info-circle me-1"/> Haz clic en el precio para editarlo directamente</span>
+                        <a href="/my/resources/new" class="btn btn-primary btn-sm px-3 rounded-pill">
+                            <i class="fa fa-plus me-1"/> Nuevo recurso
+                        </a>
                     </div>
                 </div>
 
                 <!-- Filtros -->
-                <form action="/my/resources" method="get" class="geosis-filterbar">
+                <form action="/my/resources" method="get" class="geosis-filterbar py-3 px-4 align-items-center">
                     <div class="geosis-filterbar__search">
                         <input type="text" name="search" class="form-control" t-att-value="search or ''" placeholder="Buscar por codigo o descripcion..."/>
                     </div>
@@ -2328,9 +2774,9 @@
                             <option t-att-value="sort_item[0]" t-att-selected="'selected' if sort_by == sort_item[0] else None"><t t-esc="sort_item[1]['label']"/></option>
                         </t>
                     </select>
-                    <div class="geosis-filterbar__actions">
-                        <button type="submit" class="btn btn-outline-primary btn-sm">Aplicar</button>
-                        <a href="/my/resources" class="btn btn-outline-secondary btn-sm">Limpiar</a>
+                    <div class="geosis-filterbar__actions d-flex gap-2">
+                        <button type="submit" class="btn btn-primary btn-sm px-3"><i class="fa fa-filter me-1"/> Filtrar</button>
+                        <a href="/my/resources" class="btn btn-outline-secondary btn-sm px-3"><i class="fa fa-eraser me-1"/> Limpiar</a>
                     </div>
                 </form>
 
@@ -2347,29 +2793,48 @@
                                 <th class="text-center">VAE %</th>
                                 <th>Indice INEC</th>
                                 <th class="text-end">Precio (editable)</th>
-                                <th class="text-center">Accion</th>
+                                <th class="text-center" style="width: 100px;">ACCIONES</th>
                             </tr>
                         </thead>
                         <tbody>
                             <t t-if="resources">
                                 <t t-foreach="resources" t-as="resource">
                                     <tr>
-                                        <td><a t-attf-href="/my/resources/#{resource.id}" class="geosis-open-link"><t t-esc="resource.code or '-'"/></a></td>
+                                        <td><strong><t t-esc="resource.code or '-'"/></strong></td>
                                         <td>
-                                            <strong><a t-attf-href="/my/resources/#{resource.id}" class="geosis-open-link"><t t-esc="resource.name"/></a></strong>
+                                            <strong><t t-esc="resource.name"/></strong>
+                                            
+                                            <!-- Mostrar cuántos rubros APU utilizan este recurso -->
+                                            <div class="mt-1">
+                                                <span class="text-muted small d-inline-flex align-items-center gap-1">
+                                                    <i class="fa fa-folder-open text-warning me-1"></i>
+                                                    Utilizado en: <strong><t t-esc="resource_counts.get(resource.id, 0)"/> rubro(s) APU</strong>
+                                                </span>
+                                            </div>
+
                                             <t t-if="resource.description">
-                                                <div class="text-muted small text-truncate" style="max-width:200px;"><t t-esc="resource.description"/></div>
+                                                <div class="text-muted small text-truncate mt-1" style="max-width:200px;" t-att-title="resource.description">
+                                                    <i class="fa fa-info-circle text-info me-1"/> <t t-esc="resource.description"/>
+                                                </div>
                                             </t>
                                         </td>
                                         <td><t t-esc="resource.location or 'Global'"/></td>
-                                        <td><span class="geosis-chip"><t t-esc="dict(resource._fields['category'].selection).get(resource.category)"/></span></td>
-                                        <td><t t-esc="resource.uom_id.name"/></td>
-                                        <td class="text-center">
-                                            <t t-if="resource.vae_percent">
-                                                <span class="badge bg-success" style="font-size:0.65rem;"><t t-esc="'%.1f' % resource.vae_percent"/>%</span>
-                                            </t>
-                                            <t t-else=""><span class="text-muted">-</span></t>
-                                        </td>
+                                        <td>
+                                             <span t-attf-class="geosis-chip #{'is-equipos' if resource.category == 'M' else 'is-mano-de-obra' if resource.category == 'N' else 'is-materiales' if resource.category == 'O' else 'is-transporte'}">
+                                                 <t t-esc="dict(resource._fields['category'].selection).get(resource.category)"/>
+                                             </span>
+                                         </td>
+                                         <td><t t-esc="resource.uom_id.name"/></td>
+                                         <td class="text-center">
+                                             <t t-if="resource.vae_percent">
+                                                 <span t-attf-class="geosis-vae-badge #{'is-high' if resource.vae_percent &gt;= 40.0 else 'is-medium' if resource.vae_percent &gt; 0.0 else 'is-low'}">
+                                                     <t t-esc="'%.1f' % resource.vae_percent"/>%
+                                                 </span>
+                                             </t>
+                                             <t t-else="">
+                                                 <span class="geosis-vae-badge is-low">0.0%</span>
+                                             </t>
+                                         </td>
                                         <td>
                                             <t t-if="resource.inec_index_id">
                                                 <span class="geosis-chip is-info" title="Indice INEC para formula polinomica">
@@ -2389,16 +2854,31 @@
                                                        name="price"
                                                        step="0.0001"
                                                        t-att-value="'%.4f' % resource.price"
-                                                       class="form-control form-control-sm text-end"
+                                                       class="geosis-inline-price-input text-end"
                                                        style="width:110px;"
                                                        title="Editar precio"/>
                                                 <button type="submit" class="btn btn-link btn-sm p-0" title="Guardar precio">
-                                                    <i class="fa fa-save text-primary"/>
+                                                    <i class="fa fa-save geosis-save-btn"/>
                                                 </button>
                                             </form>
                                         </td>
                                         <td class="text-center">
-                                            <a t-attf-href="/my/resources/#{resource.id}/edit" class="btn btn-outline-primary btn-sm">Abrir</a>
+                                            <div class="d-flex justify-content-center align-items-center gap-1">
+                                                <!-- Botón Ver Ficha (Ojo) -->
+                                                <a t-attf-href="/my/resources/#{resource.id}" 
+                                                   class="btn btn-outline-info btn-sm p-1 d-flex align-items-center justify-content-center" 
+                                                   style="width: 28px; height: 28px; border-radius: 8px;" 
+                                                   title="Ver Ficha">
+                                                    <i class="fa fa-eye"/>
+                                                </a>
+                                                <!-- Botón Editar Ficha (Lápiz) -->
+                                                <a t-attf-href="/my/resources/#{resource.id}/edit" 
+                                                   class="btn btn-outline-primary btn-sm p-1 d-flex align-items-center justify-content-center" 
+                                                   style="width: 28px; height: 28px; border-radius: 8px;" 
+                                                   title="Editar Recurso">
+                                                    <i class="fa fa-edit"/>
+                                                </a>
+                                            </div>
                                         </td>
                                     </tr>
                                 </t>
@@ -2423,6 +2903,261 @@
             <t t-set="page_title" t-value="(resource.name or '').replace('**', '').replace('*', '').strip()"/>
             <t t-set="page_subtitle" t-value="'Ficha tecnica del recurso seleccionado'"/>
 
+            <style>
+                .geosis-app-shell table.geosis-clean-table {
+                    margin: 0 !important;
+                    width: 100% !important;
+                    border-collapse: separate !important;
+                    border-spacing: 0 !important;
+                    background: transparent !important;
+                }
+
+                .geosis-app-shell table.geosis-clean-table thead, 
+                .geosis-app-shell table.geosis-clean-table tbody, 
+                .geosis-app-shell table.geosis-clean-table tfoot, 
+                .geosis-app-shell table.geosis-clean-table tr, 
+                .geosis-app-shell table.geosis-clean-table td, 
+                .geosis-app-shell table.geosis-clean-table th {
+                    border-color: transparent !important;
+                    border-style: none !important;
+                    border-width: 0 !important;
+                    background: transparent !important;
+                }
+
+                .geosis-app-shell table.geosis-clean-table thead th {
+                    padding: 0.95rem 1.15rem !important;
+                    background: rgba(245, 241, 235, 0.6) !important;
+                    border-bottom: 2px solid rgba(39, 53, 68, 0.08) !important;
+                    color: #5d7c99 !important;
+                    font-size: 0.68rem !important;
+                    font-weight: 800 !important;
+                    text-transform: uppercase !important;
+                    letter-spacing: 0.09em !important;
+                    vertical-align: middle !important;
+                    box-shadow: none !important;
+                }
+
+                .geosis-app-shell table.geosis-clean-table tbody tr {
+                    background: #ffffff !important;
+                    transition: background-color 0.2s ease, box-shadow 0.2s ease !important;
+                }
+
+                .geosis-app-shell table.geosis-clean-table tbody tr:hover {
+                    background-color: #faf9f6 !important;
+                }
+
+                .geosis-app-shell table.geosis-clean-table tbody td {
+                    padding: 1.15rem 1.15rem !important;
+                    border-bottom: 1px solid rgba(39, 53, 68, 0.06) !important;
+                    vertical-align: middle !important;
+                    color: #273544 !important;
+                    font-size: 0.82rem !important;
+                    font-weight: 500 !important;
+                    font-family: inherit !important;
+                }
+
+                .geosis-app-shell table.geosis-clean-table tbody tr:last-child td {
+                    border-bottom: none !important;
+                }
+
+                .geosis-app-shell table.geosis-clean-table td strong {
+                    font-weight: 700 !important;
+                    color: #273544 !important;
+                }
+
+                .geosis-app-shell table.geosis-clean-table .text-end {
+                    font-variant-numeric: tabular-nums !important;
+                    text-align: right !important;
+                }
+
+                .geosis-app-shell table.geosis-clean-table .text-center {
+                    text-align: center !important;
+                }
+
+                .geosis-app-shell table.geosis-clean-table a {
+                    color: #0f75bc !important;
+                    text-decoration: none !important;
+                    font-weight: 700 !important;
+                    transition: color 0.15s ease !important;
+                }
+
+                .geosis-app-shell table.geosis-clean-table a:hover {
+                    color: #0e649f !important;
+                }
+
+                .geosis-chip {
+                    display: inline-flex !important;
+                    align-items: center !important;
+                    padding: 0.25rem 0.55rem !important;
+                    border-radius: 8px !important;
+                    font-size: 0.7rem !important;
+                    font-weight: 700 !important;
+                    border: 1px solid transparent !important;
+                }
+
+                .geosis-vae-badge {
+                    display: inline-flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    padding: 0.28rem 0.58rem !important;
+                    border-radius: 999px !important;
+                    font-size: 0.7rem !important;
+                    font-weight: 700 !important;
+                }
+
+                .geosis-vae-badge.is-high {
+                    background-color: rgba(122, 146, 130, 0.12) !important;
+                    color: #28a745 !important;
+                    border: 1px solid rgba(122, 146, 130, 0.22) !important;
+                }
+
+                .geosis-vae-badge.is-medium {
+                    background-color: rgba(197, 139, 107, 0.12) !important;
+                    color: #fd7e14 !important;
+                    border: 1px solid rgba(197, 139, 107, 0.22) !important;
+                }
+
+                .geosis-vae-badge.is-low {
+                    background-color: rgba(107, 122, 141, 0.08) !important;
+                    color: #5d7c99 !important;
+                    border: 1px solid rgba(107, 122, 141, 0.15) !important;
+                }
+
+                .geosis-apu-sheet__grid {
+                    background: #ffffff !important;
+                    border-radius: 16px !important;
+                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04) !important;
+                    border: 1px solid rgba(39, 53, 68, 0.06) !important;
+                    padding: 2rem !important;
+                }
+
+                .geosis-resource-meta-grid {
+                    display: grid !important;
+                    grid-template-columns: repeat(4, 1fr) !important;
+                    gap: 1.25rem !important;
+                    padding: 1.5rem !important;
+                    background: #fdfdfd !important;
+                    border-radius: 16px !important;
+                }
+
+                .geosis-resource-meta-grid .geosis-meta-item {
+                    background: #ffffff !important;
+                    border: 1px solid rgba(39, 53, 68, 0.06) !important;
+                    border-radius: 14px !important;
+                    padding: 1.1rem 1.3rem !important;
+                    display: flex !important;
+                    align-items: center !important;
+                    gap: 1rem !important;
+                    transition: all 0.25s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.015) !important;
+                    position: relative !important;
+                    overflow: hidden !important;
+                }
+
+                .geosis-resource-meta-grid .geosis-meta-item::before {
+                    content: "" !important;
+                    position: absolute !important;
+                    top: 0 !important;
+                    left: 0 !important;
+                    right: 0 !important;
+                    height: 3px !important;
+                    background: transparent !important;
+                    transition: all 0.2s ease !important;
+                }
+
+                .geosis-resource-meta-grid .geosis-meta-item:hover::before {
+                    background: #0f75bc !important;
+                }
+
+                .geosis-resource-meta-grid .geosis-meta-item:hover {
+                    transform: translateY(-4px) !important;
+                    box-shadow: 0 12px 24px rgba(15, 117, 188, 0.08) !important;
+                    border-color: rgba(15, 117, 188, 0.2) !important;
+                    background: #fbfdff !important;
+                }
+
+                .geosis-resource-meta-grid .geosis-meta-item__icon {
+                    width: 44px !important;
+                    height: 44px !important;
+                    border-radius: 12px !important;
+                    display: flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    font-size: 1.2rem !important;
+                    flex-shrink: 0 !important;
+                    transition: transform 0.25s ease !important;
+                }
+
+                .geosis-resource-meta-grid .geosis-meta-item:hover .geosis-meta-item__icon {
+                    transform: scale(1.1) rotate(3deg) !important;
+                }
+
+                .geosis-resource-meta-grid .geosis-meta-item__icon.is-blue {
+                    background: rgba(15, 117, 188, 0.08) !important;
+                    color: #0f75bc !important;
+                }
+                .geosis-resource-meta-grid .geosis-meta-item__icon.is-orange {
+                    background: rgba(253, 126, 20, 0.08) !important;
+                    color: #fd7e14 !important;
+                }
+                .geosis-resource-meta-grid .geosis-meta-item__icon.is-green {
+                    background: rgba(40, 167, 69, 0.08) !important;
+                    color: #28a745 !important;
+                }
+                .geosis-resource-meta-grid .geosis-meta-item__icon.is-cyan {
+                    background: rgba(23, 162, 184, 0.08) !important;
+                    color: #17a2b8 !important;
+                }
+
+                .geosis-resource-meta-grid .geosis-meta-item__content span {
+                    display: block !important;
+                    font-size: 0.68rem !important;
+                    text-transform: uppercase !important;
+                    letter-spacing: 0.08em !important;
+                    color: #8b96a2 !important;
+                    font-weight: 700 !important;
+                    margin-bottom: 2px !important;
+                }
+
+                .geosis-resource-meta-grid .geosis-meta-item__content strong {
+                    display: block !important;
+                    font-size: 0.95rem !important;
+                    color: #2c3e50 !important;
+                    font-weight: 800 !important;
+                }
+
+                @media (max-width: 1200px) {
+                    .geosis-resource-meta-grid {
+                        grid-template-columns: repeat(3, 1fr) !important;
+                    }
+                }
+
+                @media (max-width: 991.98px) {
+                    .geosis-resource-meta-grid {
+                        grid-template-columns: repeat(2, 1fr) !important;
+                    }
+                }
+
+                @media (max-width: 575.98px) {
+                    .geosis-resource-meta-grid {
+                        grid-template-columns: 1fr !important;
+                    }
+                }
+
+                .geosis-resource-meta-grid-container {
+                    margin-bottom: 2rem !important;
+                }
+
+                .geosis-panel__subsection {
+                    margin-top: 2rem !important;
+                    padding-top: 1.5rem !important;
+                    border-top: 1px solid rgba(39, 53, 68, 0.08) !important;
+                    margin-left: 1.5rem !important;
+                    margin-right: 1.5rem !important;
+                    padding-bottom: 1.5rem !important;
+                }
+            </style>
+
             <div t-if="success == 'created'" class="alert alert-success geosis-notice" role="alert">
                 El recurso se creo correctamente.
             </div>
@@ -2431,36 +3166,176 @@
             </div>
 
             <section class="geosis-panel geosis-apu-sheet mb-4">
-                <div class="geosis-panel__header">
-                    <h3>Ficha del recurso</h3>
-                    <div class="geosis-inline-actions geosis-apu-sheet__actions">
-                        <a t-attf-href="/my/resources/#{resource.id}/edit" class="geosis-open-link">Editar recurso</a>
-                        <a href="/my/resources" class="geosis-open-link">Volver al catalogo</a>
+                <div class="geosis-panel__header py-3 px-4 d-flex justify-content-between align-items-center">
+                    <h3 class="mb-0 font-weight-bold text-dark">Ficha del recurso</h3>
+                    <div class="geosis-btn-group d-flex gap-2">
+                        <a t-attf-href="/my/resources/#{resource.id}/edit" class="btn btn-outline-primary btn-sm px-3 rounded-pill">
+                            <i class="fa fa-edit me-1"/> Editar recurso
+                        </a>
+                        <a href="/my/resources" class="btn btn-outline-secondary btn-sm px-3 rounded-pill">
+                            <i class="fa fa-arrow-left me-1"/> Volver al catálogo
+                        </a>
                     </div>
                 </div>
-                <div class="geosis-apu-sheet__grid">
-                    <div class="geosis-apu-sheet__column">
-                        <div class="geosis-detail-grid geosis-apu-sheet__meta">
-                            <div><strong>Codigo</strong><span><t t-esc="resource.code or '-'"/></span></div>
-                            <div><strong>Descripcion</strong><span><t t-esc="(resource.name or '').replace('**', '').replace('*', '').strip()"/></span></div>
-                            <div><strong>Categoria</strong><span><t t-esc="dict(resource._fields['category'].selection).get(resource.category) or '-'"/></span></div>
-                            <div><strong>Ubicacion</strong><span><t t-esc="resource.location or 'Global'"/></span></div>
+                <div class="p-4 bg-white rounded-3 shadow-sm border border-light geosis-resource-meta-grid-container">
+                    <div class="geosis-resource-meta-grid">
+                        <!-- Codigo -->
+                        <div class="geosis-meta-item">
+                            <div class="geosis-meta-item__icon is-blue">
+                                <i class="fa fa-hashtag"/>
+                            </div>
+                            <div class="geosis-meta-item__content">
+                                <span>Código</span>
+                                <strong><t t-esc="resource.code or '-'"/></strong>
+                            </div>
                         </div>
-                    </div>
-                    <div class="geosis-apu-sheet__column">
-                        <div class="geosis-detail-grid geosis-apu-sheet__meta geosis-apu-sheet__meta--costs">
-                            <div><strong>Unidad de Medida</strong><span><t t-esc="resource.uom_id.name or '-'"/></span></div>
-                            <div><strong>Codigo CPC</strong><span><t t-esc="resource.cpc_code or '-'"/></span></div>
-                            <div><strong>Indice INEC</strong><span><t t-esc="resource.inec_index_id.display_name or 'Sin indice'"/></span></div>
-                            <div><strong>VAE %</strong><span><t t-esc="'%.2f' % (resource.vae_percent or 0.0)"/>%</span></div>
-                            <div><strong>Precio</strong><span>$<t t-esc="'%.4f' % (resource.price or 0.0)"/></span></div>
-                            <div><strong>Activo</strong><span><t t-esc="'Si' if resource.active else 'No'"/></span></div>
+                        <!-- Descripcion -->
+                        <div class="geosis-meta-item is-desc-col" style="grid-column: span 2;">
+                            <div class="geosis-meta-item__icon is-blue">
+                                <i class="fa fa-align-left"/>
+                            </div>
+                            <div class="geosis-meta-item__content">
+                                <span>Descripción</span>
+                                <strong><t t-esc="(resource.name or '').replace('**', '').replace('*', '').strip()"/></strong>
+                            </div>
+                        </div>
+                        <!-- Unidad de Medida -->
+                        <div class="geosis-meta-item">
+                            <div class="geosis-meta-item__icon is-cyan">
+                                <i class="fa fa-balance-scale"/>
+                            </div>
+                            <div class="geosis-meta-item__content">
+                                <span>Unidad de Medida</span>
+                                <strong><t t-esc="resource.uom_id.name or '-'"/></strong>
+                            </div>
+                        </div>
+                        <!-- Categoria -->
+                        <div class="geosis-meta-item">
+                            <div class="geosis-meta-item__icon is-orange">
+                                <i class="fa fa-folder-open"/>
+                            </div>
+                            <div class="geosis-meta-item__content">
+                                <span>Categoría</span>
+                                <strong><t t-esc="dict(resource._fields['category'].selection).get(resource.category) or '-'"/></strong>
+                            </div>
+                        </div>
+                        <!-- Ubicacion -->
+                        <div class="geosis-meta-item">
+                            <div class="geosis-meta-item__icon is-green">
+                                <i class="fa fa-map-marker"/>
+                            </div>
+                            <div class="geosis-meta-item__content">
+                                <span>Ubicación</span>
+                                <strong><t t-esc="resource.location or 'Global'"/></strong>
+                            </div>
+                        </div>
+                        <!-- Codigo CPC -->
+                        <div class="geosis-meta-item">
+                            <div class="geosis-meta-item__icon is-orange">
+                                <i class="fa fa-barcode"/>
+                            </div>
+                            <div class="geosis-meta-item__content">
+                                <span>Código CPC</span>
+                                <strong><t t-esc="resource.cpc_code or '-'"/></strong>
+                            </div>
+                        </div>
+                        <!-- VAE % -->
+                        <div class="geosis-meta-item">
+                            <div class="geosis-meta-item__icon is-green">
+                                <i class="fa fa-shield"/>
+                            </div>
+                            <div class="geosis-meta-item__content">
+                                <span>VAE %</span>
+                                <strong><t t-esc="'%.2f' % (resource.vae_percent or 0.0)"/>%</strong>
+                            </div>
+                        </div>
+                        <!-- Indice INEC -->
+                        <div class="geosis-meta-item is-desc-col" style="grid-column: span 2;">
+                            <div class="geosis-meta-item__icon is-blue">
+                                <i class="fa fa-line-chart"/>
+                            </div>
+                            <div class="geosis-meta-item__content">
+                                <span>Índice INEC</span>
+                                <strong><t t-esc="resource.inec_index_id.display_name or 'Sin índice'"/></strong>
+                            </div>
+                        </div>
+                        <!-- Precio -->
+                        <div class="geosis-meta-item">
+                            <div class="geosis-meta-item__icon is-cyan">
+                                <i class="fa fa-usd"/>
+                            </div>
+                            <div class="geosis-meta-item__content">
+                                <span>Precio Unitario</span>
+                                <strong class="text-primary">$<t t-esc="'%.4f' % (resource.price or 0.0)"/></strong>
+                            </div>
+                        </div>
+                        <!-- Activo -->
+                        <div class="geosis-meta-item">
+                            <div t-attf-class="geosis-meta-item__icon #{'is-green' if resource.active else 'is-orange'}">
+                                <i t-attf-class="fa #{'fa-check-circle' if resource.active else 'fa-times-circle'}"/>
+                            </div>
+                            <div class="geosis-meta-item__content">
+                                <span>Estado Activo</span>
+                                <strong><t t-esc="'Habilitado' if resource.active else 'Inactivo'"/></strong>
+                            </div>
                         </div>
                     </div>
                 </div>
                 <div class="geosis-panel__subsection">
                     <h4>Observaciones</h4>
                     <p class="mb-0"><t t-esc="resource.description or 'Notas internas del recurso'"/></p>
+                </div>
+            </section>
+
+            <!-- Nueva sección premium: Rubros APU que utilizan este recurso -->
+            <section class="geosis-panel mb-4">
+                <div class="geosis-panel__header">
+                    <h3>Rubros APU que utilizan este recurso (<t t-esc="len(related_apus)"/>)</h3>
+                </div>
+                <div class="table-responsive">
+                    <table class="table geosis-clean-table">
+                        <thead>
+                            <tr>
+                                <th>Codigo</th>
+                                <th>Nombre del Rubro</th>
+                                <th>Ubicacion</th>
+                                <th>Unidad</th>
+                                <th>Costo Unitario</th>
+                                <th class="text-end">Accion</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-if="related_apus">
+                                <t t-foreach="related_apus" t-as="apu">
+                                    <tr>
+                                        <td><a t-attf-href="/my/rubro/#{apu.id}" class="geosis-open-link"><t t-esc="apu.code or '-'"/></a></td>
+                                        <td><strong><a t-attf-href="/my/rubro/#{apu.id}" class="geosis-open-link"><t t-esc="apu.name"/></a></strong></td>
+                                        <td><t t-esc="apu.location or 'Global'"/></td>
+                                        <td><t t-esc="apu.uom_name or '-'"/></td>
+                                        <td><span style="font-weight: 700; color: #2c3e50;">$<t t-esc="'%.4f' % (apu.total_cost or 0.0)"/></span></td>
+                                        <td class="text-end">
+                                            <div class="d-flex justify-content-end align-items-center gap-1">
+                                                <a t-attf-href="/my/rubro/#{apu.id}" 
+                                                   class="btn btn-outline-primary btn-sm p-1 d-flex align-items-center justify-content-center" 
+                                                   style="width: 28px; height: 28px; border-radius: 8px;" 
+                                                   title="Abrir Rubro">
+                                                    <i class="fa fa-folder-open"/>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </t>
+                            <t t-else="">
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-4">
+                                        <i class="fa fa-info-circle fa-2x mb-2 d-block"/>
+                                        Este recurso no esta asignado a ningun Rubro APU actualmente.
+                                    </td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
                 </div>
             </section>
         </t>
@@ -2472,23 +3347,101 @@
             <t t-set="page_title" t-value="'Editar recurso' if resource else 'Nuevo recurso'"/>
             <t t-set="page_subtitle" t-value="'Completa la ficha tecnica del recurso'"/>
 
-            <section class="geosis-panel">
-                <div class="geosis-panel__header">
-                    <h3><t t-esc="'Editar recurso' if resource else 'Crear recurso'"/></h3>
+            <style>
+                .geosis-form input.form-control,
+                .geosis-form select.form-select,
+                .geosis-form textarea.form-control {
+                    border: 1px solid rgba(39, 53, 68, 0.12) !important;
+                    border-radius: 8px !important;
+                    padding: 0.6rem 0.95rem !important;
+                    font-size: 0.88rem !important;
+                    font-weight: 500 !important;
+                    color: #273544 !important;
+                    background-color: #ffffff !important;
+                    box-shadow: none !important;
+                    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out !important;
+                }
+
+                .geosis-form input.form-control:focus,
+                .geosis-form select.form-select:focus,
+                .geosis-form textarea.form-control:focus {
+                    border-color: #0f75bc !important;
+                    outline: none !important;
+                    box-shadow: 0 0 0 3px rgba(15, 117, 188, 0.1) !important;
+                }
+
+                .geosis-form label {
+                    display: flex !important;
+                    flex-direction: column !important;
+                    gap: 0.35rem !important;
+                    margin-bottom: 1.25rem !important;
+                    width: 100% !important;
+                }
+
+                .geosis-form label span {
+                    font-size: 0.75rem !important;
+                    font-weight: 700 !important;
+                    text-transform: uppercase !important;
+                    letter-spacing: 0.05em !important;
+                    color: #5d7c99 !important;
+                }
+
+                .geosis-form input[readonly="readonly"] {
+                    background-color: #faf9f6 !important;
+                    color: #5d7c99 !important;
+                    cursor: not-allowed !important;
+                }
+
+                .geosis-map-container-card {
+                    border: 1px solid rgba(39, 53, 68, 0.08) !important;
+                    border-radius: 12px !important;
+                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02) !important;
+                    overflow: hidden !important;
+                }
+
+                .btn-outline-primary {
+                    border-color: #0f75bc !important;
+                    color: #0f75bc !important;
+                    border-radius: 8px !important;
+                    font-weight: 700 !important;
+                    transition: all 0.15s ease !important;
+                }
+                .btn-outline-primary:hover {
+                    background-color: #0f75bc !important;
+                    color: #ffffff !important;
+                }
+            </style>
+
+            <!-- Leaflet.js para el mapa interactivo premium -->
+            <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+            <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+            <section class="geosis-apu-header-card">
+                <div class="border-bottom pb-3 mb-4 d-flex align-items-center gap-3">
+                    <div class="geosis-meta-item__icon is-blue">
+                        <i class="fa fa-info-circle"/>
+                    </div>
+                    <div>
+                        <span class="geosis-pill mb-1">Ficha del Recurso</span>
+                        <h2 class="h4 mb-0 font-weight-bold text-dark"><t t-esc="'Editar recurso' if resource else 'Crear nuevo recurso'"/></h2>
+                    </div>
                 </div>
                 <div t-if="error_message" class="alert alert-danger" role="alert"><t t-esc="error_message"/></div>
                 <form t-att-action="'/my/resources/%s/edit' % resource.id if resource else '/my/resources/new'" method="post" class="geosis-form">
                     <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                     <input type="hidden" name="code" t-att-value="form_data.get('code', '')"/>
-                    <div class="geosis-form__grid">
+                    <div class="geosis-form__grid mb-4">
                         <label>
-                            <span>Codigo</span>
-                            <input type="text" class="form-control" t-att-value="form_data.get('code') or 'Se genera automaticamente al guardar'" readonly="readonly"/>
+                            <span class="text-uppercase small font-weight-bold text-muted mb-1 d-block"><i class="fa fa-lock me-1"/> Código (Automático)</span>
+                            <input type="text" class="form-control bg-light text-muted font-weight-bold border-dashed" t-att-value="form_data.get('code') or 'Se genera automáticamente al guardar'" readonly="readonly" style="cursor: not-allowed; border-style: dashed;"/>
                         </label>
-                        <label><span>Descripcion</span><input type="text" name="name" t-att-value="form_data.get('name', '')" class="form-control" required="required"/></label>
                         <label>
-                            <span>Categoria</span>
-                            <select name="category" class="form-select">
+                            <span class="text-uppercase small font-weight-bold text-muted mb-1 d-block">Descripción / Nombre del recurso</span>
+                            <input type="text" name="name" t-att-value="form_data.get('name', '')" class="form-control form-control-lg font-weight-bold" required="required" placeholder="Ej: Cemento Selvalegre..."/>
+                        </label>
+                        <label>
+                            <span class="text-uppercase small font-weight-bold text-muted mb-1 d-block">Categoría</span>
+                            <select name="category" class="form-select font-weight-bold">
                                 <option value="M" t-att-selected="'selected' if form_data.get('category') == 'M' else None">Equipos</option>
                                 <option value="N" t-att-selected="'selected' if form_data.get('category') == 'N' else None">Mano de Obra</option>
                                 <option value="O" t-att-selected="'selected' if form_data.get('category', 'O') == 'O' else None">Materiales</option>
@@ -2496,7 +3449,7 @@
                             </select>
                         </label>
                         <label>
-                            <span>Unidad de Medida</span>
+                            <span class="text-uppercase small font-weight-bold text-muted mb-1 d-block">Unidad de Medida</span>
                             <select name="uom_id" class="form-select" required="required">
                                 <option value="">Selecciona una unidad</option>
                                 <t t-foreach="uoms" t-as="uom">
@@ -2506,34 +3459,195 @@
                                 </t>
                             </select>
                         </label>
-                        <label><span>Precio</span><input type="number" name="price" step="0.0001" min="0" t-att-value="form_data.get('price', 0)" class="form-control"/></label>
-                        <label><span>Codigo CPC</span><input type="text" name="cpc_code" t-att-value="form_data.get('cpc_code', '')" class="form-control"/></label>
-                        <label><span>VAE %</span><input type="number" name="vae_percent" step="0.01" min="0" t-att-value="form_data.get('vae_percent', 0)" class="form-control"/></label>
                         <label>
-                            <span>Indice INEC</span>
+                            <span class="text-uppercase small font-weight-bold text-muted mb-1 d-block">Precio ($)</span>
+                            <input type="number" name="price" step="0.0001" min="0" t-att-value="form_data.get('price', 0)" class="form-control text-end font-weight-bold" placeholder="0.0000"/>
+                        </label>
+                        <label>
+                            <span class="text-uppercase small font-weight-bold text-muted mb-1 d-block">Código CPC</span>
+                            <input type="text" name="cpc_code" t-att-value="form_data.get('cpc_code', '')" class="form-control" placeholder="Ej: 37410..."/>
+                        </label>
+                        <label>
+                            <span class="text-uppercase small font-weight-bold text-muted mb-1 d-block">VAE %</span>
+                            <input type="number" name="vae_percent" step="0.01" min="0" max="100" t-att-value="form_data.get('vae_percent', 0)" class="form-control text-end font-weight-bold" placeholder="100.00"/>
+                        </label>
+                        <label>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="text-uppercase small font-weight-bold text-muted d-block">Índice INEC</span>
+                                <a href="/my/inec-indices/new" class="small text-primary font-weight-bold" style="text-decoration: none;" target="_blank"><i class="fa fa-plus-circle"/> Crear índice INEC</a>
+                            </div>
                             <select name="inec_index_id" class="form-select">
-                                <option value="">Sin indice</option>
+                                <option value="">Sin índice (No aplica)</option>
                                 <t t-foreach="inec_indices" t-as="index">
                                     <option t-att-value="index.id" t-att-selected="'selected' if selected_inec_index_id == str(index.id) else None">
                                         <t t-esc="index.display_name"/>
                                     </option>
                                 </t>
                             </select>
-                            <a href="/my/inec-indices/new" class="geosis-open-link geosis-open-link--muted">Crear indice INEC</a>
-                        </label>
-                        <label><span>Ubicacion</span><input type="text" name="location" t-att-value="form_data.get('location', '')" class="form-control" placeholder="Ej: Cuenca, Quito, Global"/></label>
-                        <label class="geosis-form__check mt-4">
-                            <input type="checkbox" name="active" value="1" t-att-checked="'checked' if form_data.get('active', True) else None"/>
-                            <span>Activo</span>
                         </label>
                     </div>
+
+                    <div class="mb-4 p-3 bg-light rounded border d-inline-block">
+                        <label class="geosis-form__check m-0 d-flex align-items-center gap-2" style="cursor: pointer;">
+                            <input type="checkbox" name="active" value="1" t-att-checked="'checked' if form_data.get('active', True) else None" style="width: 18px; height: 18px;"/>
+                            <span class="font-weight-bold text-dark">Habilitar este recurso en el catálogo (Activo)</span>
+                        </label>
+                    </div>
+
+                    <!-- Asistente Geográfico (Mapa Leaflet Interactivo) -->
+                    <div class="geosis-form__block mt-4 mb-4">
+                        <span class="d-block mb-2" style="font-weight: 600; color: #2c3e50; font-size: 0.95rem;">
+                            <i class="fa fa-globe text-primary me-1"/> Asistente Geográfico (Ubicación de Precios)
+                        </span>
+                        <div class="row g-3">
+                            <div class="col-md-5 d-flex flex-column justify-content-between">
+                                <div>
+                                    <label class="w-100 mb-0">
+                                        <span class="small text-muted d-block mb-1">Zona o Ciudad Seleccionada</span>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-white" style="border-right:0;"><i class="fa fa-map-marker text-danger"/></span>
+                                            <input type="text" id="resource_location_input" name="location" t-att-value="form_data.get('location', '')" class="form-control" placeholder="Ej: Cuenca, Quito, Global" style="border-left:0; font-weight:600;" required="required"/>
+                                        </div>
+                                    </label>
+                                    <span class="text-muted small d-block mt-2" style="font-size:0.75rem; line-height: 1.3;">
+                                        <i class="fa fa-info-circle text-info me-1"/> Haz clic en cualquier ciudad del mapa o arrastra el marcador para autocompletar la zona de precios regional de este recurso.
+                                    </span>
+                                </div>
+                                <div class="mt-3">
+                                    <button type="button" id="btn_geolocate" class="btn btn-outline-primary btn-sm w-100 d-flex align-items-center justify-content-center gap-2" style="border-radius: 8px; padding: 6px 12px;">
+                                        <i class="fa fa-location-arrow"/> Detectar Mi Ubicación
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-7">
+                                <div id="geosis_leaflet_map" style="height: 220px; border-radius: 12px; border: 1px solid #dee2e6; box-shadow: 0 4px 12px rgba(0,0,0,0.05); z-index: 1;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <script type="text/javascript">
+                        // <![CDATA[
+                        document.addEventListener('DOMContentLoaded', function() {
+                            var mapContainer = document.getElementById('geosis_leaflet_map');
+                            if (!mapContainer) return;
+
+                            var input = document.getElementById('resource_location_input');
+                            var btnGeolocate = document.getElementById('btn_geolocate');
+
+                            // Inicializar el mapa centrado en Ecuador
+                            var defaultLat = -1.8312;
+                            var defaultLon = -78.1834;
+                            var map = L.map('geosis_leaflet_map').setView([defaultLat, defaultLon], 7);
+
+                            // Capa de mapas OpenStreetMap standard
+                            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                                maxZoom: 18,
+                                attribution: '© OpenStreetMap contributors'
+                            }).addTo(map);
+
+                            // Marcador inicial
+                            var marker = L.marker([defaultLat, defaultLon], { draggable: true }).addTo(map);
+
+                            // Función para buscar la ciudad/provincia usando Nominatim (Reverse Geocoding)
+                            function updateLocationFromCoords(lat, lon) {
+                                marker.setLatLng([lat, lon]);
+                                map.panTo([lat, lon]);
+
+                                var url = 'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=' + lat + '&lon=' + lon;
+                                fetch(url, {
+                                    headers: {
+                                        'Accept-Language': 'es'
+                                    }
+                                })
+                                .then(response => response.json())
+                                .then(data => {
+                                    if (data && data.address) {
+                                        var address = data.address;
+                                        var city = address.city || address.town || address.village || address.city_district || address.county || address.state || '';
+                                        
+                                        if (city) {
+                                            // Eliminar palabras genéricas como "Cantón" si Nominatim las devuelve
+                                            city = city.replace(/cantón/gi, '').trim();
+                                            input.value = city;
+                                        } else {
+                                            input.value = 'Cuenca';
+                                        }
+                                    }
+                                })
+                                .catch(err => {
+                                    console.error("Error geocodificando: ", err);
+                                });
+                            }
+
+                            // Evento al arrastrar el marcador
+                            marker.on('dragend', function(e) {
+                                var position = marker.getLatLng();
+                                updateLocationFromCoords(position.lat, position.lng);
+                            });
+
+                            // Evento al hacer clic en el mapa
+                            map.on('click', function(e) {
+                                updateLocationFromCoords(e.latlng.lat, e.latlng.lng);
+                            });
+
+                            // Evento para autodetectar coordenadas (Geolocalización del navegador)
+                            btnGeolocate.addEventListener('click', function() {
+                                if (navigator.geolocation) {
+                                    btnGeolocate.disabled = true;
+                                    btnGeolocate.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Detectando...';
+                                    
+                                    navigator.geolocation.getCurrentPosition(
+                                        function(position) {
+                                            var lat = position.coords.latitude;
+                                            var lon = position.coords.longitude;
+                                            map.setView([lat, lon], 14);
+                                            updateLocationFromCoords(lat, lon);
+                                            
+                                            btnGeolocate.disabled = false;
+                                            btnGeolocate.innerHTML = '<i class="fa fa-location-arrow"></i> Detectar Mi Ubicación';
+                                        },
+                                        function(error) {
+                                            alert("No se pudo detectar tu ubicación automáticamente. Selecciona un punto en el mapa manualmente.");
+                                            btnGeolocate.disabled = false;
+                                            btnGeolocate.innerHTML = '<i class="fa fa-location-arrow"></i> Detectar Mi Ubicación';
+                                        },
+                                        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+                                    );
+                                } else {
+                                    alert("Tu navegador no soporta la geolocalización. Selecciona un punto en el mapa.");
+                                }
+                            });
+
+                            // Si el campo ya tiene una ubicación por defecto (ej. al editar)
+                            var existingLoc = input.value.trim();
+                            if (existingLoc && existingLoc.toLowerCase() !== 'global' && existingLoc.toLowerCase() !== '') {
+                                var searchUrl = 'https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(existingLoc) + '&limit=1';
+                                fetch(searchUrl)
+                                .then(response => response.json())
+                                .then(results => {
+                                    if (results && results.length > 0) {
+                                        var lat = parseFloat(results[0].lat);
+                                        var lon = parseFloat(results[0].lon);
+                                        map.setView([lat, lon], 12);
+                                        marker.setLatLng([lat, lon]);
+                                    }
+                                })
+                                .catch(err => console.log(err));
+                            }
+                        });
+                        // ]]>
+                    </script>
                     <label class="geosis-form__block">
                         <span>Observaciones</span>
                         <textarea name="description" class="form-control" rows="4"><t t-esc="form_data.get('description', '')"/></textarea>
                     </label>
-                    <div class="geosis-form__actions">
-                        <button type="submit" class="btn btn-primary">Guardar recurso</button>
-                        <a href="/my/resources" class="btn btn-outline-secondary">Cancelar</a>
+                    <div class="geosis-form__actions border-top pt-3 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="fa fa-save me-1"/> <t t-esc="'Guardar cambios' if resource else 'Guardar recurso'"/>
+                        </button>
+                        <a t-att-href="'/my/resources/%s' % resource.id if resource else '/my/resources'" class="btn btn-outline-secondary px-4">
+                            <i class="fa fa-times me-1"/> Cancelar
+                        </a>
                     </div>
                 </form>
             </section>
@@ -2565,7 +3679,9 @@
                     <h3>Catalogo de indices</h3>
                     <div class="geosis-inline-actions">
                         <span class="geosis-panel__lead text-muted small">Asigna estos indices despues en recursos para formula polinomica</span>
-                        <a href="/my/inec-indices/new" class="btn btn-primary btn-sm">Nuevo indice</a>
+                        <a href="/my/inec-indices/new" class="btn btn-primary btn-sm px-3 rounded-pill">
+                            <i class="fa fa-plus me-1"/> Nuevo índice
+                        </a>
                     </div>
                 </div>
 
@@ -2584,8 +3700,12 @@
                         </t>
                     </select>
                     <div class="geosis-filterbar__actions">
-                        <button type="submit" class="btn btn-outline-primary btn-sm">Aplicar</button>
-                        <a href="/my/inec-indices" class="btn btn-outline-secondary btn-sm">Limpiar</a>
+                        <button type="submit" class="btn btn-primary btn-sm px-3">
+                            <i class="fa fa-filter me-1"/> Filtrar
+                        </button>
+                        <a href="/my/inec-indices" class="btn btn-outline-secondary btn-sm px-3">
+                            <i class="fa fa-eraser me-1"/> Limpiar
+                        </a>
                     </div>
                 </form>
 
@@ -2605,8 +3725,8 @@
                             <t t-if="indices">
                                 <t t-foreach="indices" t-as="index_record">
                                     <tr>
-                                        <td><a t-attf-href="/my/inec-indices/#{index_record.id}" class="geosis-open-link"><t t-esc="index_record.code"/></a></td>
-                                        <td><strong><a t-attf-href="/my/inec-indices/#{index_record.id}" class="geosis-open-link"><t t-esc="index_record.name"/></a></strong></td>
+                                        <td><strong><t t-esc="index_record.code"/></strong></td>
+                                        <td><strong><t t-esc="index_record.name"/></strong></td>
                                         <td class="text-center"><t t-esc="len(index_record.value_ids)"/></td>
                                         <td>
                                             <t t-set="latest_value" t-value="index_record.value_ids.sorted(lambda v: (-v.year, -int(v.month or 0)))[:1]"/>
@@ -2619,8 +3739,17 @@
                                             </t>
                                             <t t-else=""><span class="text-muted small">Sin valores</span></t>
                                         </td>
-                                        <td class="text-center"><t t-esc="'Si' if index_record.active else 'No'"/></td>
-                                        <td class="text-center"><a t-attf-href="/my/inec-indices/#{index_record.id}/edit" class="btn btn-outline-primary btn-sm">Abrir</a></td>
+                                        <td class="text-center">
+                                            <span t-attf-class="badge #{'bg-success' if index_record.active else 'bg-secondary'} px-2 py-1" style="font-size: 0.72rem; border-radius: 6px;">
+                                                <t t-esc="'Sí' if index_record.active else 'No'"/>
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            <a t-attf-href="/my/inec-indices/#{index_record.id}" 
+                                               class="btn btn-outline-primary btn-sm px-3 rounded-pill">
+                                                <i class="fa fa-folder-open me-1"/> Abrir
+                                            </a>
+                                        </td>
                                     </tr>
                                 </t>
                             </t>
@@ -2686,24 +3815,78 @@
             <div t-if="error_message" class="alert alert-danger" role="alert"><t t-esc="error_message"/></div>
 
             <section class="geosis-panel geosis-apu-sheet mb-4">
-                <div class="geosis-panel__header">
-                    <h3>Ficha del indice</h3>
-                    <div class="geosis-inline-actions geosis-apu-sheet__actions">
-                        <a t-attf-href="/my/inec-indices/#{index_record.id}/edit" class="geosis-open-link">Editar indice</a>
-                        <a href="/my/inec-indices" class="geosis-open-link">Volver al catalogo</a>
+                <div class="geosis-panel__header py-3 px-4 d-flex justify-content-between align-items-center">
+                    <h3 class="mb-0 font-weight-bold text-dark">Ficha del índice</h3>
+                    <div class="geosis-btn-group d-flex gap-2">
+                        <a t-attf-href="/my/inec-indices/#{index_record.id}/edit" class="btn btn-outline-primary btn-sm px-3 rounded-pill">
+                            <i class="fa fa-edit me-1"/> Editar índice
+                        </a>
+                        <a href="/my/inec-indices" class="btn btn-outline-secondary btn-sm px-3 rounded-pill">
+                            <i class="fa fa-arrow-left me-1"/> Volver al catálogo
+                        </a>
                     </div>
                 </div>
-                <div class="geosis-apu-sheet__grid">
-                    <div class="geosis-apu-sheet__column">
-                        <div class="geosis-detail-grid geosis-apu-sheet__meta">
-                            <div><strong>Codigo</strong><span><t t-esc="index_record.code"/></span></div>
-                            <div><strong>Nombre del indice</strong><span><t t-esc="index_record.name"/></span></div>
+                
+                <div class="p-4 bg-white rounded-3 shadow-sm border border-light geosis-resource-meta-grid-container">
+                    <div class="geosis-resource-meta-grid">
+                        <!-- Codigo -->
+                        <div class="geosis-meta-item">
+                            <div class="geosis-meta-item__icon is-blue">
+                                <i class="fa fa-hashtag"/>
+                            </div>
+                            <div class="geosis-meta-item__content">
+                                <span>Código</span>
+                                <strong><t t-esc="index_record.code"/></strong>
+                            </div>
                         </div>
-                    </div>
-                    <div class="geosis-apu-sheet__column">
-                        <div class="geosis-detail-grid geosis-apu-sheet__meta geosis-apu-sheet__meta--costs">
-                            <div><strong>Activo</strong><span><t t-esc="'Si' if index_record.active else 'No'"/></span></div>
-                            <div><strong>Valores registrados</strong><span><t t-esc="len(index_record.value_ids)"/></span></div>
+                        <!-- Nombre del Indice -->
+                        <div class="geosis-meta-item is-desc-col" style="grid-column: span 2;">
+                            <div class="geosis-meta-item__icon is-blue">
+                                <i class="fa fa-line-chart"/>
+                            </div>
+                            <div class="geosis-meta-item__content">
+                                <span>Nombre del Índice</span>
+                                <strong><t t-esc="index_record.name"/></strong>
+                            </div>
+                        </div>
+                        <!-- Activo -->
+                        <div class="geosis-meta-item">
+                            <div t-attf-class="geosis-meta-item__icon #{'is-green' if index_record.active else 'is-orange'}">
+                                <i t-attf-class="fa #{'fa-check-circle' if index_record.active else 'fa-times-circle'}"/>
+                            </div>
+                            <div class="geosis-meta-item__content">
+                                <span>Estado Activo</span>
+                                <strong><t t-esc="'Habilitado' if index_record.active else 'Inactivo'"/></strong>
+                            </div>
+                        </div>
+                        <!-- Valores Registrados -->
+                        <div class="geosis-meta-item" style="grid-column: span 2;">
+                            <div class="geosis-meta-item__icon is-cyan">
+                                <i class="fa fa-database"/>
+                            </div>
+                            <div class="geosis-meta-item__content">
+                                <span>Valores Registrados</span>
+                                <strong><t t-esc="len(index_record.value_ids)"/> meses con valores</strong>
+                            </div>
+                        </div>
+                        <!-- Ultimo Valor -->
+                        <div class="geosis-meta-item" style="grid-column: span 2;">
+                            <div class="geosis-meta-item__icon is-orange">
+                                <i class="fa fa-calendar-check-o"/>
+                            </div>
+                            <div class="geosis-meta-item__content">
+                                <span>Último Valor Registrado</span>
+                                <strong>
+                                    <t t-set="latest_value" t-value="index_record.value_ids.sorted(lambda v: (-v.year, -int(v.month or 0)))[:1]"/>
+                                    <t t-if="latest_value">
+                                        <t t-esc="'%.4f' % (latest_value.value or 0.0)"/>
+                                        <span class="text-muted small ms-1">(<t t-esc="latest_value.year"/> / <t t-esc="dict(latest_value._fields['month'].selection).get(latest_value.month)"/>)</span>
+                                    </t>
+                                    <t t-else="">
+                                        <span class="text-muted small">Sin valores</span>
+                                    </t>
+                                </strong>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2748,7 +3931,9 @@
                                 <span>Uso esperado</span>
                                 <strong>Formula polinomica</strong>
                             </div>
-                            <button type="submit" class="btn btn-primary">Agregar valor</button>
+                            <button type="submit" class="btn btn-primary px-4 rounded-pill">
+                                <i class="fa fa-plus me-1"/> Agregar valor
+                            </button>
                         </div>
                     </form>
 
