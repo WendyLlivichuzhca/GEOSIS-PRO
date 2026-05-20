@@ -235,8 +235,11 @@ class GeosisExcelImportWizard(models.TransientModel):
 
         apu_sheet_map = self._build_apu_sheet_map(workbook, budget_sheet_name, budget_lines)
         apu_cache = {}
+        resource_cache = {}
+        uom_cache = {}
         missing_codes = []
         chapter_stack = {} # level -> chapter_id
+        budget_line_vals = []
 
         for index, line_data in enumerate(budget_lines, start=1):
             if line_data.get('is_chapter'):
@@ -258,7 +261,7 @@ class GeosisExcelImportWizard(models.TransientModel):
                 continue
 
             # Es un rubro
-            apu = self._get_or_create_apu(workbook, line_data, apu_sheet_map, apu_cache)
+            apu = self._get_or_create_apu(workbook, line_data, apu_sheet_map, apu_cache, resource_cache, uom_cache)
             if not apu:
                 missing_codes.append(line_data['code'])
                 continue
@@ -274,17 +277,18 @@ class GeosisExcelImportWizard(models.TransientModel):
                 max_level = max(chapter_stack.keys())
                 current_chapter_id = chapter_stack[max_level]
 
-            self.env['geosis.budget.line'].create(
-                {
-                    'budget_id': budget.id,
-                    'sequence': index * 10,
-                    'chapter_id': current_chapter_id,
-                    'apu_id': apu.id,
-                    'quantity': line_data['quantity'],
-                    'unit_price': unit_price,
-                    'note': line_data.get('note') or False,
-                }
-            )
+            budget_line_vals.append({
+                'budget_id': budget.id,
+                'sequence': index * 10,
+                'chapter_id': current_chapter_id,
+                'apu_id': apu.id,
+                'quantity': line_data['quantity'],
+                'unit_price': unit_price,
+                'note': line_data.get('note') or False,
+            })
+
+        if budget_line_vals:
+            self.env['geosis.budget.line'].create(budget_line_vals)
 
         if missing_codes:
             raise UserError(
@@ -693,7 +697,7 @@ class GeosisExcelImportWizard(models.TransientModel):
 
         return budget
 
-    def _get_or_create_apu(self, workbook, line_data, apu_sheet_map, apu_cache):
+    def _get_or_create_apu(self, workbook, line_data, apu_sheet_map, apu_cache, resource_cache=None, uom_cache=None):
         company = self.env.company
         apu_model = self.env['geosis.apu']
         code = line_data['code']
@@ -711,7 +715,7 @@ class GeosisExcelImportWizard(models.TransientModel):
 
         sheet_name = apu_sheet_map.get(code)
         if sheet_name:
-            apu = self._import_apu_from_sheet(apu, code, workbook, sheet_name, line_data)
+            apu = self._import_apu_from_sheet(apu, code, workbook, sheet_name, line_data, resource_cache, uom_cache)
         elif not apu and self.create_missing_apus:
             apu = apu_model.create(
                 {
@@ -728,7 +732,7 @@ class GeosisExcelImportWizard(models.TransientModel):
         apu_cache[cache_key] = apu
         return apu
 
-    def _import_apu_from_sheet(self, apu, code, workbook, sheet_name, line_data):
+    def _import_apu_from_sheet(self, apu, code, workbook, sheet_name, line_data, resource_cache=None, uom_cache=None):
         company = self.env.company
         apu_lines = self._extract_apu_lines(workbook.get_sheet(sheet_name))
 
@@ -757,23 +761,24 @@ class GeosisExcelImportWizard(models.TransientModel):
         if not apu_lines:
             return apu
 
+        apu_line_vals = []
         for index, resource_data in enumerate(apu_lines, start=1):
-            resource = self._get_or_create_resource(resource_data)
-            self.env['geosis.apu.line'].create(
-                {
-                    'apu_id': apu.id,
-                    'sequence': index * 10,
-                    'resource_id': resource.id,
-                    'category': resource_data['category'],
-                    'uom_name': resource_data['uom_name'],
-                    'quantity': resource_data['quantity'],
-                    'rate': resource_data['rate'],
-                    'performance': resource_data['performance'],
-                    'percentage': resource_data['percentage'],
-                    'distance': resource_data['distance'],
-                    'note': resource_data['note'] or False,
-                }
-            )
+            resource = self._get_or_create_resource(resource_data, resource_cache, uom_cache)
+            apu_line_vals.append({
+                'apu_id': apu.id,
+                'sequence': index * 10,
+                'resource_id': resource.id,
+                'category': resource_data['category'],
+                'uom_name': resource_data['uom_name'],
+                'quantity': resource_data['quantity'],
+                'rate': resource_data['rate'],
+                'performance': resource_data['performance'],
+                'percentage': resource_data['percentage'],
+                'distance': resource_data['distance'],
+                'note': resource_data['note'] or False,
+            })
+        if apu_line_vals:
+            self.env['geosis.apu.line'].create(apu_line_vals)
 
         apu._compute_totals()
         return apu
@@ -859,14 +864,18 @@ class GeosisExcelImportWizard(models.TransientModel):
 
         return parsed_lines
 
-    def _get_or_create_resource(self, resource_data):
+    def _get_or_create_resource(self, resource_data, resource_cache=None, uom_cache=None):
         location = self.location or ''
+        cache_key = (resource_data['code'], location)
+        if resource_cache is not None and cache_key in resource_cache:
+            return resource_cache[cache_key]
+
         resource = self.env['geosis.resource'].search([
             ('code', '=', resource_data['code']),
             ('location', '=', location)
         ], limit=1)
         
-        uom = self._resolve_uom(resource_data['uom_name'])
+        uom = self._resolve_uom(resource_data['uom_name'], uom_cache)
         values = {
             'code': resource_data['code'],
             'name': resource_data['name'],
@@ -879,10 +888,22 @@ class GeosisExcelImportWizard(models.TransientModel):
         }
 
         if resource:
-            resource.write(values)
+            changed = False
+            for k, v in values.items():
+                if k == 'uom_id':
+                    if resource.uom_id.id != v:
+                        changed = True
+                        break
+                elif getattr(resource, k) != v:
+                    changed = True
+                    break
+            if changed:
+                resource.write(values)
         else:
             resource = self.env['geosis.resource'].create(values)
 
+        if resource_cache is not None:
+            resource_cache[cache_key] = resource
         return resource
 
     def _detect_header(self, rows, aliases):
@@ -906,28 +927,39 @@ class GeosisExcelImportWizard(models.TransientModel):
 
         return None, {}
 
-    def _resolve_uom(self, raw_uom_name):
-        uom_model = self.env['uom.uom']
+    def _resolve_uom(self, raw_uom_name, uom_cache=None):
         name = _normalize_text(raw_uom_name)
         if not name:
             return self.env.ref('uom.product_uom_unit')
 
+        if uom_cache is not None and name in uom_cache:
+            return uom_cache[name]
+
+        uom_model = self.env['uom.uom']
+        uom = False
         candidates = list(UOM_ALIASES.get(name, ())) + [raw_uom_name]
+        
         for candidate in candidates:
             if not candidate:
                 continue
             uom = uom_model.search([('name', '=', candidate)], limit=1)
             if uom:
-                return uom
+                break
 
-        for candidate in candidates:
-            if not candidate:
-                continue
-            uom = uom_model.search([('name', 'ilike', candidate)], limit=1)
-            if uom:
-                return uom
+        if not uom:
+            for candidate in candidates:
+                if not candidate:
+                    continue
+                uom = uom_model.search([('name', 'ilike', candidate)], limit=1)
+                if uom:
+                    break
 
-        return self.env.ref('uom.product_uom_unit')
+        if not uom:
+            uom = self.env.ref('uom.product_uom_unit')
+
+        if uom_cache is not None:
+            uom_cache[name] = uom
+        return uom
 
     def _map_category(self, raw_value):
         normalized = _normalize_text(raw_value)
@@ -1013,11 +1045,21 @@ class GeosisSimpleXlsxReader:
 
         root = ET.fromstring(archive.read('xl/sharedStrings.xml'))
         values = []
-        for string_item in root.findall('main:si', XLSX_NS):
-            text_parts = []
-            for text_node in string_item.findall('.//main:t', XLSX_NS):
-                text_parts.append(text_node.text or '')
-            values.append(''.join(text_parts))
+        si_tag = '{%s}si' % XLSX_NS['main']
+        t_tag = '{%s}t' % XLSX_NS['main']
+        r_tag = '{%s}r' % XLSX_NS['main']
+        
+        for string_item in root:
+            if string_item.tag == si_tag:
+                text_parts = []
+                for child in string_item:
+                    if child.tag == t_tag:
+                        text_parts.append(child.text or '')
+                    elif child.tag == r_tag:
+                        for subchild in child:
+                            if subchild.tag == t_tag:
+                                text_parts.append(subchild.text or '')
+                values.append(''.join(text_parts))
         return values
 
     def _load_relationships(self, archive):
@@ -1040,16 +1082,23 @@ class GeosisSimpleXlsxReader:
         root = ET.fromstring(archive.read(sheet_path))
         rows = []
 
-        for row_node in root.findall('.//main:sheetData/main:row', XLSX_NS):
+        sheet_data = root.find('main:sheetData', XLSX_NS)
+        if sheet_data is None:
+            return rows
+
+        c_tag = '{%s}c' % XLSX_NS['main']
+
+        for row_node in sheet_data.findall('main:row', XLSX_NS):
             row_values = {}
             max_index = -1
 
-            for cell in row_node.findall('main:c', XLSX_NS):
-                column_index = _column_to_index(cell.attrib.get('r', 'A1'))
-                cell_type = cell.attrib.get('t')
-                value = self._extract_cell_value(cell, cell_type, shared_strings)
-                row_values[column_index] = value
-                max_index = max(max_index, column_index)
+            for cell in row_node:
+                if cell.tag == c_tag:
+                    column_index = _column_to_index(cell.attrib.get('r', 'A1'))
+                    cell_type = cell.attrib.get('t')
+                    value = self._extract_cell_value(cell, cell_type, shared_strings)
+                    row_values[column_index] = value
+                    max_index = max(max_index, column_index)
 
             if max_index < 0:
                 rows.append([])
@@ -1063,13 +1112,25 @@ class GeosisSimpleXlsxReader:
         return rows
 
     def _extract_cell_value(self, cell, cell_type, shared_strings):
+        v_tag = '{%s}v' % XLSX_NS['main']
+        is_tag = '{%s}is' % XLSX_NS['main']
+        t_tag = '{%s}t' % XLSX_NS['main']
+        
         if cell_type == 'inlineStr':
-            inline = cell.find('main:is/main:t', XLSX_NS)
-            return inline.text if inline is not None else False
+            for child in cell:
+                if child.tag == is_tag:
+                    for subchild in child:
+                        if subchild.tag == t_tag:
+                            return subchild.text or ''
+            return False
 
-        value_node = cell.find('main:v', XLSX_NS)
-        raw_value = value_node.text if value_node is not None else False
-        if raw_value is False:
+        raw_value = False
+        for child in cell:
+            if child.tag == v_tag:
+                raw_value = child.text or ''
+                break
+
+        if raw_value is False or raw_value is None:
             return False
 
         if cell_type == 's':

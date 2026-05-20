@@ -373,8 +373,7 @@ class GeosisCustomerPortal(CustomerPortal):
         ]
         return request.make_response(pdf_content, headers=pdfhttpheaders)
 
-    @http.route(['/my/gantt'], type='http', auth="user", website=True)
-    def portal_my_gantt(self, project_id=None, **kw):
+    def _prepare_project_tasks_context(self, project_id=None):
         values = self._prepare_portal_layout_values()
         Project = request.env['geosis.project'].sudo()
         Task = request.env['project.task'].sudo()
@@ -438,10 +437,9 @@ class GeosisCustomerPortal(CustomerPortal):
                 else:
                     task_durations[task.id] = 0
 
+        assignable_users = request.env['res.users'].sudo().search([('active', '=', True)], order='name asc')
+
         values.update({
-            'page_name': 'gantt',
-            'page_title': 'Cronograma (Gantt)',
-            'page_subtitle': 'Tareas generadas desde las fechas del presupuesto',
             'projects': projects,
             'selected_project': selected_project,
             'selected_odoo_project': selected_odoo_project,
@@ -454,8 +452,239 @@ class GeosisCustomerPortal(CustomerPortal):
             'gantt_open_count': open_task_count,
             'gantt_critical_count': critical_task_count,
             'gantt_scheduled_count': len(tasks_with_gantt),
+            'assignable_users': assignable_users,
+        })
+        return values
+
+    @http.route(['/my/gantt'], type='http', auth="user", website=True)
+    def portal_my_gantt(self, project_id=None, **kw):
+        import json
+        values = self._prepare_project_tasks_context(project_id)
+        
+        timeline_data = []
+        seen_groups = set()
+        groups = []
+        
+        for item in values.get('tasks_with_gantt', []):
+            task = item['task']
+            start_dt = item['start_dt']
+            end_dt = item['end_dt']
+            if not start_dt:
+                start_dt = self._get_task_start(task)
+            if not end_dt:
+                end_dt = self._get_task_end(task)
+                
+            if start_dt and end_dt:
+                try:
+                    start_str = start_dt.strftime('%Y-%m-%d')
+                    end_str = end_dt.strftime('%Y-%m-%d')
+                except Exception:
+                    start_str = str(start_dt)[:10]
+                    end_str = str(end_dt)[:10]
+                
+                task_code = getattr(task, 'code', '') or ''
+                task_name = task.name or ''
+                content = f"[{task_code}] {task_name}" if task_code else task_name
+                
+                is_critical = False
+                if 'is_critical' in task._fields:
+                    is_critical = bool(task.is_critical)
+                priority = task.priority or '0'
+                
+                group_id = task.project_id.id or 0
+                group_name = task.project_id.name or 'Tareas Generales'
+                
+                timeline_data.append({
+                    'id': task.id,
+                    'group': group_id,
+                    'content': content,
+                    'start': start_str,
+                    'end': end_str,
+                    'is_critical': is_critical,
+                    'priority': priority,
+                })
+                
+                if group_id not in seen_groups:
+                    seen_groups.add(group_id)
+                    groups.append({
+                        'id': group_id,
+                        'content': group_name
+                    })
+
+        values.update({
+            'page_name': 'gantt',
+            'page_title': 'Cronograma (Gantt)',
+            'page_subtitle': 'Tareas generadas desde las fechas del presupuesto',
+            'action_url': '/my/gantt',
+            'timeline_data_json': json.dumps(timeline_data),
+            'timeline_groups_json': json.dumps(groups),
         })
         return request.render("geosis_website.portal_my_gantt", values)
+
+    @http.route(['/my/tasks'], type='http', auth="user", website=True)
+    def portal_my_tasks(self, project_id=None, **kw):
+        values = self._prepare_project_tasks_context(project_id)
+        values.update({
+            'page_name': 'tasks',
+            'page_title': 'Tablero de Tareas',
+            'page_subtitle': 'Gestión interactiva de tareas del proyecto',
+            'action_url': '/my/tasks',
+        })
+        return request.render("geosis_website.portal_my_tasks", values)
+
+    @http.route(['/my/task/<int:task_id>/toggle_priority'], type='json', auth="user", methods=['POST'])
+    def portal_task_toggle_priority(self, task_id, **kw):
+        task = request.env['project.task'].sudo().browse(task_id)
+        if not task.exists():
+            return {'success': False, 'error': 'Tarea no encontrada'}
+        
+        if not self._check_task_access(task):
+            return {'success': False, 'error': 'Acceso no permitido'}
+        
+        new_priority = '1' if task.priority == '0' else '0'
+        task.write({'priority': new_priority})
+        return {'success': True, 'new_priority': new_priority}
+
+    @http.route(['/my/task/<int:task_id>/update_state'], type='json', auth="user", methods=['POST'])
+    def portal_task_update_state(self, task_id, state_val, **kw):
+        task = request.env['project.task'].sudo().browse(task_id)
+        if not task.exists():
+            return {'success': False, 'error': 'Tarea no encontrada'}
+        
+        if not self._check_task_access(task):
+            return {'success': False, 'error': 'Acceso no permitido'}
+        
+        vals = {}
+        if 'state' in task._fields:
+            vals['state'] = state_val
+        elif 'kanban_state' in task._fields:
+            mapping = {
+                '01_in_progress': 'normal',
+                '02_changes_requested': 'blocked',
+                '03_approved': 'done',
+                '04_cancelled': 'blocked',
+                '01_done': 'done'
+            }
+            vals['kanban_state'] = mapping.get(state_val, 'normal')
+        
+        if vals:
+            task.write(vals)
+            return {'success': True}
+        return {'success': False, 'error': 'No se pudo actualizar el estado'}
+
+    @http.route(['/my/task/<int:task_id>/update_assignee'], type='json', auth="user", methods=['POST'])
+    def portal_task_update_assignee(self, task_id, user_id, **kw):
+        task = request.env['project.task'].sudo().browse(task_id)
+        if not task.exists():
+            return {'success': False, 'error': 'Tarea no encontrada'}
+        
+        if not self._check_task_access(task):
+            return {'success': False, 'error': 'Acceso no permitido'}
+        
+        vals = {}
+        if user_id:
+            user = request.env['res.users'].sudo().browse(int(user_id))
+            if not user.exists():
+                return {'success': False, 'error': 'Usuario no encontrado'}
+            if 'user_ids' in task._fields:
+                vals['user_ids'] = [(6, 0, [user.id])]
+            elif 'user_id' in task._fields:
+                vals['user_id'] = user.id
+        else:
+            if 'user_ids' in task._fields:
+                vals['user_ids'] = [(5, 0, 0)]
+            elif 'user_id' in task._fields:
+                vals['user_id'] = False
+        
+        task.write(vals)
+        return {'success': True}
+
+    @http.route(['/my/task/<int:task_id>/update_stage'], type='json', auth="user", methods=['POST'])
+    def portal_task_update_stage(self, task_id, stage_id, **kw):
+        task = request.env['project.task'].sudo().browse(task_id)
+        if not task.exists():
+            return {'success': False, 'error': 'Tarea no encontrada'}
+        
+        if not self._check_task_access(task):
+            return {'success': False, 'error': 'Acceso no permitido'}
+        
+        if stage_id:
+            stage = request.env['project.task.type'].sudo().browse(int(stage_id))
+            if not stage.exists():
+                return {'success': False, 'error': 'Etapa no encontrada'}
+            task.write({'stage_id': stage.id})
+        else:
+            task.write({'stage_id': False})
+            
+        return {'success': True}
+
+    @http.route(['/my/task/<int:task_id>/update_dates'], type='json', auth="user", methods=['POST'])
+    def portal_task_update_dates(self, task_id, start_date, end_date, **kw):
+        task = request.env['project.task'].sudo().browse(task_id)
+        if not task.exists():
+            return {'success': False, 'error': 'Tarea no encontrada'}
+        
+        if not self._check_task_access(task):
+            return {'success': False, 'error': 'Acceso no permitido'}
+            
+        vals = {}
+        if 'planned_date_start' in task._fields:
+            vals['planned_date_start'] = start_date
+        if 'planned_date_end' in task._fields:
+            vals['planned_date_end'] = end_date
+            
+        # Fallbacks for standard task fields if planned_date_start/end do not exist
+        if 'planned_date_start' not in task._fields:
+            if 'date_assign' in task._fields:
+                vals['date_assign'] = start_date
+        if 'planned_date_end' not in task._fields:
+            if 'date_deadline' in task._fields:
+                vals['date_deadline'] = end_date
+                
+        if vals:
+            task.write(vals)
+            return {'success': True}
+        return {'success': False, 'error': 'No hay campos de fecha modificables'}
+
+    def _check_task_access(self, task):
+        Project = request.env['geosis.project'].sudo()
+        projects = Project.search(self._partner_domain())
+        all_odoo_project_ids = []
+        for p in projects:
+            budgets, _, odoo_projects = self._get_project_budget_context(p)
+            if odoo_projects:
+                all_odoo_project_ids.extend(odoo_projects.ids)
+        return task.project_id.id in all_odoo_project_ids
+
+    def _check_project_access(self, project_id):
+        Project = request.env['geosis.project'].sudo()
+        projects = Project.search(self._partner_domain())
+        all_odoo_project_ids = []
+        for p in projects:
+            budgets, _, odoo_projects = self._get_project_budget_context(p)
+            if odoo_projects:
+                all_odoo_project_ids.extend(odoo_projects.ids)
+        return project_id in all_odoo_project_ids
+
+    @http.route(['/my/project/<int:project_id>/add_stage'], type='json', auth="user", methods=['POST'])
+    def portal_project_add_stage(self, project_id, name, **kw):
+        if not self._check_project_access(project_id):
+            return {'success': False, 'error': 'Acceso no permitido'}
+        
+        if not name:
+            return {'success': False, 'error': 'El nombre de la etapa es obligatorio'}
+            
+        stage_vals = {
+            'name': name,
+            'project_ids': [(4, project_id)]
+        }
+        existing_stages = request.env['project.task.type'].sudo().search([('project_ids', 'in', [project_id])])
+        if existing_stages:
+            max_seq = max(existing_stages.mapped('sequence') or [0])
+            stage_vals['sequence'] = max_seq + 1
+            
+        request.env['project.task.type'].sudo().create(stage_vals)
+        return {'success': True}
 
     @http.route(['/my/projects/new'], type='http', auth="user", website=True, methods=['GET', 'POST'])
     def portal_my_project_new(self, **kw):

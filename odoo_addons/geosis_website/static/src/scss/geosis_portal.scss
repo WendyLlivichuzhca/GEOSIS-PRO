@@ -1876,3 +1876,207 @@ a.geosis-app-user {
         box-shadow: 0 6px 18px rgba(201, 123, 88, 0.35);
     }
 }
+
+/* Card Financiera del Portal */
+.geosis-financial-card {
+    background: linear-gradient(135deg, #2A3B4C 0%, #15202B 100%) !important;
+    background-color: #2A3B4C !important;
+    color: #ffffff !important;
+    border-radius: 16px !important;
+    border: none !important;
+    
+    .card-body {
+        background: transparent !important;
+        background-color: transparent !important;
+        color: #ffffff !important;
+    }
+    
+    .card-subtitle {
+        color: rgba(255, 255, 255, 0.75) !important;
+        font-weight: 700 !important;
+    }
+    
+    .text-white-50 {
+        color: rgba(255, 255, 255, 0.75) !important;
+    }
+    
+    .card-title, h2 {
+        color: #2ecc71 !important;
+        font-weight: 800 !important;
+    }
+    
+    span:not(.badge), div, h6, strong {
+        color: #ffffff !important;
+    }
+}
+
+/* Card de Tarea Kanban Portal */
+.geosis-task-kanban-card {
+    border: 1px solid rgba(0, 0, 0, 0.04) !important;
+    overflow: visible !important;
+    position: relative;
+    
+    &:hover, &:focus-within {
+        transform: translateY(-2.5px);
+        box-shadow: 0 10px 22px rgba(31, 45, 61, 0.09) !important;
+        border-color: rgba(109, 135, 157, 0.2) !important;
+        z-index: 10 !important;
+    }
+    
+    .text-muted-light {
+        color: #b2bec3 !important;
+    }
+}
+
+.geosis-gantt-bar {
+    border-radius: 10px;
+    height: 100%;
+    
+    &.is-critical {
+        box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+    }
+    
+    &:not(.is-critical) {
+        box-shadow: 0 2px 8px rgba(46, 204, 113, 0.3);
+    }
+}
+
+.geosis-kanban-stage-card {
+    overflow: visible !important;
+}
+
+.geosis-kanban-column-body {
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+    border: 2px dashed transparent;
+    border-radius: 12px;
+    overflow: visible !important;
+    
+    &.bg-light-subtle {
+        background-color: rgba(93, 124, 153, 0.08) !important;
+        border-color: #5d7c99 !important;
+    }
+}
+
+.geosis-task-kanban-card {
+    &.dragging {
+        opacity: 0.4;
+        transform: scale(0.98);
+        border: 2px dashed #5d7c99 !important;
+    }
+}
+
+/* ==========================================================================
+   VIS TIMELINE MODERN CUSTOM STYLES
+   ========================================================================== */
+.vis-timeline {
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    border-radius: 12px !important;
+    overflow: hidden;
+    background-color: #ffffff;
+    font-family: inherit !important;
+}
+
+.vis-panel.vis-background, 
+.vis-panel.vis-contents, 
+.vis-panel.vis-center, 
+.vis-panel.vis-right, 
+.vis-panel.vis-top, 
+.vis-panel.vis-bottom {
+    border-color: rgba(0, 0, 0, 0.06) !important;
+}
+
+.vis-panel.vis-left,
+.vis-panel.vis-left-sidebar {
+    width: 200px !important;
+    min-width: 200px !important;
+    max-width: 200px !important;
+    border-color: rgba(0, 0, 0, 0.06) !important;
+}
+
+.vis-time-axis .vis-grid.vis-vertical {
+    border-color: rgba(0, 0, 0, 0.04) !important;
+}
+
+.vis-time-axis .vis-grid.vis-minor {
+    border-color: rgba(0, 0, 0, 0.02) !important;
+}
+
+.vis-time-axis .vis-text {
+    font-size: 0.65rem !important;
+    color: #4a5568 !important;
+}
+
+.vis-label {
+    width: 200px !important;
+    min-width: 200px !important;
+    max-width: 200px !important;
+    padding: 6px 10px !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+    background-color: #f7fafc !important;
+    display: flex !important;
+    align-items: center !important;
+    
+    .vis-inner {
+        padding: 0 !important;
+        font-size: 0.65rem !important;
+        font-weight: 700 !important;
+        color: #2d3748 !important;
+        line-height: 1.3 !important;
+        white-space: normal !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        display: -webkit-box !important;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+    }
+}
+
+.vis-item {
+    border-radius: 4px !important;
+    border: none !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    padding: 0 !important;
+    transition: transform 0.2s, box-shadow 0.2s;
+    overflow: hidden;
+    cursor: grab;
+    height: 22px !important;
+    line-height: 22px !important;
+    
+    &:active {
+        cursor: grabbing;
+    }
+    
+    &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+        z-index: 9999 !important;
+    }
+    
+    .vis-item-content {
+        padding: 0 !important;
+        font-size: 0.65rem !important;
+    }
+}
+
+.vis-item.vis-range {
+    background: linear-gradient(135deg, #3182ce 0%, #2b6cb0 100%) !important; /* Premium Blue */
+}
+
+.vis-item.vis-range.is-critical {
+    background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%) !important; /* Premium Red */
+    box-shadow: 0 2px 4px rgba(229, 62, 62, 0.2) !important;
+}
+
+.vis-item.vis-range.is-priority {
+    background: linear-gradient(135deg, #ecc94b 0%, #d69e2e 100%) !important; /* Premium Gold */
+    box-shadow: 0 2px 4px rgba(236, 201, 75, 0.2) !important;
+}
+
+.vis-current-time {
+    background-color: #e53e3e !important;
+    width: 1.5px !important;
+}
+
+
+
+

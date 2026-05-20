@@ -55,13 +55,23 @@ class GeosisBitacora(models.Model):
             estimation = Estimation.search([
                 ('budget_id', '=', budget.id),
                 ('state', '=', 'draft')
-            ], limit=1, order='date desc')
+            ], limit=1, order='estimation_date desc, id desc')
             
             if not estimation:
+                # Generar código automático simple
+                last_est = Estimation.search([], order='id desc', limit=1)
+                next_num = 1
+                if last_est and last_est.code and last_est.code.startswith('EST-'):
+                    try:
+                        next_num = int(last_est.code.split('-')[1]) + 1
+                    except: pass
+                code = "EST-%04d" % next_num
+
                 estimation = Estimation.create({
-                    'name': f"Planilla - {record.project_id.name}",
+                    'code': code,
+                    'project_id': record.project_id.id,
                     'budget_id': budget.id,
-                    'date': record.date,
+                    'estimation_date': record.date,
                     'state': 'draft',
                 })
                 # Crear las líneas vacías basadas en los rubros contractuales
@@ -69,9 +79,7 @@ class GeosisBitacora(models.Model):
                     EstimationLine.create({
                         'estimation_id': estimation.id,
                         'budget_line_id': bline.id,
-                        'uom_id': bline.apu_id.uom_name or 'u',
-                        'unit_price': bline.unit_price,
-                        'qty_current': 0.0,
+                        'quantity_executed': 0.0,
                     })
             
             # 3. Sumar cantidades ejecutadas basándose en el incremento de progreso diario
@@ -96,7 +104,7 @@ class GeosisBitacora(models.Model):
                     
                     if eline:
                         eline.write({
-                            'qty_current': eline.qty_current + daily_qty
+                            'quantity_executed': eline.quantity_executed + daily_qty
                         })
             
             # 4. Enviar notificación automática por correo con el PDF MIDUVI adjunto
