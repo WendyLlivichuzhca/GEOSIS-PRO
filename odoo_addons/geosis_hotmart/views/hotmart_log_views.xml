@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Vista de Lista (Tree) -->
+    <record id="view_geosis_hotmart_log_tree" model="ir.ui.view">
+        <field name="name">geosis.hotmart.log.tree</field>
+        <field name="model">geosis.hotmart.log</field>
+        <field name="arch" type="xml">
+            <tree string="Logs de Hotmart" create="false" edit="false" delete="true">
+                <field name="create_date" string="Fecha y Hora"/>
+                <field name="event"/>
+                <field name="buyer_email"/>
+                <field name="buyer_name"/>
+                <field name="transaction"/>
+                <field name="status" widget="badge" decoration-danger="status == 'error'" decoration-success="status == 'success'"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Vista de Formulario (Form) -->
+    <record id="view_geosis_hotmart_log_form" model="ir.ui.view">
+        <field name="name">geosis.hotmart.log.form</field>
+        <field name="model">geosis.hotmart.log</field>
+        <field name="arch" type="xml">
+            <form string="Log de Hotmart" create="false" edit="false">
+                <header>
+                    <field name="status" widget="statusbar" statusbar_visible="success,error"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group string="Información del Evento">
+                            <field name="event" readonly="1"/>
+                            <field name="create_date" string="Fecha de Recepción" readonly="1"/>
+                            <field name="transaction" readonly="1"/>
+                        </group>
+                        <group string="Datos del Comprador">
+                            <field name="buyer_name" readonly="1"/>
+                            <field name="buyer_email" readonly="1"/>
+                        </group>
+                    </group>
+                    
+                    <!-- Campo de error que se muestra solo si el estado es error -->
+                    <group string="Detalles de Error" invisible="status == 'success'">
+                        <field name="error_message" readonly="1" nolabel="1"/>
+                    </group>
+
+                    <notebook>
+                        <page string="Payload JSON Recibido" name="payload_json">
+                            <field name="payload" widget="text" readonly="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vista de Búsqueda (Search) -->
+    <record id="view_geosis_hotmart_log_search" model="ir.ui.view">
+        <field name="name">geosis.hotmart.log.search</field>
+        <field name="model">geosis.hotmart.log</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Logs">
+                <field name="buyer_email" string="Email"/>
+                <field name="buyer_name" string="Nombre"/>
+                <field name="transaction" string="Transacción"/>
+                <field name="event" string="Evento"/>
+                <filter string="Con Error" name="errors" domain="[('status', '=', 'error')]"/>
+                <filter string="Exitosos" name="success" domain="[('status', '=', 'success')]"/>
+                <group expand="0" string="Agrupar Por">
+                    <filter string="Evento" name="group_by_event" context="{'group_by': 'event'}"/>
+                    <filter string="Estado" name="group_by_status" context="{'group_by': 'status'}"/>
+                    <filter string="Fecha" name="group_by_date" context="{'group_by': 'create_date'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Acción de Ventana -->
+    <record id="action_geosis_hotmart_log" model="ir.actions.act_window">
+        <field name="name">Logs de Hotmart</field>
+        <field name="res_model">geosis.hotmart.log</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_geosis_hotmart_log_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay registros de webhooks de Hotmart todavía.
+            </p>
+            <p>
+                Aquí se mostrarán las peticiones que envíe Hotmart en tiempo real cuando tus clientes realicen compras o cancelen suscripciones.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menús en GEOSIS-PRO -->
+    <menuitem
+        id="menu_geosis_hotmart"
+        name="Hotmart"
+        parent="geosis_base.menu_geosis_root"
+        sequence="100"
+        groups="geosis_base.group_geosis_admin"
+    />
+    
+    <menuitem
+        id="menu_geosis_hotmart_logs"
+        name="Logs de Webhooks"
+        parent="menu_geosis_hotmart"
+        action="action_geosis_hotmart_log"
+        sequence="10"
+    />
+</odoo>

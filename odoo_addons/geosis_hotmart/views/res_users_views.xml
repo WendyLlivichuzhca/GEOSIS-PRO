@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_users_form_inherit_hotmart" model="ir.ui.view">
+        <field name="name">res.users.form.inherit.hotmart</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Hotmart &amp; Suscripción" name="hotmart_subscription">
+                    <group>
+                        <group string="Estado de la Suscripción">
+                            <field name="subscription_status"/>
+                        </group>
+                        <group string="Detalles de Hotmart">
+                            <field name="hotmart_subscription_id" readonly="1"/>
+                            <field name="hotmart_purchase_date" readonly="1"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>
