@@ -39,8 +39,9 @@ class HotmartWebhookController(http.Controller):
         event = payload.get('event')
         data = payload.get('data', {})
         buyer = data.get('buyer', {})
-        email = buyer.get('email')
-        name = buyer.get('name')
+        subscriber = data.get('subscriber', {})
+        email = buyer.get('email') or subscriber.get('email')
+        name = buyer.get('name') or subscriber.get('name')
         
         purchase = data.get('purchase', {})
         transaction = purchase.get('transaction')
