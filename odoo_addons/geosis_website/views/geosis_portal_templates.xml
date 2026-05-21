@@ -52,12 +52,15 @@
                         </a>
 
                         <nav class="geosis-app-menu">
-                            <div class="geosis-app-menu__group">Principal</div>
+                            <div class="geosis-app-menu__group">1. Inicio</div>
                             <a href="/geosis/dashboard" t-attf-class="geosis-app-menu__item #{'is-active' if page_name == 'home' else ''}">
                                 <i class="fa fa-th-large"/> Dashboard
                             </a>
 
-                            <div class="geosis-app-menu__group">Catalogos</div>
+                            <div class="geosis-app-menu__group">2. Preparación</div>
+                            <a t-if="request.env.user.has_group('geosis_base.group_geosis_admin') or request.env.user.partner_id.id == request.env.user.partner_id.commercial_partner_id.id" href="/my/team" t-attf-class="geosis-app-menu__item #{'is-active' if page_name == 'team' else ''}">
+                                <i class="fa fa-users"/> Mi Equipo
+                            </a>
                             <a href="/my/rubros" t-attf-class="geosis-app-menu__item #{'is-active' if page_name == 'rubro' else ''}">
                                 <i class="fa fa-list-alt"/> Rubros APU
                             </a>
@@ -65,30 +68,37 @@
                                 <i class="fa fa-cubes"/> Recursos
                             </a>
                             <a href="/my/inec-indices" t-attf-class="geosis-app-menu__item #{'is-active' if page_name == 'inec' else ''}">
-                                <i class="fa fa-line-chart"/> Indices INEC
+                                <i class="fa fa-line-chart"/> Índices INEC
                             </a>
                             <a href="/my/map" t-attf-class="geosis-app-menu__item #{'is-active' if page_name == 'map' else ''}">
                                 <i class="fa fa-map-marker"/> Mapa de Bases de Datos
                             </a>
 
-                            <div class="geosis-app-menu__group">Operacion</div>
+                            <div class="geosis-app-menu__group">3. Planificación</div>
                             <a href="/my/projects" t-attf-class="geosis-app-menu__item #{'is-active' if page_name == 'project' else ''}">
                                 <i class="fa fa-building"/> Proyectos
-                            </a>
-                            <a href="/my/gantt" t-attf-class="geosis-app-menu__item #{'is-active' if page_name == 'gantt' else ''}">
-                                <i class="fa fa-tasks"/> Cronograma (Gantt)
                             </a>
                             <a href="/my/budgets" t-attf-class="geosis-app-menu__item #{'is-active' if page_name == 'budget' else ''}">
                                 <i class="fa fa-calculator"/> Presupuestos
                             </a>
-                            <a href="/my/estimations" t-attf-class="geosis-app-menu__item #{'is-active' if page_name == 'estimation' else ''}">
-                                <i class="fa fa-line-chart"/> Planillas de Avance
+                            <a href="/my/import-excel" t-attf-class="geosis-app-menu__item #{'is-active' if page_name == 'import' else ''}">
+                                <i class="fa fa-file-excel-o"/> Importar Excel
+                            </a>
+
+                            <div class="geosis-app-menu__group">4. Ejecución</div>
+                            <a href="/my/gantt" t-attf-class="geosis-app-menu__item #{'is-active' if page_name == 'gantt' else ''}">
+                                <i class="fa fa-tasks"/> Cronograma (Gantt)
+                            </a>
+                            <a href="/my/tasks" t-attf-class="geosis-app-menu__item #{'is-active' if page_name == 'tasks' else ''}">
+                                <i class="fa fa-tasks"/> Tablero de Tareas
                             </a>
                             <a href="/my/bitacoras" t-attf-class="geosis-app-menu__item #{'is-active' if page_name == 'bitacora' else ''}">
                                 <i class="fa fa-book"/> Libro de Obra
                             </a>
-                            <a href="/my/import-excel" t-attf-class="geosis-app-menu__item #{'is-active' if page_name == 'import' else ''}">
-                                <i class="fa fa-file-excel-o"/> Importar Excel
+
+                            <div class="geosis-app-menu__group">5. Control</div>
+                            <a href="/my/estimations" t-attf-class="geosis-app-menu__item #{'is-active' if page_name == 'estimation' else ''}">
+                                <i class="fa fa-line-chart"/> Planillas de Avance
                             </a>
                         </nav>
 
@@ -103,7 +113,7 @@
                         </a>
 
                         <a href="/web/session/logout?redirect=/" class="geosis-app-logout">
-                            <i class="fa fa-sign-out"/> Cerrar sesion
+                            <i class="fa fa-sign-out"/> Cerrar sesión
                         </a>
                     </aside>
 
@@ -618,6 +628,1426 @@
                     </div>
                 </section>
             </t>
+        </t>
+    </template>
+
+    <template id="portal_my_gantt_restored" name="Cronograma Portal Restaurado">
+        <t t-call="geosis_website.geosis_portal_layout">
+            <t t-set="page_name" t-value="'gantt'"/>
+
+            <div class="geosis-shot-stats">
+                <article class="geosis-shot-stat is-blue">
+                    <div class="geosis-shot-stat__copy">
+                        <span>Total tareas</span>
+                        <strong><t t-esc="gantt_task_count or 0"/></strong>
+                    </div>
+                    <div class="geosis-shot-stat__icon"><i class="fa fa-tasks"/></div>
+                </article>
+                <article class="geosis-shot-stat is-green">
+                    <div class="geosis-shot-stat__copy">
+                        <span>Tareas abiertas</span>
+                        <strong><t t-esc="gantt_open_count or 0"/></strong>
+                    </div>
+                    <div class="geosis-shot-stat__icon"><i class="fa fa-folder-open-o"/></div>
+                </article>
+                <article class="geosis-shot-stat is-red">
+                    <div class="geosis-shot-stat__copy">
+                        <span>Críticas</span>
+                        <strong><t t-esc="gantt_critical_count or 0"/></strong>
+                    </div>
+                    <div class="geosis-shot-stat__icon"><i class="fa fa-warning"/></div>
+                </article>
+                <article class="geosis-shot-stat is-violet">
+                    <div class="geosis-shot-stat__copy">
+                        <span>Con fechas</span>
+                        <strong><t t-esc="gantt_scheduled_count or 0"/></strong>
+                    </div>
+                    <div class="geosis-shot-stat__icon"><i class="fa fa-calendar"/></div>
+                </article>
+            </div>
+
+            <section class="geosis-shot-panel geosis-shot-panel--selector">
+                <div class="geosis-shot-panel__header">
+                    <h2><i class="fa fa-filter"/> Seleccionar Proyecto</h2>
+                </div>
+                <form action="/my/gantt" method="get" class="geosis-shot-selector">
+                    <select name="project_id" class="form-select">
+                        <option value="">Selecciona un proyecto</option>
+                        <t t-foreach="projects" t-as="project_item">
+                            <option t-att-value="project_item.id" t-att-selected="'selected' if selected_project and project_item.id == selected_project.id else None">
+                                <t t-esc="project_item.name"/>
+                            </option>
+                        </t>
+                    </select>
+                    <button type="submit" class="geosis-shot-action">
+                        <i class="fa fa-eye"/> Ver Cronograma
+                    </button>
+                </form>
+            </section>
+
+            <t t-if="not selected_project">
+                <section class="geosis-shot-panel">
+                    <div class="geosis-shot-empty">
+                        <i class="fa fa-list-alt"/>
+                        <p>No hay un proyecto seleccionado para mostrar tareas.</p>
+                    </div>
+                </section>
+            </t>
+            <t t-elif="not project_tasks">
+                <section class="geosis-shot-panel">
+                    <div class="geosis-shot-panel__title">
+                        <h3><t t-esc="selected_project.name"/></h3>
+                    </div>
+                    <div class="geosis-shot-empty">
+                        <i class="fa fa-list-alt"/>
+                        <p>Este proyecto todavía no tiene tareas generadas. Primero asigna fechas en los rubros del presupuesto y luego usa <strong>Generar Cronograma (Gantt)</strong>.</p>
+                    </div>
+                </section>
+            </t>
+            <t t-else="">
+                <section class="geosis-shot-panel geosis-shot-panel--gantt">
+                    <div class="geosis-shot-panel__title">
+                        <h3><t t-esc="selected_project.name"/></h3>
+                    </div>
+                    <div class="geosis-shot-toolbar geosis-shot-toolbar--calendar">
+                        <div class="geosis-shot-toolbar__controls geosis-shot-toolbar__controls--tabs">
+                            <button type="button" class="geosis-shot-tab is-active" data-scale="today">Today</button>
+                            <button type="button" class="geosis-shot-tab" data-scale="day">Day</button>
+                            <button type="button" class="geosis-shot-tab" data-scale="week">Week</button>
+                            <button type="button" class="geosis-shot-tab" data-scale="month">Month</button>
+                            <button type="button" class="geosis-shot-tab" data-scale="year">Year</button>
+                        </div>
+                        <div class="geosis-shot-badge" t-if="selected_odoo_project">
+                            <i class="fa fa-cogs"/> Proyecto Odoo: <t t-esc="selected_odoo_project.name"/>
+                        </div>
+                    </div>
+                    <div class="geosis-calendar"
+                         id="geosis-calendar"
+                         t-att-data-items="timeline_data_json"
+                         t-att-data-project-name="selected_project.name"
+                         t-att-data-today="fields.Date.context_today(request.env.user).strftime('%Y-%m-%d')">
+                        <div class="geosis-calendar__header">
+                            <div class="geosis-calendar__label"/>
+                            <div class="geosis-calendar__viewport">
+                                <div class="geosis-calendar__canvas">
+                                    <div class="geosis-calendar__months"/>
+                                    <div class="geosis-calendar__days"/>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="geosis-calendar__body">
+                            <div class="geosis-calendar__label">
+                                <t t-esc="selected_project.name"/>
+                            </div>
+                            <div class="geosis-calendar__viewport">
+                                <div class="geosis-calendar__canvas">
+                                    <div class="geosis-calendar__weekends"/>
+                                    <div class="geosis-calendar__grid"/>
+                                    <div class="geosis-calendar__today-line"/>
+                                    <div class="geosis-calendar__lanes"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <script type="text/javascript">
+                        <![CDATA[
+                        document.addEventListener('DOMContentLoaded', function () {
+                            var root = document.getElementById('geosis-calendar');
+                            if (!root) {
+                                return;
+                            }
+
+                            var items = [];
+                            try {
+                                items = JSON.parse(root.dataset.items || '[]');
+                            } catch (error) {
+                                items = [];
+                            }
+
+                            var viewportHeader = root.querySelector('.geosis-calendar__header .geosis-calendar__viewport');
+                            var viewportBody = root.querySelector('.geosis-calendar__body .geosis-calendar__viewport');
+                            var canvasHeader = root.querySelector('.geosis-calendar__header .geosis-calendar__canvas');
+                            var canvasBody = root.querySelector('.geosis-calendar__body .geosis-calendar__canvas');
+                            var monthsEl = root.querySelector('.geosis-calendar__months');
+                            var daysEl = root.querySelector('.geosis-calendar__days');
+                            var weekendsEl = root.querySelector('.geosis-calendar__weekends');
+                            var gridEl = root.querySelector('.geosis-calendar__grid');
+                            var lanesEl = root.querySelector('.geosis-calendar__lanes');
+                            var todayLine = root.querySelector('.geosis-calendar__today-line');
+                            var tabs = root.closest('.geosis-shot-panel').querySelectorAll('.geosis-shot-tab');
+
+                            function parseDate(value) {
+                                var parts = (value || '').split('-');
+                                return new Date(Date.UTC(parseInt(parts[0] || '0', 10), parseInt(parts[1] || '1', 10) - 1, parseInt(parts[2] || '1', 10)));
+                            }
+
+                            function addDays(date, amount) {
+                                var next = new Date(date.getTime());
+                                next.setUTCDate(next.getUTCDate() + amount);
+                                return next;
+                            }
+
+                            function addMonths(date, amount) {
+                                return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + amount, 1));
+                            }
+
+                            function addYears(date, amount) {
+                                return new Date(Date.UTC(date.getUTCFullYear() + amount, 0, 1));
+                            }
+
+                            function diffDays(a, b) {
+                                return Math.round((b - a) / 86400000);
+                            }
+
+                            function sameMonth(a, b) {
+                                return a.getUTCFullYear() === b.getUTCFullYear() && a.getUTCMonth() === b.getUTCMonth();
+                            }
+
+                            function sameYear(a, b) {
+                                return a.getUTCFullYear() === b.getUTCFullYear();
+                            }
+
+                            function startOfWeek(date) {
+                                var day = date.getUTCDay() || 7;
+                                return addDays(date, 1 - day);
+                            }
+
+                            function startOfMonth(date) {
+                                return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1));
+                            }
+
+                            function startOfYear(date) {
+                                return new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+                            }
+
+                            function monthLabel(date) {
+                                return date.toLocaleDateString('es-EC', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+                            }
+
+                            function shortMonthLabel(date) {
+                                return date.toLocaleDateString('es-EC', { month: 'short', timeZone: 'UTC' });
+                            }
+
+                            function dayLabel(date) {
+                                return date.toLocaleDateString('es-EC', { day: 'numeric', timeZone: 'UTC' });
+                            }
+
+                            function weekLabel(date) {
+                                var end = addDays(date, 6);
+                                return dayLabel(date) + ' - ' + dayLabel(end);
+                            }
+
+                            function buildUnits(scale, today, minDate, maxDate) {
+                                var units = [];
+                                var cursor;
+                                var end;
+
+                                if (scale === 'day') {
+                                    cursor = addDays(minDate, -1);
+                                    end = addDays(maxDate, 1);
+                                    while (cursor <= end) {
+                                        units.push(new Date(cursor.getTime()));
+                                        cursor = addDays(cursor, 1);
+                                    }
+                                } else if (scale === 'week') {
+                                    cursor = startOfWeek(minDate < today ? minDate : today);
+                                    end = startOfWeek(maxDate > today ? maxDate : today);
+                                    while (cursor <= end) {
+                                        units.push(new Date(cursor.getTime()));
+                                        cursor = addDays(cursor, 7);
+                                    }
+                                } else if (scale === 'month') {
+                                    cursor = startOfMonth(minDate < today ? minDate : today);
+                                    end = startOfMonth(maxDate > today ? maxDate : today);
+                                    while (cursor <= end) {
+                                        units.push(new Date(cursor.getTime()));
+                                        cursor = addMonths(cursor, 1);
+                                    }
+                                } else {
+                                    cursor = startOfYear(minDate < today ? minDate : today);
+                                    end = startOfYear(maxDate > today ? maxDate : today);
+                                    while (cursor <= end) {
+                                        units.push(new Date(cursor.getTime()));
+                                        cursor = addYears(cursor, 1);
+                                    }
+                                }
+
+                                return units;
+                            }
+
+                            function getCellWidth(scale) {
+                                return {
+                                    day: 70,
+                                    week: 128,
+                                    month: 150,
+                                    year: 190,
+                                }[scale] || 70;
+                            }
+
+                            function getUnitIndex(date, units, scale) {
+                                var i;
+                                if (scale === 'day') {
+                                    return diffDays(units[0], date);
+                                }
+                                for (i = units.length - 1; i >= 0; i--) {
+                                    if (date >= units[i]) {
+                                        return i;
+                                    }
+                                }
+                                return 0;
+                            }
+
+                            function buildLaneEntries(scale, units) {
+                                var prepared = items.map(function (item) {
+                                    var start = parseDate(item.start);
+                                    var end = parseDate(item.end);
+                                    return {
+                                        data: item,
+                                        start: start,
+                                        end: end,
+                                        startIndex: getUnitIndex(start, units, scale),
+                                        endIndex: getUnitIndex(end, units, scale),
+                                    };
+                                }).sort(function (a, b) {
+                                    if (a.startIndex === b.startIndex) {
+                                        return a.endIndex - b.endIndex;
+                                    }
+                                    return a.startIndex - b.startIndex;
+                                });
+
+                                var lanes = [];
+                                prepared.forEach(function (entry) {
+                                    var placed = false;
+                                    lanes.forEach(function (lane) {
+                                        if (!placed && entry.startIndex > lane.lastIndex) {
+                                            lane.items.push(entry);
+                                            lane.lastIndex = entry.endIndex;
+                                            placed = true;
+                                        }
+                                    });
+                                    if (!placed) {
+                                        lanes.push({
+                                            lastIndex: entry.endIndex,
+                                            items: [entry],
+                                        });
+                                    }
+                                });
+                                return lanes;
+                            }
+
+                            function clearCanvas() {
+                                monthsEl.innerHTML = '';
+                                daysEl.innerHTML = '';
+                                weekendsEl.innerHTML = '';
+                                gridEl.innerHTML = '';
+                                lanesEl.innerHTML = '';
+                            }
+
+                            function renderScale(scale, shouldFocusToday) {
+                                if (!items.length) {
+                                    clearCanvas();
+                                    return;
+                                }
+
+                                var today = parseDate(root.dataset.today);
+                                var startDates = items.map(function (item) { return parseDate(item.start); });
+                                var endDates = items.map(function (item) { return parseDate(item.end); });
+                                var minDate = startDates.reduce(function (acc, current) { return current < acc ? current : acc; }, today);
+                                var maxDate = endDates.reduce(function (acc, current) { return current > acc ? current : acc; }, today);
+                                var units = buildUnits(scale, today, minDate, maxDate);
+                                var cellWidth = getCellWidth(scale);
+                                var width = units.length * cellWidth;
+                                var labelFormatter;
+                                var groupFormatter;
+                                var sameGroupChecker;
+
+                                if (!units.length) {
+                                    return;
+                                }
+
+                                clearCanvas();
+                                canvasHeader.style.width = width + 'px';
+                                canvasBody.style.width = width + 'px';
+
+                                if (scale === 'day') {
+                                    labelFormatter = function (date) { return dayLabel(date); };
+                                    groupFormatter = function (date) { return monthLabel(date); };
+                                    sameGroupChecker = sameMonth;
+                                } else if (scale === 'week') {
+                                    labelFormatter = function (date) { return weekLabel(date); };
+                                    groupFormatter = function (date) { return monthLabel(date); };
+                                    sameGroupChecker = sameMonth;
+                                } else if (scale === 'month') {
+                                    labelFormatter = function (date) { return shortMonthLabel(date); };
+                                    groupFormatter = function (date) { return String(date.getUTCFullYear()); };
+                                    sameGroupChecker = sameYear;
+                                } else {
+                                    labelFormatter = function (date) { return String(date.getUTCFullYear()); };
+                                    groupFormatter = function () { return 'Periodo'; };
+                                    sameGroupChecker = function () { return true; };
+                                }
+
+                                units.forEach(function (unit, index) {
+                                    var left = index * cellWidth;
+                                    var cell = document.createElement('span');
+                                    cell.className = 'geosis-calendar__day';
+                                    cell.style.left = left + 'px';
+                                    cell.style.width = cellWidth + 'px';
+                                    cell.textContent = labelFormatter(unit);
+                                    daysEl.appendChild(cell);
+
+                                    var line = document.createElement('span');
+                                    line.className = 'geosis-calendar__grid-line';
+                                    line.style.left = left + 'px';
+                                    gridEl.appendChild(line);
+
+                                    if (scale === 'day' && (unit.getUTCDay() === 0 || unit.getUTCDay() === 6)) {
+                                        var weekend = document.createElement('span');
+                                        weekend.className = 'geosis-calendar__weekend';
+                                        weekend.style.left = left + 'px';
+                                        weekend.style.width = cellWidth + 'px';
+                                        weekendsEl.appendChild(weekend);
+                                    }
+
+                                    if (index === 0 || !sameGroupChecker(unit, units[index - 1])) {
+                                        var endIndex = index;
+                                        while (endIndex + 1 < units.length && sameGroupChecker(unit, units[endIndex + 1])) {
+                                            endIndex++;
+                                        }
+                                        var headerGroup = document.createElement('span');
+                                        headerGroup.className = 'geosis-calendar__month';
+                                        headerGroup.style.left = left + 'px';
+                                        headerGroup.style.width = ((endIndex - index + 1) * cellWidth) + 'px';
+                                        headerGroup.textContent = groupFormatter(unit);
+                                        monthsEl.appendChild(headerGroup);
+                                    }
+                                });
+
+                                var lanes = buildLaneEntries(scale, units);
+                                lanes.forEach(function (lane, laneIndex) {
+                                    var laneRow = document.createElement('div');
+                                    laneRow.className = 'geosis-calendar__lane';
+                                    laneRow.style.top = (laneIndex * 32) + 'px';
+
+                                    lane.items.forEach(function (entry) {
+                                        var bar = document.createElement('div');
+                                        bar.className = 'geosis-calendar__bar' + (entry.data.is_critical ? ' is-critical' : '');
+                                        bar.style.left = (entry.startIndex * cellWidth) + 'px';
+                                        bar.style.width = ((entry.endIndex - entry.startIndex + 1) * cellWidth) + 'px';
+                                        bar.textContent = entry.data.content;
+                                        laneRow.appendChild(bar);
+                                    });
+
+                                    lanesEl.appendChild(laneRow);
+                                });
+
+                                lanesEl.style.height = Math.max(lanes.length * 32, 96) + 'px';
+                                canvasBody.style.height = Math.max(lanes.length * 32, 96) + 'px';
+
+                                var todayIndex = getUnitIndex(today, units, scale);
+                                if (todayIndex >= 0 && todayIndex < units.length) {
+                                    todayLine.style.left = (todayIndex * cellWidth) + 'px';
+                                    todayLine.style.display = 'block';
+                                } else {
+                                    todayLine.style.display = 'none';
+                                }
+
+                                if (shouldFocusToday) {
+                                    var offset = Math.max((todayIndex * cellWidth) - 180, 0);
+                                    viewportBody.scrollLeft = offset;
+                                    viewportHeader.scrollLeft = offset;
+                                } else {
+                                    viewportBody.scrollLeft = 0;
+                                    viewportHeader.scrollLeft = 0;
+                                }
+                            }
+
+                            function activateTab(nextScale) {
+                                tabs.forEach(function (tab) {
+                                    tab.classList.toggle('is-active', tab.dataset.scale === nextScale);
+                                });
+
+                                if (nextScale === 'today') {
+                                    renderScale('day', true);
+                                } else {
+                                    renderScale(nextScale, false);
+                                }
+                            }
+
+                            viewportBody.addEventListener('scroll', function () {
+                                viewportHeader.scrollLeft = viewportBody.scrollLeft;
+                            });
+
+                            tabs.forEach(function (tab) {
+                                tab.addEventListener('click', function () {
+                                    activateTab(tab.dataset.scale);
+                                });
+                            });
+
+                            activateTab('today');
+                        });
+                        ]]>
+                    </script>
+                </section>
+            </t>
+        </t>
+    </template>
+    <template id="portal_my_tasks_restored" name="Tablero de Tareas Portal Restaurado">
+        <t t-call="geosis_website.geosis_portal_layout">
+            <t t-set="page_name" t-value="'tasks'"/>
+
+            <div class="geosis-shot-stats geosis-shot-stats--tasks">
+                <article class="geosis-shot-stat is-blue">
+                    <div class="geosis-shot-stat__copy">
+                        <span>Total tareas</span>
+                        <strong><t t-esc="gantt_task_count or 0"/></strong>
+                    </div>
+                    <div class="geosis-shot-stat__icon"><i class="fa fa-tasks"/></div>
+                </article>
+                <article class="geosis-shot-stat is-green">
+                    <div class="geosis-shot-stat__copy">
+                        <span>Tareas abiertas</span>
+                        <strong><t t-esc="gantt_open_count or 0"/></strong>
+                    </div>
+                    <div class="geosis-shot-stat__icon"><i class="fa fa-folder-open-o"/></div>
+                </article>
+                <article class="geosis-shot-stat is-red">
+                    <div class="geosis-shot-stat__copy">
+                        <span>Críticas</span>
+                        <strong><t t-esc="gantt_critical_count or 0"/></strong>
+                    </div>
+                    <div class="geosis-shot-stat__icon"><i class="fa fa-warning"/></div>
+                </article>
+            </div>
+
+            <section class="geosis-shot-panel geosis-shot-panel--selector">
+                <div class="geosis-shot-panel__header">
+                    <h2><i class="fa fa-filter"/> Seleccionar Proyecto</h2>
+                </div>
+                <form action="/my/tasks" method="get" class="geosis-shot-selector">
+                    <select name="project_id" class="form-select">
+                        <option value="">Selecciona un proyecto</option>
+                        <t t-foreach="projects" t-as="project_item">
+                            <option t-att-value="project_item.id" t-att-selected="'selected' if selected_project and project_item.id == selected_project.id else None">
+                                <t t-esc="project_item.name"/>
+                            </option>
+                        </t>
+                    </select>
+                    <button type="submit" class="geosis-shot-action">
+                        <i class="fa fa-eye"/> Ver Tablero
+                    </button>
+                </form>
+            </section>
+
+            <t t-if="not selected_project">
+                <section class="geosis-shot-panel">
+                    <div class="geosis-shot-empty">
+                        <i class="fa fa-list-alt"/>
+                        <p>No hay un proyecto seleccionado para mostrar tareas.</p>
+                    </div>
+                </section>
+            </t>
+            <t t-else="">
+                <section class="geosis-shot-panel">
+                    <div class="geosis-shot-panel__title">
+                        <h3><t t-esc="selected_project.name"/></h3>
+                    </div>
+                    <div class="geosis-portal-kanban">
+                        <t t-foreach="task_board_columns or []" t-as="column">
+                            <div class="geosis-portal-kanban__column">
+                                <div class="geosis-portal-kanban__head">
+                                    <strong><t t-esc="column['name']"/></strong>
+                                    <span><t t-esc="len(column['tasks'])"/></span>
+                                </div>
+                                <div class="geosis-portal-kanban__cards">
+                                    <t t-foreach="column['tasks']" t-as="task">
+                                        <t t-set="task_current_state" t-value="task.state if 'state' in task._fields else (task.kanban_state if 'kanban_state' in task._fields else '01_in_progress')"/>
+                                        <article class="geosis-portal-task-card" t-att-data-task-id="task.id">
+                                            <div class="geosis-portal-task-card__title">
+                                                <strong>
+                                                    <t t-if="'code' in task._fields and task.code">[<t t-esc="task.code"/>] </t>
+                                                    <t t-esc="task.name"/>
+                                                </strong>
+                                            </div>
+                                            <div class="geosis-portal-task-card__assignee">
+                                                <t t-esc="task.user_ids[:1].name if task.user_ids else 'Sin responsable'"/>
+                                            </div>
+                                            <div class="geosis-portal-task-card__time">
+                                                <t t-if="task_durations and task.id in task_durations and task_durations[task.id]">
+                                                    In <t t-esc="task_durations[task.id]"/> days
+                                                </t>
+                                                <t t-else="">Sin duración</t>
+                                            </div>
+                                            <div class="geosis-portal-task-card__actions">
+                                                <button type="button" class="geosis-portal-icon-btn geosis-portal-priority-btn" t-att-data-task-id="task.id" title="Prioridad">
+                                                    <i t-attf-class="fa #{'fa-star' if task.priority == '1' else 'fa-star-o'}"/>
+                                                </button>
+                                                <span class="geosis-portal-icon-btn geosis-portal-icon-btn--static" title="Duración">
+                                                    <i class="fa fa-clock-o"/>
+                                                </span>
+                                                <details class="geosis-portal-menu geosis-portal-menu--assignee">
+                                                    <summary class="geosis-portal-icon-btn" title="Responsable">
+                                                        <i class="fa fa-user-plus"/>
+                                                    </summary>
+                                                    <div class="geosis-portal-menu__panel">
+                                                        <div class="geosis-portal-menu__search-wrap">
+                                                            <input type="text" class="form-control geosis-portal-user-search" placeholder="Search users..."/>
+                                                        </div>
+                                                        <div class="geosis-portal-menu__list">
+                                                            <button type="button" class="geosis-portal-menu__item geosis-portal-assignee-option" t-att-data-task-id="task.id" data-user-id="" data-user-name="">
+                                                                Sin responsable
+                                                            </button>
+                                                            <t t-foreach="assignable_users or []" t-as="portal_user">
+                                                                <button type="button" class="geosis-portal-menu__item geosis-portal-assignee-option" t-att-data-task-id="task.id" t-att-data-user-id="portal_user.id" t-att-data-user-name="portal_user.name or ''">
+                                                                    <t t-esc="portal_user.name"/>
+                                                                </button>
+                                                            </t>
+                                                        </div>
+                                                    </div>
+                                                </details>
+                                                <div class="geosis-portal-person">
+                                                    <button type="button" class="geosis-portal-icon-btn" title="Información del responsable">
+                                                        <i class="fa fa-user"/>
+                                                    </button>
+                                                    <div class="geosis-portal-person__card" t-if="task.user_ids">
+                                                        <div class="geosis-portal-person__avatar">
+                                                            <i class="fa fa-user"/>
+                                                        </div>
+                                                        <div class="geosis-portal-person__meta">
+                                                            <strong><t t-esc="task.user_ids[0].name"/></strong>
+                                                            <span><i class="fa fa-envelope"/> <t t-esc="task.user_ids[0].partner_id.email or 'Sin correo'"/></span>
+                                                            <span><i class="fa fa-phone"/> <t t-esc="task.user_ids[0].partner_id.phone or task.user_ids[0].partner_id.mobile or 'Sin teléfono'"/></span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <details class="geosis-portal-menu geosis-portal-menu--state">
+                                                    <summary class="geosis-portal-state-trigger" title="Estado">
+                                                        <span class="geosis-portal-state-dot"/>
+                                                    </summary>
+                                                    <div class="geosis-portal-menu__panel geosis-portal-menu__panel--state">
+                                                        <t t-foreach="task_state_choices or []" t-as="state_choice">
+                                                            <button type="button" class="geosis-portal-menu__item geosis-portal-menu__item--state geosis-portal-state-option" t-att-data-task-id="task.id" t-att-data-state="state_choice[0]">
+                                                                <i class="fa fa-circle"/>
+                                                                <span><t t-esc="state_choice[1]"/></span>
+                                                                <i t-if="task_current_state == state_choice[0]" class="fa fa-check geosis-portal-menu__check"/>
+                                                            </button>
+                                                        </t>
+                                                    </div>
+                                                </details>
+                                            </div>
+                                        </article>
+                                    </t>
+                                    <t t-if="not column['tasks']">
+                                        <div class="geosis-portal-kanban__empty"/>
+                                    </t>
+                                </div>
+                            </div>
+                        </t>
+                        <div class="geosis-portal-kanban__column geosis-portal-kanban__column--add" t-if="selected_odoo_project">
+                            <button type="button" class="geosis-portal-stage-add" t-att-data-project-id="selected_odoo_project.id">
+                                <i class="fa fa-plus"/> Stage
+                            </button>
+                            <div class="geosis-portal-stage-form">
+                                <input type="text" class="form-control geosis-portal-stage-input" placeholder="Nueva etapa"/>
+                                <button type="button" class="geosis-shot-action geosis-shot-action--small geosis-portal-stage-save">Crear</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </t>
+
+            <script type="text/javascript">
+                <![CDATA[
+                document.addEventListener('DOMContentLoaded', function () {
+                    function portalJson(url, params) {
+                        return fetch(url, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            body: JSON.stringify({
+                                jsonrpc: '2.0',
+                                method: 'call',
+                                params: params || {}
+                            })
+                        }).then(function (response) {
+                            return response.json();
+                        }).then(function (payload) {
+                            if (payload.error) {
+                                throw new Error(payload.error.data && payload.error.data.message ? payload.error.data.message : 'No se pudo completar la acción');
+                            }
+                            return payload.result || payload;
+                        });
+                    }
+
+                    function reloadPage() {
+                        window.location.reload();
+                    }
+
+                    document.querySelectorAll('.geosis-portal-priority-btn').forEach(function (button) {
+                        button.addEventListener('click', function () {
+                            portalJson('/my/task/' + button.dataset.taskId + '/toggle_priority', {}).then(reloadPage);
+                        });
+                    });
+
+                    document.querySelectorAll('.geosis-portal-state-option').forEach(function (button) {
+                        button.addEventListener('click', function () {
+                            portalJson('/my/task/' + button.dataset.taskId + '/update_state', {
+                                state_val: button.dataset.state
+                            }).then(reloadPage);
+                        });
+                    });
+
+                    document.querySelectorAll('.geosis-portal-assignee-option').forEach(function (button) {
+                        button.addEventListener('click', function () {
+                            portalJson('/my/task/' + button.dataset.taskId + '/update_assignee', {
+                                user_id: button.dataset.userId || false
+                            }).then(reloadPage);
+                        });
+                    });
+
+                    document.querySelectorAll('.geosis-portal-user-search').forEach(function (input) {
+                        input.addEventListener('input', function () {
+                            var text = (input.value || '').toLowerCase();
+                            var panel = input.closest('.geosis-portal-menu__panel');
+                            if (!panel) {
+                                return;
+                            }
+                            panel.querySelectorAll('.geosis-portal-assignee-option').forEach(function (option) {
+                                var label = (option.dataset.userName || option.textContent || '').toLowerCase();
+                                option.style.display = !text || label.indexOf(text) !== -1 ? '' : 'none';
+                            });
+                        });
+                    });
+
+                    document.querySelectorAll('.geosis-portal-stage-add').forEach(function (button) {
+                        button.addEventListener('click', function () {
+                            var column = button.closest('.geosis-portal-kanban__column');
+                            if (!column) {
+                                return;
+                            }
+                            column.classList.toggle('is-open');
+                            var input = column.querySelector('.geosis-portal-stage-input');
+                            if (input && column.classList.contains('is-open')) {
+                                input.focus();
+                            }
+                        });
+                    });
+
+                    document.querySelectorAll('.geosis-portal-stage-save').forEach(function (button) {
+                        button.addEventListener('click', function () {
+                            var column = button.closest('.geosis-portal-kanban__column');
+                            var trigger = column ? column.querySelector('.geosis-portal-stage-add') : null;
+                            var input = column ? column.querySelector('.geosis-portal-stage-input') : null;
+                            if (!trigger || !input || !input.value.trim()) {
+                                return;
+                            }
+                            portalJson('/my/project/' + trigger.dataset.projectId + '/add_stage', {
+                                name: input.value.trim()
+                            }).then(reloadPage);
+                        });
+                    });
+                });
+                ]]>
+            </script>
+        </t>
+    </template>
+<template id="portal_my_tasks_functional" name="Tablero de Tareas Portal Funcional">
+        <t t-call="geosis_website.geosis_portal_layout">
+            <t t-set="page_name" t-value="'tasks'"/>
+
+            <div class="geosis-shot-stats geosis-shot-stats--tasks">
+                <article class="geosis-shot-stat is-blue">
+                    <div class="geosis-shot-stat__copy">
+                        <span>Total tareas</span>
+                        <strong><t t-esc="gantt_task_count or 0"/></strong>
+                    </div>
+                    <div class="geosis-shot-stat__icon"><i class="fa fa-tasks"/></div>
+                </article>
+                <article class="geosis-shot-stat is-green">
+                    <div class="geosis-shot-stat__copy">
+                        <span>Tareas abiertas</span>
+                        <strong><t t-esc="gantt_open_count or 0"/></strong>
+                    </div>
+                    <div class="geosis-shot-stat__icon"><i class="fa fa-folder-open-o"/></div>
+                </article>
+                <article class="geosis-shot-stat is-red">
+                    <div class="geosis-shot-stat__copy">
+                        <span>Críticas</span>
+                        <strong><t t-esc="gantt_critical_count or 0"/></strong>
+                    </div>
+                    <div class="geosis-shot-stat__icon"><i class="fa fa-warning"/></div>
+                </article>
+            </div>
+
+            <section class="geosis-shot-panel geosis-shot-panel--selector">
+                <div class="geosis-shot-panel__header">
+                    <h2><i class="fa fa-filter"/> Seleccionar Proyecto</h2>
+                </div>
+                <form action="/my/tasks" method="get" class="geosis-shot-selector">
+                    <select name="project_id" class="form-select">
+                        <option value="">Selecciona un proyecto</option>
+                        <t t-foreach="projects" t-as="project_item">
+                            <option t-att-value="project_item.id" t-att-selected="'selected' if selected_project and project_item.id == selected_project.id else None">
+                                <t t-esc="project_item.name"/>
+                            </option>
+                        </t>
+                    </select>
+                    <button type="submit" class="geosis-shot-action">
+                        <i class="fa fa-eye"/> Ver Tablero
+                    </button>
+                </form>
+            </section>
+
+            <t t-if="not selected_project">
+                <section class="geosis-shot-panel">
+                    <div class="geosis-shot-empty">
+                        <i class="fa fa-list-alt"/>
+                        <p>No hay un proyecto seleccionado para mostrar tareas.</p>
+                    </div>
+                </section>
+            </t>
+            <t t-elif="not project_tasks">
+                <section class="geosis-shot-panel">
+                    <div class="geosis-shot-panel__title">
+                        <h3><t t-esc="selected_project.name"/></h3>
+                    </div>
+                    <div class="geosis-shot-board-toolbar" t-if="selected_odoo_project">
+                        <div class="geosis-shot-badge">
+                            <i class="fa fa-cogs"/> Proyecto Odoo: <t t-esc="selected_odoo_project.name"/>
+                        </div>
+                        <div class="geosis-shot-board-toolbar__actions">
+                            <input type="text" class="form-control geosis-shot-stage-input" id="geosis-new-stage-name-empty" placeholder="Nueva etapa"/>
+                            <button type="button" class="geosis-shot-action geosis-shot-action--small geosis-create-stage-btn" t-att-data-project-id="selected_odoo_project.id" t-att-data-input-id="'geosis-new-stage-name-empty'">
+                                <i class="fa fa-plus"/> Crear etapa
+                            </button>
+                        </div>
+                    </div>
+                    <div class="geosis-shot-empty">
+                        <i class="fa fa-list-alt"/>
+                        <p>Este proyecto todavía no tiene tareas, pero ya puedes crear etapas del tablero.</p>
+                    </div>
+                </section>
+            </t>
+            <t t-else="">
+                <section class="geosis-shot-panel">
+                    <div class="geosis-shot-panel__title">
+                        <h3><t t-esc="selected_project.name"/></h3>
+                    </div>
+                    <div class="geosis-shot-board-toolbar">
+                        <div class="geosis-shot-badge" t-if="selected_odoo_project">
+                            <i class="fa fa-cogs"/> Proyecto Odoo: <t t-esc="selected_odoo_project.name"/>
+                        </div>
+                        <div class="geosis-shot-board-toolbar__actions" t-if="selected_odoo_project">
+                            <input type="text" class="form-control geosis-shot-stage-input" id="geosis-new-stage-name" placeholder="Nueva etapa"/>
+                            <button type="button" class="geosis-shot-action geosis-shot-action--small geosis-create-stage-btn" t-att-data-project-id="selected_odoo_project.id" t-att-data-input-id="'geosis-new-stage-name'">
+                                <i class="fa fa-plus"/> Crear etapa
+                            </button>
+                        </div>
+                    </div>
+                    <div class="geosis-shot-board">
+                        <t t-foreach="task_board_columns or []" t-as="column">
+                            <div class="geosis-shot-board__column">
+                                <div class="geosis-shot-board__column-head">
+                                    <strong><t t-esc="column['name']"/></strong>
+                                    <span><t t-esc="len(column['tasks'])"/></span>
+                                </div>
+                                <div class="geosis-shot-board__cards">
+                                    <t t-if="not column['tasks']">
+                                        <div class="geosis-shot-board__empty-column">Sin tareas en esta etapa</div>
+                                    </t>
+                                    <t t-foreach="column['tasks']" t-as="task">
+                                        <t t-set="task_current_state" t-value="task.state if 'state' in task._fields else (task.kanban_state if 'kanban_state' in task._fields else '01_in_progress')"/>
+                                        <article class="geosis-shot-task-card" t-att-data-task-id="task.id">
+                                            <div class="geosis-shot-task-card__top">
+                                                <div class="geosis-shot-task-card__headline">
+                                                    <strong><t t-esc="task.name"/></strong>
+                                                    <div class="geosis-shot-task-card__code">
+                                                        <t t-esc="'[%s]' % task.code if 'code' in task._fields and task.code else 'Tarea'"/>
+                                                    </div>
+                                                </div>
+                                                <button type="button" class="geosis-shot-star" t-att-data-task-id="task.id">
+                                                    <i t-attf-class="fa #{'fa-star' if task.priority == '1' else 'fa-star-o'}"/>
+                                                </button>
+                                            </div>
+                                            <div class="geosis-shot-task-card__meta">
+                                                <span><i class="fa fa-calendar-o"/> <t t-esc="str(task.planned_date_start or task.date_assign or '')[:10] or '-'"/> - <t t-esc="str(task.planned_date_end or task.date_deadline or '')[:10] or '-'"/></span>
+                                                <span t-if="'is_critical' in task._fields and task.is_critical" class="geosis-shot-flag">Crítica</span>
+                                            </div>
+                                            <div class="geosis-shot-task-card__grid">
+                                                <label>
+                                                    <span>Responsable</span>
+                                                    <div class="geosis-shot-person">
+                                                        <select class="form-select geosis-task-assignee" t-att-data-task-id="task.id">
+                                                            <option value="">Sin responsable</option>
+                                                            <t t-foreach="assignable_users or []" t-as="portal_user">
+                                                                <option t-att-value="portal_user.id" t-att-selected="'selected' if task.user_ids and task.user_ids[0].id == portal_user.id else None">
+                                                                    <t t-esc="portal_user.name"/>
+                                                                </option>
+                                                            </t>
+                                                        </select>
+                                                        <div class="geosis-shot-person__popover" t-if="task.user_ids">
+                                                            <strong><t t-esc="task.user_ids[0].name"/></strong>
+                                                            <span><i class="fa fa-envelope"/> <t t-esc="task.user_ids[0].partner_id.email or 'Sin correo'"/></span>
+                                                            <span><i class="fa fa-phone"/> <t t-esc="task.user_ids[0].partner_id.phone or task.user_ids[0].partner_id.mobile or 'Sin teléfono'"/></span>
+                                                        </div>
+                                                    </div>
+                                                </label>
+                                                <label>
+                                                    <span>Estado</span>
+                                                    <select class="form-select geosis-task-state" t-att-data-task-id="task.id">
+                                                        <t t-foreach="task_state_choices or []" t-as="state_choice">
+                                                            <option t-att-value="state_choice[0]" t-att-selected="'selected' if task_current_state == state_choice[0] else None">
+                                                                <t t-esc="state_choice[1]"/>
+                                                            </option>
+                                                        </t>
+                                                    </select>
+                                                </label>
+                                                <label>
+                                                    <span>Etapa</span>
+                                                    <select class="form-select geosis-task-stage" t-att-data-task-id="task.id">
+                                                        <option value="">Sin Etapa</option>
+                                                        <t t-foreach="task_stages or []" t-as="stage_item">
+                                                            <option t-att-value="stage_item.id" t-att-selected="'selected' if task.stage_id and task.stage_id.id == stage_item.id else None">
+                                                                <t t-esc="stage_item.name"/>
+                                                            </option>
+                                                        </t>
+                                                    </select>
+                                                </label>
+                                                <label>
+                                                    <span>Inicio</span>
+                                                    <input type="date" class="form-control geosis-task-start" t-att-data-task-id="task.id" t-att-value="str(task.planned_date_start or task.date_assign or '')[:10]"/>
+                                                </label>
+                                                <label>
+                                                    <span>Fin</span>
+                                                    <input type="date" class="form-control geosis-task-end" t-att-data-task-id="task.id" t-att-value="str(task.planned_date_end or task.date_deadline or '')[:10]"/>
+                                                </label>
+                                            </div>
+                                            <div class="geosis-shot-task-card__footer">
+                                                <span><t t-esc="'%s días' % task_durations.get(task.id) if task_durations.get(task.id) else 'Sin duración'"/></span>
+                                                <span><t t-esc="task.stage_id.name or 'Sin Etapa'"/></span>
+                                            </div>
+                                        </article>
+                                    </t>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+                </section>
+            </t>
+
+            <script type="text/javascript">
+                document.addEventListener('DOMContentLoaded', function() {
+                    function portalJson(url, params) {
+                        return fetch(url, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            body: JSON.stringify({
+                                jsonrpc: '2.0',
+                                method: 'call',
+                                params: params || {}
+                            })
+                        }).then(function(response) {
+                            return response.json();
+                        }).then(function(payload) {
+                            if (payload.error) {
+                                throw new Error(payload.error.data &amp;&amp; payload.error.data.message ? payload.error.data.message : 'No se pudo completar la accion');
+                            }
+                            return payload.result || payload;
+                        });
+                    }
+
+                    function showBoardMessage(message, isError) {
+                        var toast = document.getElementById('geosis-board-toast');
+                        if (!toast) {
+                            toast = document.createElement('div');
+                            toast.id = 'geosis-board-toast';
+                            toast.className = 'geosis-board-toast';
+                            document.body.appendChild(toast);
+                        }
+                        toast.textContent = message;
+                        toast.classList.toggle('is-error', !!isError);
+                        toast.classList.add('is-visible');
+                        window.clearTimeout(window.geosisBoardToastTimer);
+                        window.geosisBoardToastTimer = window.setTimeout(function() {
+                            toast.classList.remove('is-visible');
+                        }, 2200);
+                    }
+
+                    document.querySelectorAll('.geosis-shot-star').forEach(function(button) {
+                        button.addEventListener('click', function() {
+                            portalJson('/my/task/' + button.dataset.taskId + '/toggle_priority', {}).then(function(result) {
+                                if (!result.success) {
+                                    throw new Error(result.error || 'No se pudo actualizar la prioridad');
+                                }
+                                window.location.reload();
+                            }).catch(function(error) {
+                                showBoardMessage(error.message, true);
+                            });
+                        });
+                    });
+
+                    document.querySelectorAll('.geosis-task-assignee').forEach(function(select) {
+                        select.addEventListener('change', function() {
+                            portalJson('/my/task/' + select.dataset.taskId + '/update_assignee', {
+                                user_id: select.value || false
+                            }).then(function(result) {
+                                if (!result.success) {
+                                    throw new Error(result.error || 'No se pudo actualizar el responsable');
+                                }
+                                showBoardMessage('Responsable actualizado');
+                                window.location.reload();
+                            }).catch(function(error) {
+                                showBoardMessage(error.message, true);
+                            });
+                        });
+                    });
+
+                    document.querySelectorAll('.geosis-task-state').forEach(function(select) {
+                        select.addEventListener('change', function() {
+                            portalJson('/my/task/' + select.dataset.taskId + '/update_state', {
+                                state_val: select.value
+                            }).then(function(result) {
+                                if (!result.success) {
+                                    throw new Error(result.error || 'No se pudo actualizar el estado');
+                                }
+                                showBoardMessage('Estado actualizado');
+                            }).catch(function(error) {
+                                showBoardMessage(error.message, true);
+                            });
+                        });
+                    });
+
+                    document.querySelectorAll('.geosis-task-stage').forEach(function(select) {
+                        select.addEventListener('change', function() {
+                            portalJson('/my/task/' + select.dataset.taskId + '/update_stage', {
+                                stage_id: select.value || false
+                            }).then(function(result) {
+                                if (!result.success) {
+                                    throw new Error(result.error || 'No se pudo mover la tarea');
+                                }
+                                window.location.reload();
+                            }).catch(function(error) {
+                                showBoardMessage(error.message, true);
+                            });
+                        });
+                    });
+
+                    function bindDateChange(selector) {
+                        document.querySelectorAll(selector).forEach(function(input) {
+                            input.addEventListener('change', function() {
+                                var card = input.closest('.geosis-shot-task-card');
+                                var startInput = card.querySelector('.geosis-task-start');
+                                var endInput = card.querySelector('.geosis-task-end');
+                                portalJson('/my/task/' + input.dataset.taskId + '/update_dates', {
+                                    start_date: startInput.value || false,
+                                    end_date: endInput.value || false
+                                }).then(function(result) {
+                                    if (!result.success) {
+                                        throw new Error(result.error || 'No se pudieron actualizar las fechas');
+                                    }
+                                    showBoardMessage('Fechas actualizadas');
+                                    window.location.reload();
+                                }).catch(function(error) {
+                                    showBoardMessage(error.message, true);
+                                });
+                            });
+                        });
+                    }
+
+                    bindDateChange('.geosis-task-start');
+                    bindDateChange('.geosis-task-end');
+
+                    document.querySelectorAll('.geosis-create-stage-btn').forEach(function(button) {
+                        button.addEventListener('click', function() {
+                            var input = document.getElementById(button.dataset.inputId);
+                            var stageName = input.value.trim();
+                            if (!stageName) {
+                                showBoardMessage('Escribe un nombre para la etapa', true);
+                                input.focus();
+                                return;
+                            }
+                            portalJson('/my/project/' + button.dataset.projectId + '/add_stage', {
+                                name: stageName
+                            }).then(function(result) {
+                                if (!result.success) {
+                                    throw new Error(result.error || 'No se pudo crear la etapa');
+                                }
+                                window.location.reload();
+                            }).catch(function(error) {
+                                showBoardMessage(error.message, true);
+                            });
+                        });
+                    });
+                });
+            </script>
+        </t>
+    </template>
+
+    <template id="portal_my_gantt_odoo_mirror" name="Cronograma Portal Odoo Mirror">
+        <t t-call="geosis_website.geosis_portal_layout">
+            <t t-set="page_name" t-value="'gantt'"/>
+            <section class="geosis-odoo-view">
+                <div class="geosis-odoo-header">
+                    <div class="geosis-odoo-header__project">
+                        <strong>Projects</strong>
+                        <span><t t-esc="selected_project.name if selected_project else 'Selecciona un proyecto'"/></span>
+                    </div>
+                    <form action="/my/gantt" method="get" class="geosis-odoo-header__filters">
+                        <select name="project_id" class="form-select">
+                            <option value="">Selecciona un proyecto</option>
+                            <t t-foreach="projects" t-as="project_item">
+                                <option t-att-value="project_item.id" t-att-selected="'selected' if selected_project and project_item.id == selected_project.id else None">
+                                    <t t-esc="project_item.name"/>
+                                </option>
+                            </t>
+                        </select>
+                        <button type="submit" class="geosis-odoo-btn">Ver</button>
+                    </form>
+                </div>
+
+                <t t-if="not selected_project">
+                    <div class="geosis-odoo-empty">No hay un proyecto seleccionado para mostrar el cronograma.</div>
+                </t>
+                <t t-elif="not project_tasks">
+                    <div class="geosis-odoo-empty">Este proyecto todavia no tiene tareas generadas.</div>
+                </t>
+                <t t-else="">
+                    <div class="geosis-odoo-toolbar">
+                        <div class="geosis-odoo-toolbar__modes">
+                            <span>Today</span>
+                            <span>Day</span>
+                            <span>Week</span>
+                            <span>Month</span>
+                            <span>Year</span>
+                        </div>
+                        <div class="geosis-odoo-toolbar__badge" t-if="selected_odoo_project">
+                            <t t-esc="selected_odoo_project.name"/>
+                        </div>
+                    </div>
+                    <div class="geosis-odoo-timeline">
+                        <div class="geosis-odoo-timeline__header">
+                            <div class="geosis-odoo-timeline__label">Projects</div>
+                            <div class="geosis-odoo-timeline__scale">
+                                <t t-foreach="gantt_years or []" t-as="year_item">
+                                    <span t-attf-style="left: #{year_item['left']}%; width: #{year_item['width']}%;">
+                                        <t t-esc="year_item['year']"/>
+                                    </span>
+                                </t>
+                            </div>
+                        </div>
+                        <div class="geosis-odoo-timeline__body">
+                            <div class="geosis-odoo-timeline__today"/>
+                            <t t-foreach="tasks_with_gantt" t-as="item">
+                                <div class="geosis-odoo-timeline__row">
+                                    <div class="geosis-odoo-timeline__name">
+                                        <t t-esc="selected_project.name"/>
+                                    </div>
+                                    <div class="geosis-odoo-timeline__track">
+                                        <div t-attf-class="geosis-odoo-timeline__bar #{'is-critical' if 'is_critical' in item['task']._fields and item['task'].is_critical else ''}"
+                                             t-attf-style="left: #{item['left']}%; width: #{max(item['width'], 4)}%;">
+                                            <t t-if="'code' in item['task']._fields and item['task'].code">
+                                                <t t-esc="'[%s] ' % item['task'].code"/>
+                                            </t>
+                                            <t t-esc="item['task'].name"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+                </t>
+            </section>
+        </t>
+    </template>
+
+    <template id="portal_my_tasks_odoo_mirror" name="Tablero de Tareas Portal Odoo Mirror">
+        <t t-call="geosis_website.geosis_portal_layout">
+            <t t-set="page_name" t-value="'tasks'"/>
+            <section class="geosis-odoo-view">
+                <div class="geosis-odoo-header">
+                    <div class="geosis-odoo-header__project">
+                        <button type="button" class="geosis-odoo-new">New</button>
+                        <div>
+                            <strong>Projects</strong>
+                            <span><t t-esc="selected_project.name if selected_project else 'Selecciona un proyecto'"/></span>
+                        </div>
+                    </div>
+                    <form action="/my/tasks" method="get" class="geosis-odoo-header__filters">
+                        <select name="project_id" class="form-select">
+                            <option value="">Selecciona un proyecto</option>
+                            <t t-foreach="projects" t-as="project_item">
+                                <option t-att-value="project_item.id" t-att-selected="'selected' if selected_project and project_item.id == selected_project.id else None">
+                                    <t t-esc="project_item.name"/>
+                                </option>
+                            </t>
+                        </select>
+                        <button type="submit" class="geosis-odoo-btn">Ver</button>
+                    </form>
+                </div>
+
+                <t t-if="not selected_project">
+                    <div class="geosis-odoo-empty">No hay un proyecto seleccionado para mostrar tareas.</div>
+                </t>
+                <t t-else="">
+                    <div class="geosis-odoo-board-toolbar">
+                        <div class="geosis-odoo-board-toolbar__title" t-if="selected_odoo_project">
+                            <i class="fa fa-cog"/> <t t-esc="selected_odoo_project.name"/>
+                        </div>
+                        <div class="geosis-odoo-board-toolbar__actions" t-if="selected_odoo_project">
+                            <input type="text" class="form-control geosis-odoo-stage-input" id="geosis-odoo-stage-name" placeholder="Stage"/>
+                            <button type="button" class="geosis-odoo-btn geosis-create-stage-btn" t-att-data-project-id="selected_odoo_project.id" t-att-data-input-id="'geosis-odoo-stage-name'">+ Stage</button>
+                        </div>
+                    </div>
+
+                    <t t-if="not project_tasks">
+                        <div class="geosis-odoo-empty">Este proyecto todavia no tiene tareas, pero ya puedes crear etapas.</div>
+                    </t>
+                    <t t-else="">
+                        <div class="geosis-odoo-board">
+                            <t t-foreach="task_board_columns or []" t-as="column">
+                                <div class="geosis-odoo-column">
+                                    <div class="geosis-odoo-column__head">
+                                        <strong><t t-esc="column['name']"/></strong>
+                                        <span><t t-esc="len(column['tasks'])"/></span>
+                                    </div>
+                                    <div class="geosis-odoo-column__body">
+                                        <t t-if="not column['tasks']">
+                                            <div class="geosis-odoo-column__empty">Sin tareas</div>
+                                        </t>
+                                        <t t-foreach="column['tasks']" t-as="task">
+                                            <t t-set="task_current_state" t-value="task.state if 'state' in task._fields else (task.kanban_state if 'kanban_state' in task._fields else '01_in_progress')"/>
+                                            <article class="geosis-odoo-card" t-att-data-task-id="task.id">
+                                                <div class="geosis-odoo-card__top">
+                                                    <div class="geosis-odoo-card__name">
+                                                        <t t-if="'code' in task._fields and task.code">
+                                                            <t t-esc="'[%s] ' % task.code"/>
+                                                        </t>
+                                                        <t t-esc="task.name"/>
+                                                    </div>
+                                                    <button type="button" class="geosis-odoo-card__star geosis-shot-star" t-att-data-task-id="task.id">
+                                                        <i t-attf-class="fa #{'fa-star-o' if task.priority != '1' else 'fa-star'}"/>
+                                                    </button>
+                                                </div>
+                                                <div class="geosis-odoo-card__owner">
+                                                    <t t-esc="task.user_ids[:1].name if task.user_ids else 'Sin responsable'"/>
+                                                </div>
+                                                <div class="geosis-odoo-card__date">
+                                                    <t t-esc="str(task.planned_date_start or task.date_assign or '')[:10] or '-'"/>
+                                                    <span>-</span>
+                                                    <t t-esc="str(task.planned_date_end or task.date_deadline or '')[:10] or '-'"/>
+                                                </div>
+                                                <div class="geosis-odoo-card__controls">
+                                                    <div class="geosis-odoo-card__person geosis-shot-person">
+                                                        <i class="fa fa-user"/>
+                                                        <select class="form-select geosis-task-assignee" t-att-data-task-id="task.id">
+                                                            <option value="">Sin responsable</option>
+                                                            <t t-foreach="assignable_users or []" t-as="portal_user">
+                                                                <option t-att-value="portal_user.id" t-att-selected="'selected' if task.user_ids and task.user_ids[0].id == portal_user.id else None">
+                                                                    <t t-esc="portal_user.name"/>
+                                                                </option>
+                                                            </t>
+                                                        </select>
+                                                        <div class="geosis-shot-person__popover" t-if="task.user_ids">
+                                                            <strong><t t-esc="task.user_ids[0].name"/></strong>
+                                                            <span><i class="fa fa-envelope"/> <t t-esc="task.user_ids[0].partner_id.email or 'Sin correo'"/></span>
+                                                            <span><i class="fa fa-phone"/> <t t-esc="task.user_ids[0].partner_id.phone or task.user_ids[0].partner_id.mobile or 'Sin telefono'"/></span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="geosis-odoo-card__state" t-att-data-state="task_current_state">
+                                                        <select class="form-select geosis-task-state" t-att-data-task-id="task.id">
+                                                            <t t-foreach="task_state_choices or []" t-as="state_choice">
+                                                                <option t-att-value="state_choice[0]" t-att-selected="'selected' if task_current_state == state_choice[0] else None">
+                                                                    <t t-esc="state_choice[1]"/>
+                                                                </option>
+                                                            </t>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <details class="geosis-odoo-card__details">
+                                                    <summary>Mas opciones</summary>
+                                                    <div class="geosis-odoo-card__details-grid">
+                                                        <label>
+                                                            <span>Etapa</span>
+                                                            <select class="form-select geosis-task-stage" t-att-data-task-id="task.id">
+                                                                <option value="">Sin Etapa</option>
+                                                                <t t-foreach="task_stages or []" t-as="stage_item">
+                                                                    <option t-att-value="stage_item.id" t-att-selected="'selected' if task.stage_id and task.stage_id.id == stage_item.id else None">
+                                                                        <t t-esc="stage_item.name"/>
+                                                                    </option>
+                                                                </t>
+                                                            </select>
+                                                        </label>
+                                                        <label>
+                                                            <span>Inicio</span>
+                                                            <input type="date" class="form-control geosis-task-start" t-att-data-task-id="task.id" t-att-value="str(task.planned_date_start or task.date_assign or '')[:10]"/>
+                                                        </label>
+                                                        <label>
+                                                            <span>Fin</span>
+                                                            <input type="date" class="form-control geosis-task-end" t-att-data-task-id="task.id" t-att-value="str(task.planned_date_end or task.date_deadline or '')[:10]"/>
+                                                        </label>
+                                                    </div>
+                                                </details>
+                                            </article>
+                                        </t>
+                                    </div>
+                                </div>
+                            </t>
+                        </div>
+                    </t>
+                </t>
+
+                <script type="text/javascript">
+                    document.addEventListener('DOMContentLoaded', function() {
+                        function portalJson(url, params) {
+                            return fetch(url, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                },
+                                body: JSON.stringify({
+                                    jsonrpc: '2.0',
+                                    method: 'call',
+                                    params: params || {}
+                                })
+                            }).then(function(response) {
+                                return response.json();
+                            }).then(function(payload) {
+                                if (payload.error) {
+                                    throw new Error(payload.error.data &amp;&amp; payload.error.data.message ? payload.error.data.message : 'No se pudo completar la accion');
+                                }
+                                return payload.result || payload;
+                            });
+                        }
+
+                        function showBoardMessage(message, isError) {
+                            var toast = document.getElementById('geosis-board-toast');
+                            if (!toast) {
+                                toast = document.createElement('div');
+                                toast.id = 'geosis-board-toast';
+                                toast.className = 'geosis-board-toast';
+                                document.body.appendChild(toast);
+                            }
+                            toast.textContent = message;
+                            toast.classList.toggle('is-error', !!isError);
+                            toast.classList.add('is-visible');
+                            window.clearTimeout(window.geosisBoardToastTimer);
+                            window.geosisBoardToastTimer = window.setTimeout(function() {
+                                toast.classList.remove('is-visible');
+                            }, 2200);
+                        }
+
+                        document.querySelectorAll('.geosis-shot-star').forEach(function(button) {
+                            button.addEventListener('click', function() {
+                                portalJson('/my/task/' + button.dataset.taskId + '/toggle_priority', {}).then(function(result) {
+                                    if (!result.success) {
+                                        throw new Error(result.error || 'No se pudo actualizar la prioridad');
+                                    }
+                                    window.location.reload();
+                                }).catch(function(error) {
+                                    showBoardMessage(error.message, true);
+                                });
+                            });
+                        });
+
+                        document.querySelectorAll('.geosis-task-assignee').forEach(function(select) {
+                            select.addEventListener('change', function() {
+                                portalJson('/my/task/' + select.dataset.taskId + '/update_assignee', {
+                                    user_id: select.value || false
+                                }).then(function(result) {
+                                    if (!result.success) {
+                                        throw new Error(result.error || 'No se pudo actualizar el responsable');
+                                    }
+                                    window.location.reload();
+                                }).catch(function(error) {
+                                    showBoardMessage(error.message, true);
+                                });
+                            });
+                        });
+
+                        document.querySelectorAll('.geosis-task-state').forEach(function(select) {
+                            select.addEventListener('change', function() {
+                                portalJson('/my/task/' + select.dataset.taskId + '/update_state', {
+                                    state_val: select.value
+                                }).then(function(result) {
+                                    if (!result.success) {
+                                        throw new Error(result.error || 'No se pudo actualizar el estado');
+                                    }
+                                    showBoardMessage('Estado actualizado');
+                                }).catch(function(error) {
+                                    showBoardMessage(error.message, true);
+                                });
+                            });
+                        });
+
+                        document.querySelectorAll('.geosis-task-stage').forEach(function(select) {
+                            select.addEventListener('change', function() {
+                                portalJson('/my/task/' + select.dataset.taskId + '/update_stage', {
+                                    stage_id: select.value || false
+                                }).then(function(result) {
+                                    if (!result.success) {
+                                        throw new Error(result.error || 'No se pudo mover la tarea');
+                                    }
+                                    window.location.reload();
+                                }).catch(function(error) {
+                                    showBoardMessage(error.message, true);
+                                });
+                            });
+                        });
+
+                        function bindDateChange(selector) {
+                            document.querySelectorAll(selector).forEach(function(input) {
+                                input.addEventListener('change', function() {
+                                    var card = input.closest('.geosis-odoo-card');
+                                    var startInput = card.querySelector('.geosis-task-start');
+                                    var endInput = card.querySelector('.geosis-task-end');
+                                    portalJson('/my/task/' + input.dataset.taskId + '/update_dates', {
+                                        start_date: startInput.value || false,
+                                        end_date: endInput.value || false
+                                    }).then(function(result) {
+                                        if (!result.success) {
+                                            throw new Error(result.error || 'No se pudieron actualizar las fechas');
+                                        }
+                                        window.location.reload();
+                                    }).catch(function(error) {
+                                        showBoardMessage(error.message, true);
+                                    });
+                                });
+                            });
+                        }
+
+                        bindDateChange('.geosis-task-start');
+                        bindDateChange('.geosis-task-end');
+
+                        document.querySelectorAll('.geosis-create-stage-btn').forEach(function(button) {
+                            button.addEventListener('click', function() {
+                                var input = document.getElementById(button.dataset.inputId);
+                                var stageName = input.value.trim();
+                                if (!stageName) {
+                                    showBoardMessage('Escribe un nombre para la etapa', true);
+                                    input.focus();
+                                    return;
+                                }
+                                portalJson('/my/project/' + button.dataset.projectId + '/add_stage', {
+                                    name: stageName
+                                }).then(function(result) {
+                                    if (!result.success) {
+                                        throw new Error(result.error || 'No se pudo crear la etapa');
+                                    }
+                                    window.location.reload();
+                                }).catch(function(error) {
+                                    showBoardMessage(error.message, true);
+                                });
+                            });
+                        });
+                    });
+                </script>
+            </section>
         </t>
     </template>
 
@@ -1919,7 +3349,7 @@
                                     <a t-attf-href="/my/budgets/#{recent_budget.id}" class="geosis-recent-item">
                                         <div>
                                             <strong><t t-esc="recent_budget.project_id.name or recent_budget.name"/></strong>
-                                            <span><t t-esc="recent_budget.code"/> Â· <t t-esc="recent_budget.budget_date or '-'"/></span>
+                                            <span><t t-esc="recent_budget.code"/> · <t t-esc="recent_budget.budget_date or '-'"/></span>
                                         </div>
                                         <em>$<t t-esc="'%.2f' % recent_budget.total_amount"/></em>
                                     </a>
@@ -5314,5 +6744,128 @@
             </section>
         </t>
     </template>
+
+    <template id="portal_my_team" name="Mi Equipo">
+        <t t-call="geosis_website.geosis_portal_layout">
+            <t t-set="page_name" t-value="'team'"/>
+
+            <div t-if="success == 'created'" class="alert alert-success geosis-notice" role="alert">
+                El colaborador se registró correctamente y se envió su invitación por correo.
+            </div>
+            <div t-if="success == 'updated'" class="alert alert-success geosis-notice" role="alert">
+                El estado del colaborador se actualizó correctamente.
+            </div>
+            <div t-if="error_message" class="alert alert-danger geosis-notice" role="alert">
+                <t t-esc="error_message"/>
+            </div>
+
+            <div class="geosis-team-hero">
+                <div>
+                    <p class="geosis-team-hero__eyebrow">Gestión de personal</p>
+                    <h2>Mi Equipo</h2>
+                    <p class="geosis-team-hero__lead">
+                        Administra a los colaboradores de <strong><t t-esc="team_company_partner.name"/></strong> sin entrar al backend técnico de Odoo.
+                    </p>
+                </div>
+                <div class="geosis-team-hero__stats">
+                    <article class="geosis-team-stat">
+                        <span>Colaboradores</span>
+                        <strong><t t-esc="team_total_count or 0"/></strong>
+                    </article>
+                    <article class="geosis-team-stat">
+                        <span>Activos</span>
+                        <strong><t t-esc="team_active_count or 0"/></strong>
+                    </article>
+                </div>
+            </div>
+
+            <section class="geosis-shot-panel geosis-team-layout">
+                <div class="geosis-team-card">
+                    <div class="geosis-team-card__header">
+                        <h3><i class="fa fa-user-plus"/> Agregar Miembro al Equipo</h3>
+                        <p>Crea el acceso de residentes y supervisores directamente desde el portal.</p>
+                    </div>
+                    <form action="/my/team/create" method="post" class="geosis-team-form">
+                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                        <label>
+                            <span>Nombre completo</span>
+                            <input type="text" name="name" class="form-control" required="required" t-att-value="form_data.get('name')"/>
+                        </label>
+                        <label>
+                            <span>Correo electrónico</span>
+                            <input type="email" name="email" class="form-control" required="required" t-att-value="form_data.get('email')"/>
+                        </label>
+                        <label>
+                            <span>Teléfono</span>
+                            <input type="text" name="phone" class="form-control" t-att-value="form_data.get('phone')"/>
+                        </label>
+                        <label>
+                            <span>Rol</span>
+                            <select name="role" class="form-select" required="required">
+                                <t t-foreach="team_role_choices" t-as="role_choice">
+                                    <option t-att-value="role_choice[0]" t-att-selected="'selected' if form_data.get('role') == role_choice[0] else None">
+                                        <t t-esc="role_choice[1]"/>
+                                    </option>
+                                </t>
+                            </select>
+                        </label>
+                        <button type="submit" class="geosis-shot-action">
+                            <i class="fa fa-plus"/> Registrar colaborador
+                        </button>
+                    </form>
+                </div>
+
+                <div class="geosis-team-card">
+                    <div class="geosis-team-card__header">
+                        <h3><i class="fa fa-users"/> Personal registrado</h3>
+                        <p>Cada empresa ve únicamente a su propio equipo.</p>
+                    </div>
+                    <div class="geosis-team-table-wrap">
+                        <table class="table geosis-team-table">
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Correo</th>
+                                    <th>Rol</th>
+                                    <th>Teléfono</th>
+                                    <th>Estado</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-if="not team_members">
+                                    <td colspan="6" class="text-center text-muted py-4">Todavía no hay colaboradores registrados en esta empresa.</td>
+                                </tr>
+                                <t t-foreach="team_members or []" t-as="member">
+                                    <tr>
+                                        <td>
+                                            <strong><t t-esc="member['user'].name"/></strong>
+                                        </td>
+                                        <td><t t-esc="member['email'] or '-'"/></td>
+                                        <td><t t-esc="member['role_label']"/></td>
+                                        <td><t t-esc="member['phone'] or '-'"/></td>
+                                        <td>
+                                            <span t-attf-class="geosis-team-state #{'is-active' if member['user'].active else 'is-inactive'}">
+                                                <t t-esc="member['status_label']"/>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <form t-attf-action="/my/team/toggle-active/#{member['user'].id}" method="post" class="d-inline">
+                                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                                <button type="submit" t-attf-class="btn btn-sm #{'btn-outline-danger' if member['user'].active else 'btn-outline-success'}">
+                                                    <t t-esc="'Desactivar' if member['user'].active else 'Activar'"/>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </t>
+    </template>
 </odoo>
+
 

@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from datetime import date
+
 from odoo import http, _, fields
 from odoo.http import request
 from odoo.addons.portal.controllers.portal import CustomerPortal, pager as portal_pager
@@ -52,6 +54,87 @@ class GeosisCustomerPortal(CustomerPortal):
             })
 
         return tasks_with_gantt
+
+    def _build_gantt_years(self, tasks_with_gantt):
+        if not tasks_with_gantt:
+            return []
+
+        all_dates = []
+        for item in tasks_with_gantt:
+            if item.get('start_dt'):
+                all_dates.append(item['start_dt'])
+            if item.get('end_dt'):
+                all_dates.append(item['end_dt'])
+
+        if not all_dates:
+            return []
+
+        min_date = min(all_dates)
+        max_date = max(all_dates)
+        min_base = min_date.date() if hasattr(min_date, 'date') else min_date
+        max_base = max_date.date() if hasattr(max_date, 'date') else max_date
+        total_days = max((max_base - min_base).days, 1)
+        years = []
+
+        for year in range(min_base.year, max_base.year + 1):
+            year_start = date(year, 1, 1)
+            year_end = date(year, 12, 31)
+            visible_start = max(min_base, year_start)
+            visible_end = min(max_base, year_end)
+            if visible_end < visible_start:
+                continue
+
+            start_offset = max((visible_start - min_base).days, 0)
+            end_offset = max((visible_end - min_base).days, 0)
+            left = (start_offset / total_days) * 100
+            width = (max(end_offset - start_offset, 1) / total_days) * 100
+            years.append({
+                'year': year,
+                'left': left,
+                'width': width,
+            })
+
+        return years
+
+    def _build_task_board_columns(self, project_tasks, project_stage_ids=None):
+        columns = []
+        grouped = {
+            0: {
+                'id': 0,
+                'name': 'Sin Etapa',
+                'fold': False,
+                'tasks': request.env['project.task'].sudo().browse(),
+            }
+        }
+
+        Stage = request.env['project.task.type'].sudo()
+        if project_stage_ids:
+            for stage in Stage.browse(project_stage_ids).exists():
+                grouped[stage.id] = {
+                    'id': stage.id,
+                    'name': stage.name or 'Sin nombre',
+                    'fold': bool(getattr(stage, 'fold', False)),
+                    'tasks': request.env['project.task'].sudo().browse(),
+                }
+
+        if not project_tasks:
+            return [grouped[key] for key in sorted(grouped.keys(), key=lambda stage_id: (grouped[stage_id]['fold'], grouped[stage_id]['name'], grouped[stage_id]['id']))]
+
+        for task in project_tasks:
+            stage = task.stage_id
+            stage_key = stage.id or 0
+            if stage_key not in grouped:
+                grouped[stage_key] = {
+                    'id': stage_key,
+                    'name': stage.name or 'Sin etapa',
+                    'fold': bool(getattr(stage, 'fold', False)),
+                    'tasks': request.env['project.task'].sudo().browse(),
+                }
+            grouped[stage_key]['tasks'] |= task
+
+        for key in sorted(grouped.keys(), key=lambda stage_id: (grouped[stage_id]['fold'], grouped[stage_id]['name'], grouped[stage_id]['id'])):
+            columns.append(grouped[key])
+        return columns
 
     def _get_accessible_project(self, project_id):
         Project = request.env['geosis.project'].sudo()
@@ -124,6 +207,63 @@ class GeosisCustomerPortal(CustomerPortal):
 
     def _partner_domain(self):
         return [('partner_id', 'child_of', request.env.user.partner_id.commercial_partner_id.id)]
+
+    def _is_team_admin(self):
+        user = request.env.user
+        partner = user.partner_id
+        commercial_partner = partner.commercial_partner_id
+        return bool(
+            user.has_group('geosis_base.group_geosis_admin')
+            or (partner and commercial_partner and partner.id == commercial_partner.id)
+        )
+
+    def _get_team_company_partner(self):
+        return request.env.user.partner_id.commercial_partner_id
+
+    def _get_team_user_domain(self):
+        company_partner = self._get_team_company_partner()
+        geosis_groups = [
+            request.env.ref('geosis_base.group_geosis_admin', raise_if_not_found=False),
+            request.env.ref('geosis_base.group_geosis_user', raise_if_not_found=False),
+            request.env.ref('geosis_base.group_geosis_readonly', raise_if_not_found=False),
+        ]
+        geosis_group_ids = [group.id for group in geosis_groups if group]
+        domain = [
+            ('partner_id.commercial_partner_id', '=', company_partner.id),
+            ('id', '!=', request.env.user.id),
+        ]
+        if geosis_group_ids:
+            domain.append(('groups_id', 'in', geosis_group_ids))
+        return domain
+
+    def _get_team_users(self):
+        User = request.env['res.users'].sudo().with_context(active_test=False)
+        return User.search(self._get_team_user_domain(), order='active desc, name asc, id asc')
+
+    def _get_team_role_choices(self):
+        return [
+            ('resident', 'Residente de Obra'),
+            ('supervisor', 'Fiscalizador / Supervisor'),
+        ]
+
+    def _get_user_team_role(self, user):
+        if user.has_group('geosis_base.group_geosis_admin'):
+            return 'Administrador'
+        if user.has_group('geosis_base.group_geosis_user'):
+            return 'Residente de Obra'
+        if user.has_group('geosis_base.group_geosis_readonly'):
+            return 'Fiscalizador / Supervisor'
+        return 'Sin rol GEOSIS'
+
+    def _prepare_team_member_values(self, user):
+        partner = user.partner_id
+        return {
+            'user': user,
+            'role_label': self._get_user_team_role(user),
+            'phone': partner.phone or partner.mobile or '',
+            'email': user.login or partner.email or '',
+            'status_label': 'Activo' if user.active else 'Inactivo',
+        }
 
     @http.route(['/geosis/dashboard'], type='http', auth="user", website=True)
     def geosis_private_dashboard(self, **kw):
@@ -438,6 +578,23 @@ class GeosisCustomerPortal(CustomerPortal):
                     task_durations[task.id] = 0
 
         assignable_users = request.env['res.users'].sudo().search([('active', '=', True)], order='name asc')
+        stage_domain = []
+        if odoo_projects:
+            stage_domain = ['|', ('project_ids', '=', False), ('project_ids', 'in', odoo_projects.ids)]
+        project_stages = request.env['project.task.type'].sudo().search(stage_domain, order='sequence asc, name asc') if stage_domain else request.env['project.task.type'].sudo().browse()
+        gantt_years = self._build_gantt_years(tasks_with_gantt)
+        task_board_columns = self._build_task_board_columns(project_tasks, project_stages.ids)
+        task_state_choices = []
+        if 'state' in Task._fields and getattr(Task._fields['state'], 'selection', None):
+            task_state_choices = Task._fields['state'].selection
+        else:
+            task_state_choices = [
+                ('01_in_progress', 'In Progress'),
+                ('02_changes_requested', 'Changes Requested'),
+                ('03_approved', 'Approved'),
+                ('04_cancelled', 'Canceled'),
+                ('01_done', 'Done'),
+            ]
 
         values.update({
             'projects': projects,
@@ -448,11 +605,15 @@ class GeosisCustomerPortal(CustomerPortal):
             'project_tasks': project_tasks,
             'tasks_with_gantt': tasks_with_gantt,
             'task_durations': task_durations,
+            'gantt_years': gantt_years,
             'gantt_task_count': len(project_tasks),
             'gantt_open_count': open_task_count,
             'gantt_critical_count': critical_task_count,
             'gantt_scheduled_count': len(tasks_with_gantt),
             'assignable_users': assignable_users,
+            'task_board_columns': task_board_columns,
+            'task_stages': project_stages,
+            'task_state_choices': task_state_choices,
         })
         return values
 
@@ -519,7 +680,7 @@ class GeosisCustomerPortal(CustomerPortal):
             'timeline_data_json': json.dumps(timeline_data),
             'timeline_groups_json': json.dumps(groups),
         })
-        return request.render("geosis_website.portal_my_gantt", values)
+        return request.render("geosis_website.portal_my_gantt_restored", values)
 
     @http.route(['/my/tasks'], type='http', auth="user", website=True)
     def portal_my_tasks(self, project_id=None, **kw):
@@ -530,7 +691,7 @@ class GeosisCustomerPortal(CustomerPortal):
             'page_subtitle': 'Gestión interactiva de tareas del proyecto',
             'action_url': '/my/tasks',
         })
-        return request.render("geosis_website.portal_my_tasks", values)
+        return request.render("geosis_website.portal_my_tasks_restored", values)
 
     @http.route(['/my/task/<int:task_id>/toggle_priority'], type='json', auth="user", methods=['POST'])
     def portal_task_toggle_priority(self, task_id, **kw):
@@ -685,6 +846,100 @@ class GeosisCustomerPortal(CustomerPortal):
             
         request.env['project.task.type'].sudo().create(stage_vals)
         return {'success': True}
+
+    @http.route(['/my/team'], type='http', auth="user", website=True)
+    def portal_my_team(self, **kw):
+        if not self._is_team_admin():
+            return request.redirect('/geosis/dashboard')
+
+        company_partner = self._get_team_company_partner()
+        team_users = self._get_team_users()
+        team_member_values = [self._prepare_team_member_values(user) for user in team_users]
+        values = {
+            'page_name': 'team',
+            'page_title': 'Mi Equipo',
+            'page_subtitle': 'Gestiona a tu personal desde el portal',
+            'team_company_partner': company_partner,
+            'team_members': team_member_values,
+            'team_total_count': len(team_member_values),
+            'team_active_count': len([member for member in team_member_values if member['user'].active]),
+            'team_role_choices': self._get_team_role_choices(),
+            'success': kw.get('success'),
+            'error_message': kw.get('error_message'),
+            'form_data': {
+                'name': kw.get('name', ''),
+                'email': kw.get('email', ''),
+                'phone': kw.get('phone', ''),
+                'role': kw.get('role', 'resident'),
+            },
+        }
+        return request.render("geosis_website.portal_my_team", values)
+
+    @http.route(['/my/team/create'], type='http', auth="user", website=True, methods=['POST'])
+    def portal_my_team_create(self, **kw):
+        if not self._is_team_admin():
+            return request.redirect('/geosis/dashboard')
+
+        name = (kw.get('name') or '').strip()
+        email = (kw.get('email') or '').strip().lower()
+        phone = (kw.get('phone') or '').strip()
+        role = (kw.get('role') or 'resident').strip()
+
+        if not name or not email or role not in dict(self._get_team_role_choices()):
+            return request.redirect('/my/team?error_message=Completa los datos obligatorios del colaborador.')
+
+        User = request.env['res.users'].sudo().with_context(active_test=False)
+        if User.search_count(['|', ('login', '=', email), ('partner_id.email', '=', email)]):
+            return request.redirect('/my/team?error_message=Ya existe un usuario con ese correo.')
+
+        company_partner = self._get_team_company_partner().sudo()
+        partner_vals = {
+            'name': name,
+            'email': email,
+            'phone': phone,
+            'parent_id': company_partner.id,
+            'company_type': 'person',
+            'type': 'contact',
+        }
+        partner = request.env['res.partner'].sudo().create(partner_vals)
+
+        geosis_role_group = request.env.ref(
+            'geosis_base.group_geosis_user' if role == 'resident' else 'geosis_base.group_geosis_readonly',
+            raise_if_not_found=False,
+        )
+        base_user_group = request.env.ref('base.group_user', raise_if_not_found=False)
+        project_user_group = request.env.ref('project.group_project_user', raise_if_not_found=False)
+        group_ids = [group.id for group in [base_user_group, geosis_role_group, project_user_group] if group]
+
+        user = User.create({
+            'name': name,
+            'login': email,
+            'email': email,
+            'partner_id': partner.id,
+            'groups_id': [(6, 0, group_ids)],
+            'active': True,
+        })
+        user.action_reset_password()
+        return request.redirect('/my/team?success=created')
+
+    @http.route(['/my/team/toggle-active/<int:user_id>'], type='http', auth="user", website=True, methods=['POST'])
+    def portal_my_team_toggle_active(self, user_id, **kw):
+        if not self._is_team_admin():
+            return request.redirect('/geosis/dashboard')
+
+        user = request.env['res.users'].sudo().with_context(active_test=False).browse(user_id)
+        if not user.exists():
+            return request.redirect('/my/team?error_message=Colaborador no encontrado.')
+
+        company_partner = self._get_team_company_partner()
+        if user.partner_id.commercial_partner_id.id != company_partner.id:
+            return request.redirect('/my/team?error_message=No tienes permisos para gestionar este colaborador.')
+
+        if user.id == request.env.user.id:
+            return request.redirect('/my/team?error_message=No puedes desactivar tu propio usuario desde el portal.')
+
+        user.write({'active': not user.active})
+        return request.redirect('/my/team?success=updated')
 
     @http.route(['/my/projects/new'], type='http', auth="user", website=True, methods=['GET', 'POST'])
     def portal_my_project_new(self, **kw):
