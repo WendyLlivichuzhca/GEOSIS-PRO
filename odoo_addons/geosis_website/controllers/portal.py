@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from datetime import date
+from datetime import date, timedelta
 
 from odoo import http, _, fields
 from odoo.http import request
@@ -98,27 +98,16 @@ class GeosisCustomerPortal(CustomerPortal):
 
     def _build_task_board_columns(self, project_tasks, project_stage_ids=None):
         columns = []
-        grouped = {
-            0: {
+        grouped = {}
+        empty_tasks = request.env['project.task'].sudo().browse()
+
+        if not project_tasks:
+            return [{
                 'id': 0,
                 'name': 'Sin Etapa',
                 'fold': False,
-                'tasks': request.env['project.task'].sudo().browse(),
-            }
-        }
-
-        Stage = request.env['project.task.type'].sudo()
-        if project_stage_ids:
-            for stage in Stage.browse(project_stage_ids).exists():
-                grouped[stage.id] = {
-                    'id': stage.id,
-                    'name': stage.name or 'Sin nombre',
-                    'fold': bool(getattr(stage, 'fold', False)),
-                    'tasks': request.env['project.task'].sudo().browse(),
-                }
-
-        if not project_tasks:
-            return [grouped[key] for key in sorted(grouped.keys(), key=lambda stage_id: (grouped[stage_id]['fold'], grouped[stage_id]['name'], grouped[stage_id]['id']))]
+                'tasks': empty_tasks,
+            }]
 
         for task in project_tasks:
             stage = task.stage_id
@@ -126,14 +115,31 @@ class GeosisCustomerPortal(CustomerPortal):
             if stage_key not in grouped:
                 grouped[stage_key] = {
                     'id': stage_key,
-                    'name': stage.name or 'Sin etapa',
+                    'name': stage.name or 'None',
                     'fold': bool(getattr(stage, 'fold', False)),
-                    'tasks': request.env['project.task'].sudo().browse(),
+                    'tasks': empty_tasks,
                 }
             grouped[stage_key]['tasks'] |= task
 
-        for key in sorted(grouped.keys(), key=lambda stage_id: (grouped[stage_id]['fold'], grouped[stage_id]['name'], grouped[stage_id]['id'])):
-            columns.append(grouped[key])
+        if 0 not in grouped:
+            grouped[0] = {
+                'id': 0,
+                'name': 'None',
+                'fold': False,
+                'tasks': empty_tasks,
+            }
+
+        def sort_key(item):
+            stage_id, stage_data = item
+            return (
+                stage_id != 0,
+                stage_data['fold'],
+                stage_data['name'].lower(),
+                stage_id,
+            )
+
+        for key, value in sorted(grouped.items(), key=sort_key):
+            columns.append(value)
         return columns
 
     def _get_accessible_project(self, project_id):
@@ -194,6 +200,60 @@ class GeosisCustomerPortal(CustomerPortal):
         if 'fold' in stage_fields:
             return [('stage_id.fold', '=', False)]
         return []
+
+    def _compute_schedule_kpis(self, tasks, board_columns):
+        Task = request.env['project.task'].sudo()
+        today = fields.Date.context_today(request.env.user)
+        total_task_count = len(tasks)
+        open_task_ids = set()
+        completed_task_ids = set()
+        overdue_task_ids = set()
+        stage_progress = []
+
+        if total_task_count:
+            open_tasks = Task.search([('id', 'in', tasks.ids)] + self._get_open_task_domain())
+            open_task_ids = set(open_tasks.ids)
+            completed_task_ids = set(tasks.ids) - open_task_ids
+            if open_task_ids:
+                overdue_tasks = Task.search(
+                    [('id', 'in', list(open_task_ids)), '|', ('date_deadline', '<', today), ('planned_date_end', '<', today)]
+                )
+                overdue_task_ids = set(overdue_tasks.ids)
+
+        open_task_count = len(open_task_ids)
+        completed_task_count = len(completed_task_ids)
+        overdue_task_count = len(overdue_task_ids)
+        schedule_compliance_pct = ((total_task_count - overdue_task_count) / total_task_count * 100.0) if total_task_count else 0.0
+        overdue_rate_pct = (overdue_task_count / open_task_count * 100.0) if open_task_count else 0.0
+        delay_index_pct = (overdue_task_count / total_task_count * 100.0) if total_task_count else 0.0
+
+        for column in board_columns or []:
+            column_total = len(column['tasks'])
+            column_open = len([task for task in column['tasks'] if task.id in open_task_ids])
+            column_completed = len([task for task in column['tasks'] if task.id in completed_task_ids])
+            if not column_total:
+                continue
+            stage_progress.append({
+                'name': column['name'],
+                'total': column_total,
+                'open': column_open,
+                'completed': column_completed,
+                'share_pct': (column_total / total_task_count * 100.0) if total_task_count else 0.0,
+                'completion_pct': (column_completed / column_total * 100.0) if column_total else 0.0,
+                'completion_pct_clamped': min(max((column_completed / column_total * 100.0) if column_total else 0.0, 0.0), 100.0),
+                'is_folded': bool(column.get('fold')),
+            })
+
+        return {
+            'total_task_count': total_task_count,
+            'open_task_count': open_task_count,
+            'completed_task_count': completed_task_count,
+            'overdue_task_count': overdue_task_count,
+            'schedule_compliance_pct': schedule_compliance_pct,
+            'overdue_rate_pct': overdue_rate_pct,
+            'delay_index_pct': delay_index_pct,
+            'stage_progress': stage_progress,
+        }
 
     def _prepare_home_portal_values(self, counters):
         values = super(GeosisCustomerPortal, self)._prepare_home_portal_values(counters)
@@ -265,8 +325,7 @@ class GeosisCustomerPortal(CustomerPortal):
             'status_label': 'Activo' if user.active else 'Inactivo',
         }
 
-    @http.route(['/geosis/dashboard'], type='http', auth="user", website=True)
-    def geosis_private_dashboard(self, **kw):
+    def _legacy_geosis_private_dashboard_unused(self, **kw):
         partner_domain = self._partner_domain()
         Project = request.env['geosis.project'].sudo()
         Apu = request.env['geosis.apu'].sudo()
@@ -310,6 +369,114 @@ class GeosisCustomerPortal(CustomerPortal):
             'active_project_count': Project.search_count([*partner_domain, ('state', '=', 'active')]),
             'apu_count': Apu.search_count([('active', '=', True)]),
             'resource_count': Resource.search_count([('active', '=', True)]),
+            'latest_projects': latest_projects,
+            'res_stats': res_stats,
+            'critical_tasks': critical_tasks,
+            'cost_dist': cost_dist,
+            'page_name': 'home',
+        }
+        return request.render("geosis_website.geosis_private_dashboard_page", values)
+
+    @http.route(['/geosis/dashboard'], type='http', auth="user", website=True)
+    def geosis_private_dashboard(self, **kw):
+        partner_domain = self._partner_domain()
+        Project = request.env['geosis.project'].sudo()
+        Apu = request.env['geosis.apu'].sudo()
+        Resource = request.env['geosis.resource'].sudo()
+        Estimation = request.env['geosis.estimation'].sudo()
+        Bitacora = request.env['geosis.bitacora'].sudo()
+        Task = request.env['project.task'].sudo()
+
+        today = fields.Date.context_today(request.env.user)
+        month_start = today.replace(day=1)
+        month_end = (month_start + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+
+        latest_projects = Project.search(partner_domain, limit=5, order='write_date desc')
+        all_client_projects = Project.search(partner_domain)
+        all_budgets = request.env['geosis.budget'].sudo().search([('project_id', 'in', all_client_projects.ids)])
+        all_odoo_projects = all_budgets.mapped('odoo_project_id').filtered(lambda project: project.exists())
+
+        res_stats = {}
+        for cat in ['M', 'N', 'O', 'P']:
+            resources = Resource.search([('category', '=', cat), ('active', '=', True)])
+            res_stats[cat] = {
+                'count': len(resources),
+                'avg': sum(resources.mapped('price')) / len(resources) if resources else 0.0,
+            }
+
+        budget_total_amount = sum(all_client_projects.mapped('total_budget_amount'))
+        latest_approved_estimations = Estimation.browse()
+        for budget in all_budgets:
+            approved_estimation = Estimation.search([
+                ('budget_id', '=', budget.id),
+                ('state', '=', 'approved'),
+            ], limit=1, order='estimation_date desc, id desc')
+            if approved_estimation:
+                latest_approved_estimations |= approved_estimation
+
+        executed_total = sum(latest_approved_estimations.mapped('total_accumulated'))
+        pending_total = max(budget_total_amount - executed_total, 0.0)
+        physical_progress_pct = (executed_total / budget_total_amount * 100.0) if budget_total_amount else 0.0
+
+        delayed_project_count = len(all_client_projects.filtered(
+            lambda project: project.state not in ('completed', 'cancelled') and project.end_date and project.end_date < today
+        ))
+        completed_project_count = len(all_client_projects.filtered(lambda project: project.state == 'completed'))
+
+        open_task_domain = [('project_id', 'in', all_odoo_projects.ids)] + self._get_open_task_domain()
+        critical_task_domain = open_task_domain + [('is_critical', '=', True)]
+        critical_tasks = Task.search(
+            critical_task_domain,
+            limit=5,
+            order='date_deadline asc, planned_date_end asc, id asc',
+        )
+        overdue_task_count = Task.search_count(
+            open_task_domain + ['|', ('date_deadline', '<', today), ('planned_date_end', '<', today)]
+        )
+
+        month_bitacoras = Bitacora.search([
+            ('project_id', 'in', all_client_projects.ids),
+            ('date', '>=', month_start),
+            ('date', '<=', month_end),
+        ])
+        approved_bitacora_count = len(month_bitacoras.filtered(lambda bitacora: bitacora.state == 'approved'))
+        month_bitacora_count = len(month_bitacoras)
+        bitacora_approval_rate = (approved_bitacora_count / month_bitacora_count * 100.0) if month_bitacora_count else 0.0
+
+        estimation_domain = [('project_id', 'in', all_client_projects.ids)]
+        planilla_state_counts = {
+            'draft': Estimation.search_count(estimation_domain + [('state', '=', 'draft')]),
+            'submitted': Estimation.search_count(estimation_domain + [('state', '=', 'submitted')]),
+            'approved': Estimation.search_count(estimation_domain + [('state', '=', 'approved')]),
+            'rejected': Estimation.search_count(estimation_domain + [('state', '=', 'rejected')]),
+        }
+
+        cost_dist = {
+            'M': sum(Resource.search([('category', '=', 'M'), ('active', '=', True)]).mapped('price')),
+            'N': sum(Resource.search([('category', '=', 'N'), ('active', '=', True)]).mapped('price')),
+            'O': sum(Resource.search([('category', '=', 'O'), ('active', '=', True)]).mapped('price')),
+            'P': sum(Resource.search([('category', '=', 'P'), ('active', '=', True)]).mapped('price')),
+        }
+
+        values = {
+            'project_count': Project.search_count(partner_domain),
+            'active_project_count': Project.search_count([*partner_domain, ('state', '=', 'active')]),
+            'completed_project_count': completed_project_count,
+            'delayed_project_count': delayed_project_count,
+            'apu_count': Apu.search_count([('active', '=', True)]),
+            'resource_count': Resource.search_count([('active', '=', True)]),
+            'budget_total_amount': budget_total_amount,
+            'executed_total': executed_total,
+            'pending_total': pending_total,
+            'physical_progress_pct': physical_progress_pct,
+            'open_task_count': Task.search_count(open_task_domain),
+            'critical_task_count': Task.search_count(critical_task_domain),
+            'overdue_task_count': overdue_task_count,
+            'approved_bitacora_count': approved_bitacora_count,
+            'month_bitacora_count': month_bitacora_count,
+            'bitacora_approval_rate': bitacora_approval_rate,
+            'planilla_state_counts': planilla_state_counts,
+            'month_label': month_start.strftime('%B %Y').capitalize(),
             'latest_projects': latest_projects,
             'res_stats': res_stats,
             'critical_tasks': critical_tasks,
@@ -557,7 +724,12 @@ class GeosisCustomerPortal(CustomerPortal):
                 tasks_with_gantt = self._build_tasks_with_gantt(project_tasks)
 
         open_task_count = 0
+        completed_task_count = 0
+        overdue_task_count = 0
         critical_task_count = 0
+        schedule_compliance_pct = 0.0
+        overdue_rate_pct = 0.0
+        delay_index_pct = 0.0
         task_durations = {}
         if project_tasks:
             open_task_count = Task.search_count(
@@ -584,6 +756,13 @@ class GeosisCustomerPortal(CustomerPortal):
         project_stages = request.env['project.task.type'].sudo().search(stage_domain, order='sequence asc, name asc') if stage_domain else request.env['project.task.type'].sudo().browse()
         gantt_years = self._build_gantt_years(tasks_with_gantt)
         task_board_columns = self._build_task_board_columns(project_tasks, project_stages.ids)
+        schedule_kpis = self._compute_schedule_kpis(project_tasks, task_board_columns)
+        open_task_count = schedule_kpis['open_task_count']
+        completed_task_count = schedule_kpis['completed_task_count']
+        overdue_task_count = schedule_kpis['overdue_task_count']
+        schedule_compliance_pct = schedule_kpis['schedule_compliance_pct']
+        overdue_rate_pct = schedule_kpis['overdue_rate_pct']
+        delay_index_pct = schedule_kpis['delay_index_pct']
         task_state_choices = []
         if 'state' in Task._fields and getattr(Task._fields['state'], 'selection', None):
             task_state_choices = Task._fields['state'].selection
@@ -608,8 +787,14 @@ class GeosisCustomerPortal(CustomerPortal):
             'gantt_years': gantt_years,
             'gantt_task_count': len(project_tasks),
             'gantt_open_count': open_task_count,
+            'gantt_completed_count': completed_task_count,
+            'gantt_overdue_count': overdue_task_count,
             'gantt_critical_count': critical_task_count,
             'gantt_scheduled_count': len(tasks_with_gantt),
+            'gantt_schedule_compliance_pct': schedule_compliance_pct,
+            'gantt_overdue_rate_pct': overdue_rate_pct,
+            'gantt_delay_index_pct': delay_index_pct,
+            'gantt_stage_progress': schedule_kpis['stage_progress'],
             'assignable_users': assignable_users,
             'task_board_columns': task_board_columns,
             'task_stages': project_stages,
@@ -679,6 +864,7 @@ class GeosisCustomerPortal(CustomerPortal):
             'action_url': '/my/gantt',
             'timeline_data_json': json.dumps(timeline_data),
             'timeline_groups_json': json.dumps(groups),
+            'today_date': fields.Date.context_today(request.env.user).strftime('%Y-%m-%d'),
         })
         return request.render("geosis_website.portal_my_gantt_restored", values)
 

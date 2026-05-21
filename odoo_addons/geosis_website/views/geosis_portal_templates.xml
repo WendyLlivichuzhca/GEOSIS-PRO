@@ -133,76 +133,131 @@
         <t t-call="geosis_website.geosis_portal_layout">
             <t t-set="page_name" t-value="'home'"/>
             <t t-set="page_title" t-value="'Dashboard'"/>
-            <t t-set="page_subtitle" t-value="'Tu centro de operacion tecnico'"/>
+            <t t-set="page_subtitle" t-value="'Indicadores clave para controlar obra, avance y riesgo'"/>
 
-            <!-- Chart.js para visualizaciones -->
             <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-            <section class="geosis-dashboard-hero">
+            <section class="geosis-dashboard-hero geosis-dashboard-hero--premium">
                 <div class="geosis-dashboard-hero__copy">
-                    <span class="geosis-pill">Centro de Control de Ingenieria</span>
-                    <h2>Toda tu oficina tecnica en una sola vista.</h2>
+                    <span class="geosis-pill">Centro de Control de Obra</span>
+                    <h2>Estado ejecutivo del portafolio y la ejecución en campo.</h2>
                     <p>
-                        Gestiona la Ruta Critica, optimiza rubros con IA y controla tus costos operativos
-                        en tiempo real desde este panel centralizado.
+                        Aquí se concentra el avance físico, la ejecución económica, la disciplina documental
+                        y las alertas del cronograma para dirigir la obra con criterio técnico.
                     </p>
+                    <div class="geosis-dashboard-hero__badges">
+                        <span class="geosis-chip">Obra</span>
+                        <span class="geosis-chip">Control</span>
+                        <span class="geosis-chip">Trazabilidad</span>
+                    </div>
                     <div class="geosis-public-actions">
                         <a href="/my/projects" class="btn btn-primary">Navegar Proyectos</a>
-                        <a href="/my/rubros" class="btn btn-outline-primary">Catalogo APU</a>
+                        <a href="/my/estimations" class="btn btn-outline-primary">Ver Planillas</a>
                     </div>
                 </div>
-                <div class="geosis-dashboard-hero__card">
+                <div class="geosis-dashboard-hero__card geosis-dashboard-profile-card">
                     <div class="d-flex align-items-center gap-3 mb-3">
-                        <div class="geosis-avatar-main"><i class="fa fa-user-circle-o"/></div>
+                        <div class="geosis-avatar-main"><i class="fa fa-hard-hat"/></div>
                         <div>
                             <strong><t t-esc="request.env.user.name"/></strong>
-                            <div class="small text-muted text-uppercase">Cliente Principal</div>
+                            <div class="small text-muted text-uppercase">Dirección de Proyecto</div>
                         </div>
                     </div>
                     <ul class="list-unstyled mb-0">
                         <li class="mb-2"><i class="fa fa-envelope-o me-2 text-primary"/> <t t-esc="request.env.user.partner_id.email or 'Sin correo'"/></li>
-                        <li><i class="fa fa-map-marker me-2 text-primary"/> <t t-esc="request.env.user.partner_id.city or 'Ubicacion no registrada'"/></li>
+                        <li class="mb-2"><i class="fa fa-map-marker me-2 text-primary"/> <t t-esc="request.env.user.partner_id.city or 'Ubicación no registrada'"/></li>
+                        <li><i class="fa fa-calendar-check-o me-2 text-primary"/> Corte del dashboard: <t t-esc="month_label"/></li>
                     </ul>
+                    <div class="geosis-dashboard-profile-card__foot">
+                        <span>Proyectos activos</span>
+                        <strong><t t-esc="active_project_count or 0"/></strong>
+                    </div>
                 </div>
             </section>
 
             <div class="geosis-metric-grid">
-                <article class="geosis-metric-card is-blue">
-                    <div class="geosis-metric-card__icon"><i class="fa fa-list-alt"/></div>
+                <article class="geosis-metric-card geosis-metric-card--premium is-blue">
                     <div class="geosis-metric-card__data">
-                        <span>Rubros APU</span>
-                        <strong><t t-esc="apu_count or 0"/></strong>
+                        <span>Avance físico acumulado</span>
+                        <strong><t t-esc="'%.1f' % (physical_progress_pct or 0.0)"/>%</strong>
                     </div>
                 </article>
-                <article class="geosis-metric-card is-green">
-                    <div class="geosis-metric-card__icon"><i class="fa fa-cubes"/></div>
+                <article class="geosis-metric-card geosis-metric-card--premium is-green">
                     <div class="geosis-metric-card__data">
-                        <span>Recursos</span>
-                        <strong><t t-esc="resource_count or 0"/></strong>
+                        <span>Monto ejecutado acumulado</span>
+                        <strong>$<t t-esc="'{:,.2f}'.format(executed_total or 0.0)"/></strong>
                     </div>
                 </article>
-                <article class="geosis-metric-card is-orange">
-                    <div class="geosis-metric-card__icon"><i class="fa fa-building-o"/></div>
+                <article class="geosis-metric-card geosis-metric-card--premium is-orange">
                     <div class="geosis-metric-card__data">
-                        <span>Proyectos</span>
-                        <strong><t t-esc="project_count or 0"/></strong>
+                        <span>Monto pendiente por ejecutar</span>
+                        <strong>$<t t-esc="'{:,.2f}'.format(pending_total or 0.0)"/></strong>
                     </div>
                 </article>
-                <article class="geosis-metric-card is-danger">
-                    <div class="geosis-metric-card__icon"><i class="fa fa-exclamation-triangle"/></div>
+                <article class="geosis-metric-card geosis-metric-card--premium is-cyan">
                     <div class="geosis-metric-card__data">
-                        <span>Tareas Criticas</span>
-                        <strong><t t-esc="len(critical_tasks or [])"/></strong>
+                        <span>Bitácoras aprobadas del período</span>
+                        <strong><t t-esc="approved_bitacora_count or 0"/> / <t t-esc="month_bitacora_count or 0"/></strong>
                     </div>
                 </article>
             </div>
 
+            <div class="geosis-stat-strip mt-3">
+                <article class="geosis-mini-card"><span>Tareas críticas activas</span><strong><t t-esc="critical_task_count or 0"/></strong></article>
+                <article class="geosis-mini-card"><span>Tareas vencidas</span><strong><t t-esc="overdue_task_count or 0"/></strong></article>
+                <article class="geosis-mini-card"><span>Proyectos activos</span><strong><t t-esc="active_project_count or 0"/></strong></article>
+                <article class="geosis-mini-card"><span>Proyectos atrasados</span><strong><t t-esc="delayed_project_count or 0"/></strong></article>
+            </div>
+
             <div class="geosis-dashboard-grid">
-                <!-- PANEL DE RUTA CRITICA -->
                 <section class="geosis-panel">
                     <div class="geosis-panel__header">
-                        <h3><i class="fa fa-road me-2 text-danger"/>Alertas de Ruta Critica</h3>
-                        <span class="badge bg-danger">Atencion Inmediata</span>
+                        <h3><i class="fa fa-line-chart me-2 text-primary"/>Pulso de la obra</h3>
+                        <span class="geosis-chip">Presupuesto total: $<t t-esc="'{:,.2f}'.format(budget_total_amount or 0.0)"/></span>
+                    </div>
+                    <div class="geosis-panel__subsection">
+                        <div class="geosis-kpi-progress">
+                            <div class="geosis-kpi-progress__labels">
+                                <strong>Avance global del contrato</strong>
+                                <span><t t-esc="'%.1f' % (physical_progress_pct or 0.0)"/>%</span>
+                            </div>
+                            <div class="geosis-kpi-progress__track">
+                                <span t-attf-style="width: #{min(max(physical_progress_pct or 0.0, 0.0), 100.0)}%;"/>
+                            </div>
+                        </div>
+
+                        <div class="geosis-kpi-summary-grid">
+                            <article class="geosis-kpi-summary-card"><span>Planillas aprobadas</span><strong><t t-esc="planilla_state_counts.get('approved', 0)"/></strong></article>
+                            <article class="geosis-kpi-summary-card"><span>Planillas presentadas</span><strong><t t-esc="planilla_state_counts.get('submitted', 0)"/></strong></article>
+                            <article class="geosis-kpi-summary-card"><span>Planillas borrador</span><strong><t t-esc="planilla_state_counts.get('draft', 0)"/></strong></article>
+                            <article class="geosis-kpi-summary-card"><span>Planillas rechazadas</span><strong><t t-esc="planilla_state_counts.get('rejected', 0)"/></strong></article>
+                        </div>
+
+                        <div class="geosis-kpi-insights">
+                            <article>
+                                <strong>Control documental</strong>
+                                <span>La aprobación de bitácoras del período va en <t t-esc="'%.1f' % (bitacora_approval_rate or 0.0)"/>%.</span>
+                            </article>
+                            <article>
+                                <strong>Riesgo operativo</strong>
+                                <span>Hay <t t-esc="critical_task_count or 0"/> tareas críticas activas y <t t-esc="overdue_task_count or 0"/> vencidas.</span>
+                            </article>
+                            <article>
+                                <strong>Carga de ejecución</strong>
+                                <span>Actualmente hay <t t-esc="open_task_count or 0"/> tareas abiertas en tus proyectos.</span>
+                            </article>
+                            <article>
+                                <strong>Estado del portafolio</strong>
+                                <span><t t-esc="completed_project_count or 0"/> proyectos terminados y <t t-esc="delayed_project_count or 0"/> con atraso.</span>
+                            </article>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="geosis-panel">
+                    <div class="geosis-panel__header">
+                        <h3><i class="fa fa-road me-2 text-danger"/>Ruta crítica y vencimientos</h3>
+                        <span class="badge bg-danger">Atención inmediata</span>
                     </div>
                     <div class="geosis-critical-list">
                         <t t-if="critical_tasks">
@@ -210,11 +265,11 @@
                                 <a t-attf-href="/my/project/#{task.project_id.id}" class="geosis-critical-item">
                                     <div class="geosis-critical-item__info">
                                         <strong><t t-esc="task.name"/></strong>
-                                        <span>Proyecto: <t t-esc="task.project_id.name"/></span>
+                                        <span>Proyecto Odoo: <t t-esc="task.project_id.name"/></span>
                                     </div>
                                     <div class="text-end">
-                                        <div class="text-danger fw-bold">CRITICA</div>
-                                        <div class="small text-muted">Vence: <t t-esc="task.date_deadline or 'N/A'"/></div>
+                                        <div class="text-danger fw-bold">CRÍTICA</div>
+                                        <div class="small text-muted">Vence: <t t-esc="task.date_deadline or task.planned_date_end or 'N/A'"/></div>
                                     </div>
                                 </a>
                             </t>
@@ -222,53 +277,87 @@
                         <t t-else="">
                             <div class="text-center py-5 text-muted">
                                 <i class="fa fa-check-circle-o fa-3x mb-3 text-success d-block"/>
-                                No hay tareas criticas pendientes. Tu cronograma esta al dia.
+                                No hay tareas críticas pendientes. Tu cronograma está al día.
                             </div>
                         </t>
                     </div>
                 </section>
+            </div>
 
-                <!-- GRAFICO DE COSTOS -->
+            <div class="geosis-dashboard-grid mt-3">
                 <section class="geosis-panel">
                     <div class="geosis-panel__header">
-                        <h3><i class="fa fa-pie-chart me-2 text-primary"/>Distribucion de Costos</h3>
+                        <h3><i class="fa fa-pie-chart me-2 text-primary"/>Composición referencial de costos</h3>
                     </div>
                     <div class="geosis-chart-container" style="position: relative; height:250px; width:100%">
                         <canvas id="costDistributionChart"></canvas>
                     </div>
                     <div class="geosis-chart-legend mt-3">
-                        <div class="small text-muted text-center">Basado en el promedio de precios de tus recursos actuales.</div>
+                        <div class="small text-muted text-center">Basado en el precio referencial de recursos activos por categoría.</div>
+                    </div>
+                </section>
+
+                <section class="geosis-panel">
+                    <div class="geosis-panel__header">
+                        <h3><i class="fa fa-sitemap me-2 text-primary"/>Capacidad técnica disponible</h3>
+                    </div>
+                    <div class="geosis-resource-stack">
+                        <div class="geosis-resource-card">
+                            <div class="geosis-resource-card__dot is-blue"/>
+                            <div class="geosis-resource-card__copy">
+                                <strong>Rubros APU activos</strong>
+                                <span>Base técnica disponible para presupuestar</span>
+                            </div>
+                            <div class="text-end"><strong><t t-esc="apu_count or 0"/></strong></div>
+                        </div>
+                        <div class="geosis-resource-card">
+                            <div class="geosis-resource-card__dot is-green"/>
+                            <div class="geosis-resource-card__copy">
+                                <strong>Recursos activos</strong>
+                                <span>Materiales, mano de obra, equipos y transporte</span>
+                            </div>
+                            <div class="text-end"><strong><t t-esc="resource_count or 0"/></strong></div>
+                        </div>
+                        <div class="geosis-resource-card">
+                            <div class="geosis-resource-card__dot is-orange"/>
+                            <div class="geosis-resource-card__copy">
+                                <strong>Proyectos totales</strong>
+                                <span>Portafolio total registrado para este cliente</span>
+                            </div>
+                            <div class="text-end"><strong><t t-esc="project_count or 0"/></strong></div>
+                        </div>
                     </div>
                 </section>
             </div>
 
-            <!-- JAVASCRIPT PARA EL GRAFICO -->
             <script type="text/javascript">
                 document.addEventListener('DOMContentLoaded', function() {
-                    var ctx = document.getElementById('costDistributionChart').getContext('2d');
-                    var myChart = new Chart(ctx, {
-                        type: 'doughnut',
-                        data: {
-                            labels: ['Equipos', 'Mano de Obra', 'Materiales', 'Transporte'],
-                            datasets: [{
-                                data: [<t t-esc="cost_dist.get('M', 0)"/>, <t t-esc="cost_dist.get('N', 0)"/>, <t t-esc="cost_dist.get('O', 0)"/>, <t t-esc="cost_dist.get('P', 0)"/>],
-                                backgroundColor: ['#3498db', '#2ecc71', '#f39c12', '#1abc9c'],
-                                borderWidth: 0
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: { position: 'bottom' }
+                    var chartNode = document.getElementById('costDistributionChart');
+                    if (chartNode) {
+                        var ctx = chartNode.getContext('2d');
+                        new Chart(ctx, {
+                            type: 'doughnut',
+                            data: {
+                                labels: ['Equipos', 'Mano de Obra', 'Materiales', 'Transporte'],
+                                datasets: [{
+                                    data: [<t t-esc="cost_dist.get('M', 0)"/>, <t t-esc="cost_dist.get('N', 0)"/>, <t t-esc="cost_dist.get('O', 0)"/>, <t t-esc="cost_dist.get('P', 0)"/>],
+                                    backgroundColor: ['#6d879d', '#7a9282', '#c58b6b', '#78aeb1'],
+                                    borderWidth: 0
+                                }]
                             },
-                            cutout: '70%'
-                        }
-                    });
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: { position: 'bottom' }
+                                },
+                                cutout: '70%'
+                            }
+                        });
+                    }
                 });
             </script>
 
-            <!-- TABLA DE PROYECTOS RECIENTES -->
             <section class="geosis-panel mt-4">
                 <div class="geosis-panel__header">
                     <h3><i class="fa fa-folder-open-o me-2 text-primary"/>Proyectos Recientes</h3>
@@ -305,29 +394,6 @@
                 </div>
             </section>
 
-            <section class="geosis-panel mt-4">
-                <div class="geosis-panel__header">
-                    <h3>Acciones rapidas</h3>
-                </div>
-                <div class="geosis-action-grid">
-                    <a href="/my/projects/new" class="geosis-action-card">
-                        <strong>Nuevo proyecto</strong>
-                        <span>Crea una nueva obra y organiza su seguimiento.</span>
-                    </a>
-                    <a href="/my/import-excel" class="geosis-action-card">
-                        <strong>Importar Excel</strong>
-                        <span>Sube un archivo y genera presupuesto, rubros y recursos.</span>
-                    </a>
-                    <a href="/my/rubros" class="geosis-action-card">
-                        <strong>Catalogo APU</strong>
-                        <span>Consulta rubros, costos unitarios y detalles tecnicos.</span>
-                    </a>
-                    <a href="/web/session/logout?redirect=/" class="geosis-action-card is-danger">
-                        <strong>Cerrar sesion</strong>
-                        <span>Volver a la pagina de bienvenida publica.</span>
-                    </a>
-                </div>
-            </section>
         </t>
     </template>
 
@@ -634,6 +700,7 @@
     <template id="portal_my_gantt_restored" name="Cronograma Portal Restaurado">
         <t t-call="geosis_website.geosis_portal_layout">
             <t t-set="page_name" t-value="'gantt'"/>
+            <div class="geosis-portal-gantt-view">
 
             <div class="geosis-shot-stats">
                 <article class="geosis-shot-stat is-blue">
@@ -694,7 +761,7 @@
                 </section>
             </t>
             <t t-elif="not project_tasks">
-                <section class="geosis-shot-panel">
+                <section class="geosis-shot-panel geosis-shot-panel--kanban-shell">
                     <div class="geosis-shot-panel__title">
                         <h3><t t-esc="selected_project.name"/></h3>
                     </div>
@@ -725,7 +792,7 @@
                          id="geosis-calendar"
                          t-att-data-items="timeline_data_json"
                          t-att-data-project-name="selected_project.name"
-                         t-att-data-today="fields.Date.context_today(request.env.user).strftime('%Y-%m-%d')">
+                         t-att-data-today="today_date">
                         <div class="geosis-calendar__header">
                             <div class="geosis-calendar__label"/>
                             <div class="geosis-calendar__viewport">
@@ -1090,11 +1157,13 @@
                     </script>
                 </section>
             </t>
+            </div>
         </t>
     </template>
     <template id="portal_my_tasks_restored" name="Tablero de Tareas Portal Restaurado">
         <t t-call="geosis_website.geosis_portal_layout">
             <t t-set="page_name" t-value="'tasks'"/>
+            <div class="geosis-portal-tasks-view">
 
             <div class="geosis-shot-stats geosis-shot-stats--tasks">
                 <article class="geosis-shot-stat is-blue">
@@ -1156,13 +1225,24 @@
                         <t t-foreach="task_board_columns or []" t-as="column">
                             <div class="geosis-portal-kanban__column">
                                 <div class="geosis-portal-kanban__head">
-                                    <strong><t t-esc="column['name']"/></strong>
-                                    <span><t t-esc="len(column['tasks'])"/></span>
+                                    <div class="geosis-portal-kanban__head-main">
+                                        <strong><t t-esc="column['name']"/></strong>
+                                        <span class="geosis-portal-kanban__head-track"/>
+                                    </div>
+                                    <div class="geosis-portal-kanban__head-side">
+                                        <button type="button" class="geosis-portal-kanban__plus" aria-label="Agregar">
+                                            <i class="fa fa-plus"/>
+                                        </button>
+                                        <span><t t-esc="len(column['tasks'])"/></span>
+                                    </div>
                                 </div>
                                 <div class="geosis-portal-kanban__cards">
                                     <t t-foreach="column['tasks']" t-as="task">
                                         <t t-set="task_current_state" t-value="task.state if 'state' in task._fields else (task.kanban_state if 'kanban_state' in task._fields else '01_in_progress')"/>
                                         <article class="geosis-portal-task-card" t-att-data-task-id="task.id">
+                                            <button type="button" class="geosis-portal-task-card__more" title="Más opciones">
+                                                <i class="fa fa-ellipsis-v"/>
+                                            </button>
                                             <div class="geosis-portal-task-card__title">
                                                 <strong>
                                                     <t t-if="'code' in task._fields and task.code">[<t t-esc="task.code"/>] </t>
@@ -1182,14 +1262,30 @@
                                                 <button type="button" class="geosis-portal-icon-btn geosis-portal-priority-btn" t-att-data-task-id="task.id" title="Prioridad">
                                                     <i t-attf-class="fa #{'fa-star' if task.priority == '1' else 'fa-star-o'}"/>
                                                 </button>
-                                                <span class="geosis-portal-icon-btn geosis-portal-icon-btn--static" title="Duración">
-                                                    <i class="fa fa-clock-o"/>
-                                                </span>
+                                                <details class="geosis-portal-menu geosis-portal-menu--activity">
+                                                    <summary class="geosis-portal-icon-btn" title="Actividad">
+                                                        <i class="fa fa-clock-o"/>
+                                                    </summary>
+                                                    <div class="geosis-portal-menu__panel geosis-portal-menu__panel--activity">
+                                                        <p>Schedule activities to help you get things done.</p>
+                                                        <button type="button" class="geosis-portal-activity-action">
+                                                            <i class="fa fa-plus"/> Schedule an activity
+                                                        </button>
+                                                    </div>
+                                                </details>
                                                 <details class="geosis-portal-menu geosis-portal-menu--assignee">
                                                     <summary class="geosis-portal-icon-btn" title="Responsable">
                                                         <i class="fa fa-user-plus"/>
                                                     </summary>
                                                     <div class="geosis-portal-menu__panel">
+                                                        <t t-if="task.user_ids">
+                                                            <div class="geosis-portal-menu__current">
+                                                                <span><i class="fa fa-user"/> <t t-esc="task.user_ids[0].name"/></span>
+                                                                <button type="button" class="geosis-portal-menu__current-clear" aria-label="Quitar responsable">
+                                                                    <i class="fa fa-times"/>
+                                                                </button>
+                                                            </div>
+                                                        </t>
                                                         <div class="geosis-portal-menu__search-wrap">
                                                             <input type="text" class="form-control geosis-portal-user-search" placeholder="Search users..."/>
                                                         </div>
@@ -1226,10 +1322,18 @@
                                                     </summary>
                                                     <div class="geosis-portal-menu__panel geosis-portal-menu__panel--state">
                                                         <t t-foreach="task_state_choices or []" t-as="state_choice">
-                                                            <button type="button" class="geosis-portal-menu__item geosis-portal-menu__item--state geosis-portal-state-option" t-att-data-task-id="task.id" t-att-data-state="state_choice[0]">
-                                                                <i class="fa fa-circle"/>
+                                                            <t t-if="state_choice[0] == '04_cancelled'">
+                                                                <div class="geosis-portal-menu__divider"/>
+                                                            </t>
+                                                            <button type="button"
+                                                                    t-attf-class="geosis-portal-menu__item geosis-portal-menu__item--state geosis-portal-state-option #{'is-active' if task_current_state == state_choice[0] else ''}"
+                                                                    t-att-data-task-id="task.id"
+                                                                    t-att-data-state="state_choice[0]">
+                                                                <span class="geosis-portal-menu__item-check">
+                                                                    <i t-if="task_current_state == state_choice[0]" class="fa fa-check"/>
+                                                                </span>
+                                                                <i t-attf-class="fa fa-circle geosis-portal-state-color #{'is-in-progress' if state_choice[0] == '01_in_progress' else 'is-warning' if state_choice[0] == '02_changes_requested' else 'is-approved' if state_choice[0] == '03_approved' else 'is-cancelled' if state_choice[0] == '04_cancelled' else 'is-done'}"/>
                                                                 <span><t t-esc="state_choice[1]"/></span>
-                                                                <i t-if="task_current_state == state_choice[0]" class="fa fa-check geosis-portal-menu__check"/>
                                                             </button>
                                                         </t>
                                                     </div>
@@ -1351,6 +1455,7 @@
                 });
                 ]]>
             </script>
+            </div>
         </t>
     </template>
 <template id="portal_my_tasks_functional" name="Tablero de Tareas Portal Funcional">
@@ -6865,6 +6970,165 @@
                 </div>
             </section>
         </t>
+    </template>
+    <template id="portal_my_gantt_restored_kpis" inherit_id="geosis_website.portal_my_gantt_restored" name="Cronograma KPIs">
+        <xpath expr="//div[@class='geosis-shot-stats']" position="replace">
+            <div class="geosis-shot-stats">
+                <article class="geosis-shot-stat is-blue">
+                    <div class="geosis-shot-stat__copy">
+                        <span>Cumplimiento</span>
+                        <strong><t t-esc="'%.1f' % (gantt_schedule_compliance_pct or 0.0)"/>%</strong>
+                    </div>
+                    <div class="geosis-shot-stat__icon"><i class="fa fa-line-chart"/></div>
+                </article>
+                <article class="geosis-shot-stat is-green">
+                    <div class="geosis-shot-stat__copy">
+                        <span>Tareas abiertas</span>
+                        <strong><t t-esc="gantt_open_count or 0"/></strong>
+                    </div>
+                    <div class="geosis-shot-stat__icon"><i class="fa fa-folder-open-o"/></div>
+                </article>
+                <article class="geosis-shot-stat is-red">
+                    <div class="geosis-shot-stat__copy">
+                        <span>Tareas terminadas</span>
+                        <strong><t t-esc="gantt_completed_count or 0"/></strong>
+                    </div>
+                    <div class="geosis-shot-stat__icon"><i class="fa fa-check-circle-o"/></div>
+                </article>
+                <article class="geosis-shot-stat is-violet">
+                    <div class="geosis-shot-stat__copy">
+                        <span>Tasa de vencimiento</span>
+                        <strong><t t-esc="'%.1f' % (gantt_overdue_rate_pct or 0.0)"/>%</strong>
+                    </div>
+                    <div class="geosis-shot-stat__icon"><i class="fa fa-warning"/></div>
+                </article>
+            </div>
+        </xpath>
+
+        <xpath expr="//section[contains(@class, 'geosis-shot-panel--gantt')]" position="before">
+            <section class="geosis-shot-panel geosis-shot-panel--kpi">
+                <div class="geosis-shot-panel__header">
+                    <h2><i class="fa fa-sliders"/> KPIs de cronograma</h2>
+                </div>
+                <div class="geosis-shot-kpi-grid">
+                    <article class="geosis-shot-kpi-card">
+                        <span>Índice de atraso del proyecto</span>
+                        <strong><t t-esc="'%.1f' % (gantt_delay_index_pct or 0.0)"/>%</strong>
+                        <small><t t-esc="gantt_overdue_count or 0"/> tareas vencidas de <t t-esc="gantt_task_count or 0"/> totales</small>
+                    </article>
+                    <article class="geosis-shot-kpi-card">
+                        <span>Tareas críticas activas</span>
+                        <strong><t t-esc="gantt_critical_count or 0"/></strong>
+                        <small>Seguimiento inmediato de la ruta crítica</small>
+                    </article>
+                </div>
+                <div class="geosis-shot-stage-progress">
+                    <div class="geosis-shot-stage-progress__header">
+                        <strong>Avance por etapa</strong>
+                        <span>Distribución y cierre de tareas por columna</span>
+                    </div>
+                    <div class="geosis-shot-stage-progress__list">
+                        <t t-foreach="gantt_stage_progress or []" t-as="stage_item">
+                            <t t-if="stage_item['total']">
+                                <article class="geosis-shot-stage-item">
+                                    <div class="geosis-shot-stage-item__top">
+                                        <strong><t t-esc="stage_item['name']"/></strong>
+                                        <span><t t-esc="stage_item['total']"/> tareas</span>
+                                    </div>
+                                    <div class="geosis-shot-stage-item__meta">
+                                        <span><t t-esc="'%.1f' % (stage_item['share_pct'] or 0.0)"/>% del proyecto</span>
+                                        <span><t t-esc="'%.1f' % (stage_item['completion_pct'] or 0.0)"/>% cerradas</span>
+                                    </div>
+                                    <div class="geosis-shot-stage-item__track">
+                                        <span t-attf-style="width: #{stage_item['completion_pct_clamped'] or 0.0}%;"/>
+                                    </div>
+                                </article>
+                            </t>
+                        </t>
+                    </div>
+                </div>
+            </section>
+        </xpath>
+    </template>
+
+    <template id="portal_my_tasks_restored_kpis" inherit_id="geosis_website.portal_my_tasks_restored" name="Tablero KPIs">
+        <xpath expr="//div[@class='geosis-shot-stats geosis-shot-stats--tasks']" position="replace">
+            <div class="geosis-shot-stats geosis-shot-stats--tasks geosis-shot-stats--tasks-kpi">
+                <article class="geosis-shot-stat is-blue">
+                    <div class="geosis-shot-stat__copy">
+                        <span>Cumplimiento</span>
+                        <strong><t t-esc="'%.1f' % (gantt_schedule_compliance_pct or 0.0)"/>%</strong>
+                    </div>
+                    <div class="geosis-shot-stat__icon"><i class="fa fa-line-chart"/></div>
+                </article>
+                <article class="geosis-shot-stat is-green">
+                    <div class="geosis-shot-stat__copy">
+                        <span>Tareas abiertas</span>
+                        <strong><t t-esc="gantt_open_count or 0"/></strong>
+                    </div>
+                    <div class="geosis-shot-stat__icon"><i class="fa fa-folder-open-o"/></div>
+                </article>
+                <article class="geosis-shot-stat is-red">
+                    <div class="geosis-shot-stat__copy">
+                        <span>Tareas terminadas</span>
+                        <strong><t t-esc="gantt_completed_count or 0"/></strong>
+                    </div>
+                    <div class="geosis-shot-stat__icon"><i class="fa fa-check-circle-o"/></div>
+                </article>
+                <article class="geosis-shot-stat is-violet">
+                    <div class="geosis-shot-stat__copy">
+                        <span>Tasa de vencimiento</span>
+                        <strong><t t-esc="'%.1f' % (gantt_overdue_rate_pct or 0.0)"/>%</strong>
+                    </div>
+                    <div class="geosis-shot-stat__icon"><i class="fa fa-warning"/></div>
+                </article>
+            </div>
+        </xpath>
+
+        <xpath expr="//section[div[@class='geosis-portal-kanban']]" position="before">
+            <section class="geosis-shot-panel geosis-shot-panel--kpi">
+                <div class="geosis-shot-panel__header">
+                    <h2><i class="fa fa-sliders"/> KPIs del tablero</h2>
+                </div>
+                <div class="geosis-shot-kpi-grid">
+                    <article class="geosis-shot-kpi-card">
+                        <span>Índice de atraso del proyecto</span>
+                        <strong><t t-esc="'%.1f' % (gantt_delay_index_pct or 0.0)"/>%</strong>
+                        <small><t t-esc="gantt_overdue_count or 0"/> tareas vencidas de <t t-esc="gantt_task_count or 0"/> totales</small>
+                    </article>
+                    <article class="geosis-shot-kpi-card">
+                        <span>Tareas críticas activas</span>
+                        <strong><t t-esc="gantt_critical_count or 0"/></strong>
+                        <small>Riesgos que afectan la ejecución inmediata</small>
+                    </article>
+                </div>
+                <div class="geosis-shot-stage-progress">
+                    <div class="geosis-shot-stage-progress__header">
+                        <strong>Avance por etapa</strong>
+                        <span>Concentración y cierre de tareas por columna</span>
+                    </div>
+                    <div class="geosis-shot-stage-progress__list">
+                        <t t-foreach="gantt_stage_progress or []" t-as="stage_item">
+                            <t t-if="stage_item['total']">
+                                <article class="geosis-shot-stage-item">
+                                    <div class="geosis-shot-stage-item__top">
+                                        <strong><t t-esc="stage_item['name']"/></strong>
+                                        <span><t t-esc="stage_item['total']"/> tareas</span>
+                                    </div>
+                                    <div class="geosis-shot-stage-item__meta">
+                                        <span><t t-esc="'%.1f' % (stage_item['share_pct'] or 0.0)"/>% del proyecto</span>
+                                        <span><t t-esc="'%.1f' % (stage_item['completion_pct'] or 0.0)"/>% cerradas</span>
+                                    </div>
+                                    <div class="geosis-shot-stage-item__track">
+                                        <span t-attf-style="width: #{stage_item['completion_pct_clamped'] or 0.0}%;"/>
+                                    </div>
+                                </article>
+                            </t>
+                        </t>
+                    </div>
+                </div>
+            </section>
+        </xpath>
     </template>
 </odoo>
 
