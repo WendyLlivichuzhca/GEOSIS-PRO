@@ -12,9 +12,10 @@ Permite recibir webhooks de Hotmart para activar y desactivar usuarios de portal
     'author': 'GEOSIS-PRO',
     'license': 'LGPL-3',
     'category': 'Extra Tools',
-    'depends': ['base', 'geosis_base'],
+    'depends': ['base', 'geosis_base', 'geosis_proyectos', 'geosis_presupuesto', 'geosis_website'],
     'data': [
         'security/ir.model.access.csv',
+        'data/ir_config_parameter_data.xml',
         'views/res_users_views.xml',
         'views/hotmart_log_views.xml',
     ],

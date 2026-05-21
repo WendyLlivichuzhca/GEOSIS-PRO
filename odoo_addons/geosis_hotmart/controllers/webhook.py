@@ -48,6 +48,10 @@ class HotmartWebhookController(http.Controller):
         subscription = data.get('subscription', {})
         sub_id = subscription.get('subscriber', {}).get('code') or transaction
 
+        # Obtener datos de producto y oferta
+        product_id = str(data.get('product', {}).get('id', ''))
+        offer_code = purchase.get('offer', {}).get('code') or ''
+
         if not email:
             return request.make_response(
                 json.dumps({'status': 'error', 'message': 'Email del comprador no encontrado en el payload'}),
@@ -68,19 +72,35 @@ class HotmartWebhookController(http.Controller):
             # Buscar el usuario. Importante usar active_test=False para incluir usuarios inactivos
             user = request.env['res.users'].sudo().with_context(active_test=False).search([('login', '=', email)], limit=1)
 
+            # Determinar el plan según el id de producto y código de oferta
+            param_product_id = request.env['ir.config_parameter'].sudo().get_param('geosis.hotmart_product_id', '')
+            offer_professional = request.env['ir.config_parameter'].sudo().get_param('geosis.hotmart_offer_professional', '')
+            offer_pyme = request.env['ir.config_parameter'].sudo().get_param('geosis.hotmart_offer_pyme', '')
+            offer_enterprise = request.env['ir.config_parameter'].sudo().get_param('geosis.hotmart_offer_enterprise', '')
+
+            plan = 'professional'  # Fallback por defecto
+            if product_id == param_product_id:
+                if offer_code == offer_professional:
+                    plan = 'professional'
+                elif offer_code == offer_pyme:
+                    plan = 'pyme'
+                elif offer_code == offer_enterprise:
+                    plan = 'enterprise'
+
             # --- CASO 1: COMPRA APROBADA (Activar o Crear Usuario Portal) ---
             if event == 'PURCHASE_APPROVED':
                 if user:
                     user.write({
                         'active': True,
                         'subscription_status': 'active',
+                        'subscription_plan': plan,
                         'hotmart_subscription_id': sub_id,
                         'hotmart_purchase_date': fields.Datetime.now()
                     })
                     # Asegurar que el partner relacionado esté activo
                     if user.partner_id and not user.partner_id.active:
                         user.partner_id.write({'active': True})
-                    _logger.info(f"Usuario existente activado correctamente por Hotmart: {email}")
+                    _logger.info(f"Usuario existente activado correctamente por Hotmart: {email} con plan {plan}")
                 else:
                     # Crear nuevo partner y asignarlo a grupo Portal
                     partner = request.env['res.partner'].sudo().search([('email', '=', email)], limit=1)
@@ -100,13 +120,14 @@ class HotmartWebhookController(http.Controller):
                         'partner_id': partner.id,
                         'active': True,
                         'subscription_status': 'active',
+                        'subscription_plan': plan,
                         'hotmart_subscription_id': sub_id,
                         'hotmart_purchase_date': fields.Datetime.now(),
                         'company_id': company_id,
                         'company_ids': [(6, 0, [company_id])],
                         'groups_id': [(6, 0, [portal_group.id])]
                     })
-                    _logger.info(f"Nuevo usuario portal creado para Hotmart: {email}")
+                    _logger.info(f"Nuevo usuario portal creado para Hotmart: {email} con plan {plan}")
                     
                     # Enviar correo de invitación / restablecimiento de contraseña
                     try:

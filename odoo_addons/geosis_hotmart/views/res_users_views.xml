@@ -10,6 +10,7 @@
                     <group>
                         <group string="Estado de la Suscripción">
                             <field name="subscription_status"/>
+                            <field name="subscription_plan"/>
                         </group>
                         <group string="Detalles de Hotmart">
                             <field name="hotmart_subscription_id" readonly="1"/>
