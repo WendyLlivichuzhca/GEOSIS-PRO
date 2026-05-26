@@ -138,6 +138,8 @@
     <!-- Menú (Simplificado para evitar errores de dependencia) -->
     <menuitem id="menu_geosis_bitacora_root" 
               name="Libro de Obra" 
+              parent="geosis_base.menu_geosis_root"
               action="action_geosis_bitacora" 
-              sequence="20"/>
+              sequence="25"
+              groups="geosis_base.group_geosis_admin,geosis_base.group_geosis_user,geosis_base.group_geosis_readonly"/>
 </odoo>

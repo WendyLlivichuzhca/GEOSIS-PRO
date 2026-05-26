@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Secuencia para Código de Avalúo -->
+    <record id="seq_geosis_avaluo" model="ir.sequence">
+        <field name="name">Secuencia de Avalúos</field>
+        <field name="code">geosis.avaluo</field>
+        <field name="prefix">AV-</field>
+        <field name="padding">5</field>
+        <field name="number_next">1</field>
+        <field name="number_increment">1</field>
+        <field name="company_id" eval="False"/>
+    </record>
+
+    <!-- Vista de Lista (Tree View) -->
+    <record id="view_geosis_avaluo_tree" model="ir.ui.view">
+        <field name="name">geosis.avaluo.tree</field>
+        <field name="model">geosis.avaluo</field>
+        <field name="arch" type="xml">
+            <tree string="Avalúos" decoration-info="state == 'draft'" decoration-warning="state == 'inspected'" decoration-success="state == 'approved'" decoration-danger="state == 'cancelled'">
+                <field name="name"/>
+                <field name="title"/>
+                <field name="owner_name"/>
+                <field name="partner_id"/>
+                <field name="inspector_id"/>
+                <field name="date"/>
+                <field name="total_value" sum="Total Avalúos"/>
+                <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-warning="state == 'inspected'" decoration-success="state == 'approved'" decoration-danger="state == 'cancelled'"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Vista de Formulario (Form View) -->
+    <record id="view_geosis_avaluo_form" model="ir.ui.view">
+        <field name="name">geosis.avaluo.form</field>
+        <field name="model">geosis.avaluo</field>
+        <field name="arch" type="xml">
+            <form string="Avalúo Inmobiliario">
+                <header>
+                    <button name="action_draft" string="Volver a Borrador" type="object" invisible="state != 'cancelled'" class="btn-secondary"/>
+                    <button name="action_inspected" string="Marcar como Inspeccionado" type="object" invisible="state != 'draft'" class="btn-primary"/>
+                    <button name="action_calculate" string="Calcular Depreciación y Totales" type="object" invisible="state != 'inspected'" class="btn-primary"/>
+                    <button name="action_approve" string="Aprobar Avalúo" type="object" invisible="state != 'calculated'" class="btn-success"/>
+                    <button name="action_cancel" string="Cancelar Avalúo" type="object" invisible="state in ['approved', 'cancelled']" class="btn-danger"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,inspected,calculated,approved"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                        <label for="title" class="oe_edit_only"/>
+                        <h2>
+                            <field name="title" placeholder="Ej: Residencia Familiar Urdesa Norte" readonly="state in ['approved', 'cancelled']"/>
+                        </h2>
+                    </div>
+                    <group>
+                        <group string="Información General">
+                            <field name="owner_name" readonly="state in ['approved', 'cancelled']"/>
+                            <field name="partner_id" readonly="state in ['approved', 'cancelled']"/>
+                            <field name="inspector_id" readonly="state in ['approved', 'cancelled']"/>
+                            <field name="date" readonly="state in ['approved', 'cancelled']"/>
+                        </group>
+                        <group string="Ubicación y Coordenadas">
+                            <field name="location" placeholder="Calle Nro y Av..." readonly="state in ['approved', 'cancelled']"/>
+                            <label for="latitude" string="Coordenadas GPS"/>
+                            <div class="o_row">
+                                <span>Lat:</span> <field name="latitude" readonly="state in ['approved', 'cancelled']"/>
+                                <span>Long:</span> <field name="longitude" readonly="state in ['approved', 'cancelled']"/>
+                            </div>
+                            <field name="company_id" groups="base.group_multi_company" readonly="state in ['approved', 'cancelled']"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <!-- Pestaña: Terreno -->
+                        <page string="Valoración del Terreno" name="tab_land">
+                            <group>
+                                <group string="Parámetros Físicos">
+                                    <field name="land_area" readonly="state in ['approved', 'cancelled']"/>
+                                    <field name="land_unit_value" readonly="state in ['approved', 'cancelled']"/>
+                                </group>
+                                <group string="Factores de Ajuste">
+                                    <field name="land_topography_factor" readonly="state in ['approved', 'cancelled']"/>
+                                    <field name="land_shape_factor" readonly="state in ['approved', 'cancelled']"/>
+                                </group>
+                            </group>
+                            <group class="oe_subtotal_footer oe_right">
+                                <field name="land_value" widget="monetary" readonly="1"/>
+                            </group>
+                        </page>
+
+                        <!-- Pestaña: Edificación (Ross-Heidecke) -->
+                        <page string="Valoración de la Construcción" name="tab_construction">
+                            <group>
+                                <group string="Reposición a Nuevo (CRN)">
+                                    <field name="apu_id" readonly="state in ['approved', 'cancelled']"/>
+                                    <field name="construction_area" readonly="state in ['approved', 'cancelled']"/>
+                                    <field name="construction_replacement_cost" readonly="state in ['approved', 'cancelled']"/>
+                                </group>
+                                <group string="Depreciación (Ross-Heidecke)">
+                                    <field name="construction_age" readonly="state in ['approved', 'cancelled']"/>
+                                    <field name="construction_life_expectancy" readonly="state in ['approved', 'cancelled']"/>
+                                    <field name="construction_state_coef" widget="radio" readonly="state in ['approved', 'cancelled']"/>
+                                </group>
+                            </group>
+                            <group class="oe_subtotal_footer oe_right">
+                                <field name="construction_depreciation_percent" readonly="1"/>
+                                <field name="construction_value" widget="monetary" readonly="1"/>
+                            </group>
+                        </page>
+
+                        <!-- Pestaña: Comparables de Mercado -->
+                        <page string="Comparables de Mercado" name="tab_comparables">
+                            <field name="comparable_ids" readonly="state in ['approved', 'cancelled']">
+                                <tree editable="bottom">
+                                    <field name="name"/>
+                                    <field name="area"/>
+                                    <field name="price"/>
+                                    <field name="price_m2"/>
+                                    <field name="distance_km"/>
+                                </tree>
+                            </field>
+                        </page>
+
+                        <!-- Pestaña: Registro Fotográfico -->
+                        <page string="Registro Fotográfico de Campo" name="tab_photos">
+                            <field name="photo_ids" readonly="state in ['approved', 'cancelled']">
+                                <kanban>
+                                    <field name="id"/>
+                                    <field name="name"/>
+                                    <field name="image"/>
+                                    <templates>
+                                        <t t-name="kanban-box">
+                                            <div class="oe_kanban_global_click" style="width: 150px; height: 180px; text-align: center;">
+                                                <div class="o_kanban_image">
+                                                    <img t-att-src="kanban_image('geosis.avaluo.photo', 'image', record.id.raw_value)" style="max-width: 100%; max-height: 100px; display: block; margin: 0 auto;"/>
+                                                </div>
+                                                <div class="oe_kanban_details" style="margin-top: 5px;">
+                                                    <strong><field name="name"/></strong>
+                                                    <div style="font-size: 0.8em; color: #666;">
+                                                        <field name="latitude"/><br/>
+                                                        <field name="longitude"/>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </t>
+                                    </templates>
+                                </kanban>
+                                <form>
+                                    <group>
+                                        <field name="name"/>
+                                        <field name="image" widget="image"/>
+                                        <field name="latitude"/>
+                                        <field name="longitude"/>
+                                    </group>
+                                </form>
+                            </field>
+                        </page>
+                    </notebook>
+
+                    <group class="oe_subtotal_footer oe_right">
+                        <field name="total_value" class="oe_subtotal_footer_separator" widget="monetary" readonly="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vista de Búsqueda (Search View) -->
+    <record id="view_geosis_avaluo_search" model="ir.ui.view">
+        <field name="name">geosis.avaluo.search</field>
+        <field name="model">geosis.avaluo</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Avalúos">
+                <field name="name"/>
+                <field name="title"/>
+                <field name="owner_name"/>
+                <field name="partner_id"/>
+                <field name="inspector_id"/>
+                <filter string="Borradores" name="draft" domain="[('state', '=', 'draft')]"/>
+                <filter string="Inspeccionados" name="inspected" domain="[('state', '=', 'inspected')]"/>
+                <filter string="Calculados" name="calculated" domain="[('state', '=', 'calculated')]"/>
+                <filter string="Aprobados" name="approved" domain="[('state', '=', 'approved')]"/>
+                <group expand="0" string="Agrupar por">
+                    <filter string="Cliente" name="group_partner" context="{'group_by': 'partner_id'}"/>
+                    <filter string="Perito Valuador" name="group_inspector" context="{'group_by': 'inspector_id'}"/>
+                    <filter string="Estado" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="Fecha" name="group_date" context="{'group_by': 'date'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Acción de Ventana -->
+    <record id="action_geosis_avaluo" model="ir.actions.act_window">
+        <field name="name">Avalúos</field>
+        <field name="res_model">geosis.avaluo</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_geosis_avaluo_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Crea tu primer avalúo comercial o catastral
+            </p>
+            <p>
+                Los avalúos permiten realizar inspecciones de campo e integrar el cálculo de depreciación física por Ross-Heidecke.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menús en Odoo -->
+    <menuitem id="menu_geosis_avaluo_list"
+              name="Avalúos"
+              parent="geosis_base.menu_geosis_root"
+              action="action_geosis_avaluo"
+              sequence="55"
+              groups="geosis_base.group_geosis_admin,geosis_base.group_geosis_user,geosis_base.group_geosis_readonly"/>
+
+</odoo>
