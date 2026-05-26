@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from datetime import date, timedelta
+from urllib.parse import quote
 
 from odoo import http, _, fields
 from odoo.http import request
@@ -166,6 +167,20 @@ class GeosisCustomerPortal(CustomerPortal):
 
         return Project
 
+    def _get_accessible_budget(self, budget_id):
+        Budget = request.env['geosis.budget'].sudo()
+        budget = Budget.browse(budget_id)
+        if not budget.exists() or not budget.project_id:
+            return Budget
+        return budget if self._get_accessible_project(budget.project_id.id) else Budget
+
+    def _get_accessible_estimation(self, estimation_id):
+        Estimation = request.env['geosis.estimation'].sudo()
+        estimation = Estimation.browse(estimation_id)
+        if not estimation.exists() or not estimation.project_id:
+            return Estimation
+        return estimation if self._get_accessible_project(estimation.project_id.id) else Estimation
+
     def _get_project_budget_context(self, project):
         budgets = project.budget_ids.sorted(
             key=lambda b: (
@@ -277,6 +292,70 @@ class GeosisCustomerPortal(CustomerPortal):
             or (partner and commercial_partner and partner.id == commercial_partner.id)
         )
 
+    def _is_portal_resident(self):
+        return request.env.user.has_group('geosis_base.group_geosis_portal_resident')
+
+    def _is_portal_supervisor(self):
+        return request.env.user.has_group('geosis_base.group_geosis_portal_supervisor')
+
+    def _is_portal_worker(self):
+        return self._is_portal_resident() or self._is_portal_supervisor()
+
+    def _can_manage_admin_portal(self):
+        return self._is_team_admin() and not self._is_portal_worker()
+
+    def _deny_portal_access(self):
+        return request.redirect('/geosis/dashboard?error=access_denied')
+
+    def _deny_json_access(self):
+        return {'success': False, 'error': 'No tienes permisos para realizar esta accion'}
+
+    def _task_assigned_to_current_user(self, task):
+        user = request.env.user
+        if 'user_ids' in task._fields:
+            return user in task.user_ids
+        if 'user_id' in task._fields:
+            return task.user_id.id == user.id
+        return False
+
+    def _assigned_task_domain(self):
+        Task = request.env['project.task']
+        user_id = request.env.user.id
+        has_user_ids = 'user_ids' in Task._fields
+        has_user_id = 'user_id' in Task._fields
+        if has_user_ids and has_user_id:
+            return ['|', ('user_ids', 'in', [user_id]), ('user_id', '=', user_id)]
+        if has_user_ids:
+            return [('user_ids', 'in', [user_id])]
+        if has_user_id:
+            return [('user_id', '=', user_id)]
+        return [('id', '=', 0)]
+
+    def _filter_tasks_for_current_role(self, tasks):
+        if self._is_portal_resident():
+            return tasks.filtered(lambda task: self._task_assigned_to_current_user(task))
+        return tasks
+
+    def _project_has_assigned_task(self, project):
+        if not self._is_portal_resident():
+            return True
+        _, _, odoo_projects = self._get_project_budget_context(project)
+        if not odoo_projects:
+            return False
+        return bool(request.env['project.task'].sudo().search_count(
+            [('project_id', 'in', odoo_projects.ids)] + self._assigned_task_domain()
+        ))
+
+    def _can_update_task_state(self, task):
+        return (
+            self._can_manage_admin_portal()
+            or self._is_portal_supervisor()
+            or (self._is_portal_resident() and self._task_assigned_to_current_user(task))
+        )
+
+    def _can_review_task(self):
+        return self._can_manage_admin_portal() or self._is_portal_supervisor()
+
     def _get_team_company_partner(self):
         return request.env.user.partner_id.commercial_partner_id
 
@@ -286,6 +365,8 @@ class GeosisCustomerPortal(CustomerPortal):
             request.env.ref('geosis_base.group_geosis_admin', raise_if_not_found=False),
             request.env.ref('geosis_base.group_geosis_user', raise_if_not_found=False),
             request.env.ref('geosis_base.group_geosis_readonly', raise_if_not_found=False),
+            request.env.ref('geosis_base.group_geosis_portal_resident', raise_if_not_found=False),
+            request.env.ref('geosis_base.group_geosis_portal_supervisor', raise_if_not_found=False),
         ]
         geosis_group_ids = [group.id for group in geosis_groups if group]
         domain = [
@@ -298,7 +379,10 @@ class GeosisCustomerPortal(CustomerPortal):
 
     def _get_team_users(self):
         User = request.env['res.users'].sudo().with_context(active_test=False)
-        return User.search(self._get_team_user_domain(), order='active desc, name asc, id asc')
+        users = User.search(self._get_team_user_domain(), order='active desc, name asc, id asc')
+        for user in users:
+            self._ensure_team_user_is_portal_only(user)
+        return users
 
     def _get_team_role_choices(self):
         return [
@@ -309,11 +393,67 @@ class GeosisCustomerPortal(CustomerPortal):
     def _get_user_team_role(self, user):
         if user.has_group('geosis_base.group_geosis_admin'):
             return 'Administrador'
+        if user.has_group('geosis_base.group_geosis_portal_resident'):
+            return 'Residente de Obra'
+        if user.has_group('geosis_base.group_geosis_portal_supervisor'):
+            return 'Fiscalizador / Supervisor'
         if user.has_group('geosis_base.group_geosis_user'):
             return 'Residente de Obra'
         if user.has_group('geosis_base.group_geosis_readonly'):
             return 'Fiscalizador / Supervisor'
         return 'Sin rol GEOSIS'
+
+    def _get_portal_team_group(self, role):
+        xmlid = (
+            'geosis_base.group_geosis_portal_resident'
+            if role == 'resident'
+            else 'geosis_base.group_geosis_portal_supervisor'
+        )
+        return request.env.ref(xmlid, raise_if_not_found=False)
+
+    def _get_portal_team_group_ids(self, role):
+        groups = [
+            request.env.ref('base.group_portal', raise_if_not_found=False),
+            self._get_portal_team_group(role),
+        ]
+        return [group.id for group in groups if group]
+
+    def _ensure_team_user_is_portal_only(self, user):
+        """Convert collaborators created by Mi Equipo before this fix to portal-only users."""
+        if not user or user.id == request.env.user.id:
+            return
+        if user.has_group('geosis_base.group_geosis_admin'):
+            return
+
+        role = False
+        if user.has_group('geosis_base.group_geosis_portal_resident'):
+            role = 'resident'
+        elif user.has_group('geosis_base.group_geosis_portal_supervisor'):
+            role = 'supervisor'
+        elif user.has_group('geosis_base.group_geosis_user'):
+            role = 'resident'
+        elif user.has_group('geosis_base.group_geosis_readonly'):
+            role = 'supervisor'
+
+        if not role:
+            return
+
+        remove_xmlids = [
+            'base.group_user',
+            'project.group_project_user',
+            'geosis_base.group_geosis_user',
+            'geosis_base.group_geosis_readonly',
+        ]
+        commands = []
+        for xmlid in remove_xmlids:
+            group = request.env.ref(xmlid, raise_if_not_found=False)
+            if group:
+                commands.append((3, group.id))
+        for group_id in self._get_portal_team_group_ids(role):
+            commands.append((4, group_id))
+        if commands:
+            user.sudo().write({'groups_id': commands})
+            user.invalidate_recordset(['groups_id'])
 
     def _prepare_team_member_values(self, user):
         partner = user.partner_id
@@ -391,8 +531,10 @@ class GeosisCustomerPortal(CustomerPortal):
         month_start = today.replace(day=1)
         month_end = (month_start + timedelta(days=32)).replace(day=1) - timedelta(days=1)
 
-        latest_projects = Project.search(partner_domain, limit=5, order='write_date desc')
         all_client_projects = Project.search(partner_domain)
+        if self._is_portal_resident():
+            all_client_projects = all_client_projects.filtered(lambda project: self._project_has_assigned_task(project))
+        latest_projects = all_client_projects[:5]
         all_budgets = request.env['geosis.budget'].sudo().search([('project_id', 'in', all_client_projects.ids)])
         all_odoo_projects = all_budgets.mapped('odoo_project_id').filtered(lambda project: project.exists())
 
@@ -423,7 +565,11 @@ class GeosisCustomerPortal(CustomerPortal):
         ))
         completed_project_count = len(all_client_projects.filtered(lambda project: project.state == 'completed'))
 
-        open_task_domain = [('project_id', 'in', all_odoo_projects.ids)] + self._get_open_task_domain()
+        base_task_domain = [('project_id', 'in', all_odoo_projects.ids)]
+        if self._is_portal_resident():
+            base_task_domain += self._assigned_task_domain()
+
+        open_task_domain = base_task_domain + self._get_open_task_domain()
         critical_task_domain = open_task_domain + [('is_critical', '=', True)]
         critical_tasks = Task.search(
             critical_task_domain,
@@ -439,6 +585,8 @@ class GeosisCustomerPortal(CustomerPortal):
             ('date', '>=', month_start),
             ('date', '<=', month_end),
         ])
+        if self._is_portal_resident():
+            month_bitacoras = month_bitacoras.filtered(lambda bitacora: bitacora.user_id.id == request.env.user.id)
         approved_bitacora_count = len(month_bitacoras.filtered(lambda bitacora: bitacora.state == 'approved'))
         month_bitacora_count = len(month_bitacoras)
         bitacora_approval_rate = (approved_bitacora_count / month_bitacora_count * 100.0) if month_bitacora_count else 0.0
@@ -459,8 +607,9 @@ class GeosisCustomerPortal(CustomerPortal):
         }
 
         values = {
-            'project_count': Project.search_count(partner_domain),
-            'active_project_count': Project.search_count([*partner_domain, ('state', '=', 'active')]),
+            'is_resident_dashboard': self._is_portal_resident(),
+            'project_count': len(all_client_projects),
+            'active_project_count': len(all_client_projects.filtered(lambda project: project.state == 'active')),
             'completed_project_count': completed_project_count,
             'delayed_project_count': delayed_project_count,
             'apu_count': Apu.search_count([('active', '=', True)]),
@@ -521,6 +670,9 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/projects', '/my/projects/page/<int:page>'], type='http', auth="user", website=True)
     def portal_my_projects(self, page=1, search=None, state='all', sort_by='date', **kw):
+        if self._is_portal_resident():
+            return self._deny_portal_access()
+
         values = self._prepare_portal_layout_values()
         Project = request.env['geosis.project'].sudo()
         domain = self._partner_domain()
@@ -572,6 +724,8 @@ class GeosisCustomerPortal(CustomerPortal):
         
         project_ids = request.env['geosis.project'].sudo().search(domain).ids
         bitacora_domain = [('project_id', 'in', project_ids)]
+        if self._is_portal_resident():
+            bitacora_domain.append(('user_id', '=', request.env.user.id))
 
         if search:
             bitacora_domain += ['|', '|', 
@@ -597,7 +751,7 @@ class GeosisCustomerPortal(CustomerPortal):
         bitacoras = Bitacora.search(bitacora_domain, order=order, limit=10, offset=pager['offset'])
 
         # Calcular métricas para el Dashboard superior
-        all_bitacoras = Bitacora.search([('project_id', 'in', project_ids)])
+        all_bitacoras = Bitacora.search(bitacora_domain)
         total_days = len(all_bitacoras)
         approved_count = len(all_bitacoras.filtered(lambda b: b.state == 'approved'))
         rainy_days = len(all_bitacoras.filtered(lambda b: b.weather in ('rainy', 'storm')))
@@ -632,9 +786,13 @@ class GeosisCustomerPortal(CustomerPortal):
         project_ids = request.env['geosis.project'].sudo().search(domain).ids
         if bitacora.project_id.id not in project_ids:
             return request.redirect('/my/bitacoras')
+        if self._is_portal_resident() and bitacora.user_id.id != request.env.user.id:
+            return request.redirect('/my/bitacoras')
 
         # Procesar Guardado e Instrucciones del Fiscalizador
         if request.httprequest.method == 'POST':
+            if not self._can_review_task():
+                return self._deny_portal_access()
             vals = {}
             if 'inspector_instructions' in kw:
                 vals['inspector_instructions'] = kw.get('inspector_instructions')
@@ -668,6 +826,8 @@ class GeosisCustomerPortal(CustomerPortal):
         project_ids = request.env['geosis.project'].sudo().search(domain).ids
         if bitacora.project_id.id not in project_ids:
             return request.redirect('/my/bitacoras')
+        if self._is_portal_resident() and bitacora.user_id.id != request.env.user.id:
+            return request.redirect('/my/bitacoras')
 
         # Generar el PDF oficial del libro de obra con el motor QWeb PDF
         pdf_content, content_type = request.env['ir.actions.report'].sudo()._render_qweb_pdf(
@@ -689,6 +849,8 @@ class GeosisCustomerPortal(CustomerPortal):
             self._partner_domain(),
             order='write_date desc, id desc',
         )
+        if self._is_portal_resident():
+            projects = projects.filtered(lambda project: self._project_has_assigned_task(project))
         selected_project = Project.browse()
 
         if project_id:
@@ -717,8 +879,11 @@ class GeosisCustomerPortal(CustomerPortal):
             budgets, _, odoo_projects = self._get_project_budget_context(selected_project)
             selected_odoo_project = budgets.mapped('odoo_project_id')[:1]
             if odoo_projects:
+                task_domain = [('project_id', 'in', odoo_projects.ids)]
+                if self._is_portal_resident():
+                    task_domain += self._assigned_task_domain()
                 project_tasks = Task.search(
-                    [('project_id', 'in', odoo_projects.ids)],
+                    task_domain,
                     order='priority desc, planned_date_start asc, date_deadline asc, id asc',
                 )
                 tasks_with_gantt = self._build_tasks_with_gantt(project_tasks)
@@ -887,6 +1052,8 @@ class GeosisCustomerPortal(CustomerPortal):
         
         if not self._check_task_access(task):
             return {'success': False, 'error': 'Acceso no permitido'}
+        if not self._can_review_task():
+            return self._deny_json_access()
         
         new_priority = '1' if task.priority == '0' else '0'
         task.write({'priority': new_priority})
@@ -900,6 +1067,8 @@ class GeosisCustomerPortal(CustomerPortal):
         
         if not self._check_task_access(task):
             return {'success': False, 'error': 'Acceso no permitido'}
+        if not self._can_update_task_state(task):
+            return self._deny_json_access()
         
         vals = {}
         if 'state' in task._fields:
@@ -927,6 +1096,8 @@ class GeosisCustomerPortal(CustomerPortal):
         
         if not self._check_task_access(task):
             return {'success': False, 'error': 'Acceso no permitido'}
+        if not self._can_manage_admin_portal():
+            return self._deny_json_access()
         
         vals = {}
         if user_id:
@@ -954,6 +1125,8 @@ class GeosisCustomerPortal(CustomerPortal):
         
         if not self._check_task_access(task):
             return {'success': False, 'error': 'Acceso no permitido'}
+        if not self._can_manage_admin_portal():
+            return self._deny_json_access()
         
         if stage_id:
             stage = request.env['project.task.type'].sudo().browse(int(stage_id))
@@ -973,6 +1146,8 @@ class GeosisCustomerPortal(CustomerPortal):
         
         if not self._check_task_access(task):
             return {'success': False, 'error': 'Acceso no permitido'}
+        if not self._can_manage_admin_portal():
+            return self._deny_json_access()
             
         vals = {}
         if 'planned_date_start' in task._fields:
@@ -994,6 +1169,8 @@ class GeosisCustomerPortal(CustomerPortal):
         return {'success': False, 'error': 'No hay campos de fecha modificables'}
 
     def _check_task_access(self, task):
+        if self._is_portal_resident() and not self._task_assigned_to_current_user(task):
+            return False
         Project = request.env['geosis.project'].sudo()
         projects = Project.search(self._partner_domain())
         all_odoo_project_ids = []
@@ -1006,6 +1183,8 @@ class GeosisCustomerPortal(CustomerPortal):
     def _check_project_access(self, project_id):
         Project = request.env['geosis.project'].sudo()
         projects = Project.search(self._partner_domain())
+        if self._is_portal_resident():
+            projects = projects.filtered(lambda project: self._project_has_assigned_task(project))
         all_odoo_project_ids = []
         for p in projects:
             budgets, _, odoo_projects = self._get_project_budget_context(p)
@@ -1015,6 +1194,9 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/project/<int:project_id>/add_stage'], type='json', auth="user", methods=['POST'])
     def portal_project_add_stage(self, project_id, name, **kw):
+        if not self._can_manage_admin_portal():
+            return self._deny_json_access()
+
         if not self._check_project_access(project_id):
             return {'success': False, 'error': 'Acceso no permitido'}
         
@@ -1035,7 +1217,7 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/team'], type='http', auth="user", website=True)
     def portal_my_team(self, **kw):
-        if not self._is_team_admin():
+        if not self._can_manage_admin_portal():
             return request.redirect('/geosis/dashboard')
 
         company_partner = self._get_team_company_partner()
@@ -1063,7 +1245,7 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/team/create'], type='http', auth="user", website=True, methods=['POST'])
     def portal_my_team_create(self, **kw):
-        if not self._is_team_admin():
+        if not self._can_manage_admin_portal():
             return request.redirect('/geosis/dashboard')
 
         name = (kw.get('name') or '').strip()
@@ -1089,13 +1271,7 @@ class GeosisCustomerPortal(CustomerPortal):
         }
         partner = request.env['res.partner'].sudo().create(partner_vals)
 
-        geosis_role_group = request.env.ref(
-            'geosis_base.group_geosis_user' if role == 'resident' else 'geosis_base.group_geosis_readonly',
-            raise_if_not_found=False,
-        )
-        base_user_group = request.env.ref('base.group_user', raise_if_not_found=False)
-        project_user_group = request.env.ref('project.group_project_user', raise_if_not_found=False)
-        group_ids = [group.id for group in [base_user_group, geosis_role_group, project_user_group] if group]
+        group_ids = self._get_portal_team_group_ids(role)
 
         user = User.create({
             'name': name,
@@ -1105,12 +1281,41 @@ class GeosisCustomerPortal(CustomerPortal):
             'groups_id': [(6, 0, group_ids)],
             'active': True,
         })
-        user.action_reset_password()
-        return request.redirect('/my/team?success=created')
+        try:
+            user.action_reset_password()
+            return request.redirect('/my/team?success=created')
+        except Exception as exc:
+            message = (
+                "El colaborador se creó, pero Odoo no pudo enviar la invitación. "
+                "Revisa el servidor de correo saliente y usa Reenviar invitación. "
+                f"Detalle: {exc}"
+            )
+            return request.redirect('/my/team?error_message=%s' % quote(message))
+
+    @http.route(['/my/team/resend-invite/<int:user_id>'], type='http', auth="user", website=True, methods=['POST'])
+    def portal_my_team_resend_invite(self, user_id, **kw):
+        if not self._can_manage_admin_portal():
+            return request.redirect('/geosis/dashboard')
+
+        user = request.env['res.users'].sudo().with_context(active_test=False).browse(user_id)
+        company_partner = self._get_team_company_partner()
+        if not user.exists() or user.partner_id.commercial_partner_id.id != company_partner.id:
+            return request.redirect('/my/team?error_message=No tienes permisos para reenviar esta invitación.')
+
+        try:
+            user.action_reset_password()
+            return request.redirect('/my/team?success=invite_resent')
+        except Exception as exc:
+            message = (
+                "No se pudo reenviar la invitación. "
+                "Revisa el servidor de correo saliente de Odoo. "
+                f"Detalle: {exc}"
+            )
+            return request.redirect('/my/team?error_message=%s' % quote(message))
 
     @http.route(['/my/team/toggle-active/<int:user_id>'], type='http', auth="user", website=True, methods=['POST'])
     def portal_my_team_toggle_active(self, user_id, **kw):
-        if not self._is_team_admin():
+        if not self._can_manage_admin_portal():
             return request.redirect('/geosis/dashboard')
 
         user = request.env['res.users'].sudo().with_context(active_test=False).browse(user_id)
@@ -1129,6 +1334,9 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/projects/new'], type='http', auth="user", website=True, methods=['GET', 'POST'])
     def portal_my_project_new(self, **kw):
+        if not self._can_manage_admin_portal():
+            return self._deny_portal_access()
+
         values = {
             'page_name': 'project',
             'form_mode': 'create',
@@ -1168,6 +1376,9 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/project/<int:project_id>/edit'], type='http', auth="user", website=True, methods=['GET', 'POST'])
     def portal_my_project_edit(self, project_id, **kw):
+        if not self._can_manage_admin_portal():
+            return self._deny_portal_access()
+
         project = self._get_accessible_project(project_id)
         if not project:
             return request.redirect('/my/projects?error=project_access')
@@ -1215,6 +1426,9 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/project/<int:project_id>'], type='http', auth="user", website=True)
     def portal_my_project_detail(self, project_id, **kw):
+        if self._is_portal_resident():
+            return self._deny_portal_access()
+
         project = self._get_accessible_project(project_id)
         if not project:
             return request.redirect('/my/projects?error=project_access')
@@ -1280,6 +1494,9 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/project/<int:project_id>/update-metadata'], type='http', auth="user", website=True, methods=['POST'])
     def portal_my_project_update_metadata(self, project_id, **kw):
+        if not self._can_manage_admin_portal():
+            return self._deny_portal_access()
+
         project = request.env['geosis.project'].sudo().browse(project_id)
         if project.exists():
             try:
@@ -1297,6 +1514,9 @@ class GeosisCustomerPortal(CustomerPortal):
         
     @http.route(['/my/project/<int:project_id>/budget/new'], type='http', auth="user", website=True, methods=['POST'])
     def portal_my_project_budget_new(self, project_id, **kw):
+        if not self._can_manage_admin_portal():
+            return self._deny_portal_access()
+
         project = self._get_accessible_project(project_id)
         if not project:
             return request.redirect('/my/projects?error=project_access')
@@ -1314,6 +1534,9 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/budgets', '/my/budgets/page/<int:page>'], type='http', auth="user", website=True)
     def portal_my_budgets(self, page=1, search=None, state='all', sort_by='date', **kw):
+        if self._is_portal_resident():
+            return self._deny_portal_access()
+
         values = self._prepare_portal_layout_values()
         Budget = request.env['geosis.budget'].sudo()
         
@@ -1364,7 +1587,10 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/budgets/<int:budget_id>'], type='http', auth="user", website=True)
     def portal_my_budget_detail(self, budget_id, **kw):
-        budget = request.env['geosis.budget'].sudo().browse(budget_id)
+        if self._is_portal_resident():
+            return self._deny_portal_access()
+
+        budget = self._get_accessible_budget(budget_id)
         if not budget.exists():
             return request.redirect('/my/projects')
 
@@ -1396,7 +1622,10 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/budget/<int:budget_id>/update-metadata'], type='http', auth="user", website=True, methods=['POST'])
     def portal_my_budget_update_metadata(self, budget_id, **kw):
-        budget = request.env['geosis.budget'].sudo().browse(budget_id)
+        if not self._can_manage_admin_portal():
+            return self._deny_portal_access()
+
+        budget = self._get_accessible_budget(budget_id)
         if budget.exists():
             try:
                 vals = {
@@ -1421,6 +1650,13 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/budget/<int:budget_id>/line/<int:line_id>/update'], type='http', auth="user", website=True, methods=['POST'])
     def portal_my_budget_line_update(self, budget_id, line_id, **kw):
+        if not self._can_manage_admin_portal():
+            return self._deny_portal_access()
+
+        budget = self._get_accessible_budget(budget_id)
+        if not budget.exists():
+            return request.redirect('/my/projects')
+
         line = request.env['geosis.budget.line'].sudo().browse(line_id)
         if line.exists() and line.budget_id.id == budget_id:
             try:
@@ -1439,6 +1675,13 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/budget/<int:budget_id>/line/<int:line_id>/update-ajax'], type='http', auth="user", website=True, methods=['POST'])
     def portal_my_budget_line_update_ajax(self, budget_id, line_id, **kw):
+        if not self._can_manage_admin_portal():
+            return request.make_json_response({'ok': False, 'message': 'No tienes permisos'}, status=403)
+
+        budget = self._get_accessible_budget(budget_id)
+        if not budget.exists():
+            return request.make_json_response({'ok': False, 'message': 'Presupuesto no encontrado'}, status=404)
+
         line = request.env['geosis.budget.line'].sudo().browse(line_id)
         if not line.exists() or line.budget_id.id != budget_id:
             return request.make_json_response({'ok': False, 'message': 'Linea no encontrada'}, status=404)
@@ -1470,7 +1713,10 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/budget/<int:budget_id>/line/add'], type='http', auth="user", website=True, methods=['POST'])
     def portal_my_budget_line_add(self, budget_id, **kw):
-        budget = request.env['geosis.budget'].sudo().browse(budget_id)
+        if not self._can_manage_admin_portal():
+            return self._deny_portal_access()
+
+        budget = self._get_accessible_budget(budget_id)
         if budget.exists() and kw.get('apu_id'):
             apu = request.env['geosis.apu'].sudo().browse(int(kw.get('apu_id')))
             request.env['geosis.budget.line'].sudo().create({
@@ -1487,6 +1733,13 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/budget/<int:budget_id>/line/<int:line_id>/delete'], type='http', auth="user", website=True, methods=['POST'])
     def portal_my_budget_line_delete(self, budget_id, line_id, **kw):
+        if not self._can_manage_admin_portal():
+            return self._deny_portal_access()
+
+        budget = self._get_accessible_budget(budget_id)
+        if not budget.exists():
+            return request.redirect('/my/projects')
+
         line = request.env['geosis.budget.line'].sudo().browse(line_id)
         if line.exists() and line.budget_id.id == budget_id:
             line.sudo().unlink()
@@ -1494,7 +1747,10 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/budgets/<int:budget_id>/create-odoo-project'], type='http', auth="user", website=True, methods=['POST'])
     def portal_my_budget_create_odoo_project(self, budget_id, **kw):
-        budget = request.env['geosis.budget'].sudo().browse(budget_id)
+        if not self._can_manage_admin_portal():
+            return self._deny_portal_access()
+
+        budget = self._get_accessible_budget(budget_id)
         if not budget.exists():
             return request.redirect('/my/projects')
         project_vals = {
@@ -1508,7 +1764,10 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/budgets/<int:budget_id>/chapter/create'], type='http', auth="user", website=True, methods=['POST'])
     def portal_my_budget_chapter_create(self, budget_id, **kw):
-        budget = request.env['geosis.budget'].sudo().browse(budget_id)
+        if not self._can_manage_admin_portal():
+            return self._deny_portal_access()
+
+        budget = self._get_accessible_budget(budget_id)
         if budget.exists() and kw.get('name'):
             request.env['geosis.budget.chapter'].sudo().create({
                 'budget_id': budget.id,
@@ -1519,6 +1778,13 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/budgets/<int:budget_id>/line/<int:line_id>/move'], type='http', auth="user", website=True, methods=['POST'])
     def portal_my_budget_line_move_chapter(self, budget_id, line_id, **kw):
+        if not self._can_manage_admin_portal():
+            return self._deny_portal_access()
+
+        budget = self._get_accessible_budget(budget_id)
+        if not budget.exists():
+            return request.redirect('/my/projects')
+
         line = request.env['geosis.budget.line'].sudo().browse(line_id)
         if line.exists() and line.budget_id.id == budget_id:
             line.write({'chapter_id': int(kw.get('chapter_id')) if kw.get('chapter_id') else False})
@@ -1526,6 +1792,9 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/projects/<int:project_id>/task/<int:task_id>/predecessor'], type='http', auth="user", website=True, methods=['POST'])
     def portal_my_project_task_update_predecessor(self, project_id, task_id, **kw):
+        if not self._can_manage_admin_portal():
+            return self._deny_portal_access()
+
         project = self._get_accessible_project(project_id)
         if not project:
             return request.redirect('/my/projects')
@@ -1544,7 +1813,10 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/budgets/<int:budget_id>/duplicate'], type='http', auth="user", website=True, methods=['POST'])
     def portal_my_budget_duplicate(self, budget_id, **kw):
-        budget = request.env['geosis.budget'].sudo().browse(budget_id)
+        if not self._can_manage_admin_portal():
+            return self._deny_portal_access()
+
+        budget = self._get_accessible_budget(budget_id)
         if budget.exists():
             new_budget = budget.copy({
                 'name': _("%s (Copia)") % budget.name,
@@ -1556,6 +1828,9 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/rubro/<int:apu_id>/duplicate'], type='http', auth="user", website=True, methods=['POST'])
     def portal_my_rubro_duplicate(self, apu_id, **kw):
+        if not self._can_manage_admin_portal():
+            return self._deny_portal_access()
+
         apu = request.env['geosis.apu'].sudo().browse(apu_id)
         if apu.exists():
             new_apu = apu.copy({
@@ -1567,7 +1842,10 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/budgets/<int:budget_id>/generate-schedule'], type='http', auth="user", website=True, methods=['POST'])
     def portal_my_budget_generate_schedule(self, budget_id, **kw):
-        budget = request.env['geosis.budget'].sudo().browse(budget_id)
+        if not self._can_manage_admin_portal():
+            return self._deny_portal_access()
+
+        budget = self._get_accessible_budget(budget_id)
         if not budget.exists():
             return request.redirect('/my/projects')
         try:
@@ -1589,7 +1867,10 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/budgets/<int:budget_id>/pdf'], type='http', auth="user", website=True)
     def portal_my_budget_report_pdf(self, budget_id, **kw):
-        budget = request.env['geosis.budget'].sudo().browse(budget_id)
+        if self._is_portal_resident():
+            return self._deny_portal_access()
+
+        budget = self._get_accessible_budget(budget_id)
         if not budget.exists():
             return request.redirect('/my/projects')
         
@@ -1614,6 +1895,9 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/rubro/<int:apu_id>/pdf', '/my/rubros/<int:apu_id>/pdf'], type='http', auth="user", website=True)
     def portal_my_rubro_pdf(self, apu_id, **kw):
+        if self._is_portal_resident():
+            return self._deny_portal_access()
+
         apu = request.env['geosis.apu'].sudo().browse(apu_id)
         if not apu.exists():
             return request.redirect('/my/rubros')
@@ -1631,13 +1915,23 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/budgets/<int:budget_id>/approve'], type='http', auth="user", website=True, methods=['POST'])
     def portal_my_budget_approve(self, budget_id, **kw):
-        budget = request.env['geosis.budget'].sudo().browse(budget_id)
+        if not self._can_manage_admin_portal():
+            return self._deny_portal_access()
+
+        budget = self._get_accessible_budget(budget_id)
         if budget.exists() and budget.state == 'draft':
             budget.sudo().write({'state': 'approved'})
         return request.redirect('/my/budgets/%s?success=approved' % budget_id)
 
     @http.route(['/my/budgets/<int:budget_id>/chapter/<int:chapter_id>/delete'], type='http', auth="user", website=True, methods=['POST'])
     def portal_my_budget_chapter_delete(self, budget_id, chapter_id, **kw):
+        if not self._can_manage_admin_portal():
+            return self._deny_portal_access()
+
+        budget = self._get_accessible_budget(budget_id)
+        if not budget.exists():
+            return request.redirect('/my/projects')
+
         chapter = request.env['geosis.budget.chapter'].sudo().browse(chapter_id)
         if chapter.exists() and chapter.budget_id.id == budget_id:
             chapter.sudo().unlink()
@@ -1645,7 +1939,10 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/budgets/<int:budget_id>/calculate-polynomial'], type='http', auth="user", website=True, methods=['POST'])
     def portal_my_budget_calculate_polynomial(self, budget_id, **kw):
-        budget = request.env['geosis.budget'].sudo().browse(budget_id)
+        if not self._can_manage_admin_portal():
+            return self._deny_portal_access()
+
+        budget = self._get_accessible_budget(budget_id)
         if not budget.exists():
             return request.redirect('/my/projects')
         try:
@@ -1656,7 +1953,10 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/budgets/<int:budget_id>/msproject'], type='http', auth="user", website=True)
     def portal_my_budget_msproject(self, budget_id, **kw):
-        budget = request.env['geosis.budget'].sudo().browse(budget_id)
+        if not self._can_manage_admin_portal():
+            return self._deny_portal_access()
+
+        budget = self._get_accessible_budget(budget_id)
         if not budget.exists():
             return request.redirect('/my/budgets')
         wizard = request.env['geosis.budget.export.msproject'].sudo().create({'budget_id': budget.id})
@@ -1670,6 +1970,9 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/rubro/<int:apu_id>/line/<int:line_id>/update'], type='http', auth="user", website=True, methods=['POST'])
     def portal_my_rubro_line_update(self, apu_id, line_id, **kw):
+        if not self._can_manage_admin_portal():
+            return self._deny_portal_access()
+
         line = request.env['geosis.apu.line'].sudo().browse(line_id)
         if line.exists() and line.apu_id.id == apu_id:
             line.write({
@@ -1684,6 +1987,9 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/rubros', '/my/rubros/page/<int:page>'], type='http', auth="user", website=True)
     def portal_my_rubros(self, page=1, search=None, active='active', sort_by='name', location='all', **kw):
+        if self._is_portal_resident():
+            return self._deny_portal_access()
+
         Apu = request.env['geosis.apu'].sudo()
         domain = []
         if search:
@@ -1738,6 +2044,9 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/rubro/<int:apu_id>'], type='http', auth="user", website=True)
     def portal_my_rubro_detail(self, apu_id, **kw):
+        if self._is_portal_resident():
+            return self._deny_portal_access()
+
         apu = request.env['geosis.apu'].sudo().browse(apu_id)
         if not apu.exists():
             return request.redirect('/my/rubros')
@@ -1779,6 +2088,9 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/rubro/<int:apu_id>/edit'], type='http', auth="user", website=True, methods=['GET', 'POST'])
     def portal_my_rubro_edit(self, apu_id, **kw):
+        if not self._can_manage_admin_portal():
+            return self._deny_portal_access()
+
         apu = request.env['geosis.apu'].sudo().browse(apu_id)
         if not apu.exists():
             return request.redirect('/my/rubros')
@@ -1808,6 +2120,9 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/rubros/new'], type='http', auth="user", website=True, methods=['GET', 'POST'])
     def portal_my_rubro_new(self, **kw):
+        if not self._can_manage_admin_portal():
+            return self._deny_portal_access()
+
         values = {
             'apu': None,
             'page_name': 'rubro',
@@ -1834,6 +2149,9 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/rubro/<int:apu_id>/delete'], type='http', auth="user", website=True, methods=['POST'])
     def portal_my_rubro_delete(self, apu_id, **kw):
+        if not self._can_manage_admin_portal():
+            return self._deny_portal_access()
+
         apu = request.env['geosis.apu'].sudo().browse(apu_id)
         if apu.exists():
             apu.sudo().unlink()
@@ -1841,6 +2159,9 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/rubro/resource/add', '/my/rubro/<int:apu_id>/add-resource'], type='http', auth="user", website=True, methods=['POST'])
     def portal_my_rubro_resource_add(self, apu_id=None, **kw):
+        if not self._can_manage_admin_portal():
+            return self._deny_portal_access()
+
         apu_id = apu_id or int(kw.get('apu_id'))
         apu = request.env['geosis.apu'].sudo().browse(apu_id)
         if not apu.exists():
@@ -1879,6 +2200,9 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/rubro/line/<int:line_id>/delete', '/my/rubro/<int:apu_id>/line/<int:line_id>/delete'], type='http', auth="user", website=True, methods=['POST'])
     def portal_my_rubro_line_delete(self, line_id, apu_id=None, **kw):
+        if not self._can_manage_admin_portal():
+            return self._deny_portal_access()
+
         line = request.env['geosis.apu.line'].sudo().browse(line_id)
         if line.exists():
             apu_id = line.apu_id.id
@@ -1887,6 +2211,9 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/rubro/<int:apu_id>/generate-ia'], type='http', auth="user", website=True, methods=['POST'])
     def portal_my_rubro_generate_ia(self, apu_id, **kw):
+        if not self._can_manage_admin_portal():
+            return self._deny_portal_access()
+
         apu = request.env['geosis.apu'].sudo().browse(apu_id)
         if apu.exists():
             apu.sudo().action_generate_with_ia()
@@ -1894,6 +2221,9 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/rubro/<int:apu_id>/update-indirects'], type='http', auth="user", website=True, methods=['POST'])
     def portal_my_rubro_update_indirects(self, apu_id, **kw):
+        if not self._can_manage_admin_portal():
+            return self._deny_portal_access()
+
         apu = request.env['geosis.apu'].sudo().browse(apu_id)
         if apu.exists():
             try:
@@ -1905,6 +2235,9 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/import-excel'], type='http', auth="user", website=True, methods=['GET', 'POST'])
     def portal_my_import_excel(self, **kw):
+        if not self._can_manage_admin_portal():
+            return self._deny_portal_access()
+
         values = {
             'page_name': 'import',
             'form_data': kw or {},
@@ -1958,6 +2291,9 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/resources', '/my/resources/page/<int:page>'], type='http', auth="user", website=True)
     def portal_my_resources(self, page=1, search=None, category='all', sort_by='name', location='all', **kw):
+        if self._is_portal_resident():
+            return self._deny_portal_access()
+
         Resource = request.env['geosis.resource'].sudo()
 
         domain = [('active', '=', True)]
@@ -2027,6 +2363,9 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/resources/new'], type='http', auth="user", website=True, methods=['GET', 'POST'])
     def portal_my_resource_new(self, **kw):
+        if not self._can_manage_admin_portal():
+            return self._deny_portal_access()
+
         Resource = request.env['geosis.resource'].sudo()
         Uom = request.env['uom.uom'].sudo()
         Inec = request.env['geosis.inec.index'].sudo()
@@ -2075,6 +2414,9 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/resources/<int:resource_id>'], type='http', auth="user", website=True)
     def portal_my_resource_detail(self, resource_id, **kw):
+        if self._is_portal_resident():
+            return self._deny_portal_access()
+
         resource = request.env['geosis.resource'].sudo().browse(resource_id)
         if not resource.exists():
             return request.redirect('/my/resources')
@@ -2093,6 +2435,9 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/resources/<int:resource_id>/edit'], type='http', auth="user", website=True, methods=['GET', 'POST'])
     def portal_my_resource_edit(self, resource_id, **kw):
+        if not self._can_manage_admin_portal():
+            return self._deny_portal_access()
+
         resource = request.env['geosis.resource'].sudo().browse(resource_id)
         if not resource.exists():
             return request.redirect('/my/resources')
@@ -2146,6 +2491,9 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/resources/<int:resource_id>/update-price'], type='http', auth="user", website=True, methods=['POST'])
     def portal_my_resource_update_price(self, resource_id, **kw):
+        if not self._can_manage_admin_portal():
+            return self._deny_portal_access()
+
         resource = request.env['geosis.resource'].sudo().browse(resource_id)
         if resource.exists():
             try:
@@ -2161,6 +2509,9 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/inec-indices', '/my/inec-indices/page/<int:page>'], type='http', auth="user", website=True)
     def portal_my_inec_indices(self, page=1, search=None, status='active', sort_by='code', **kw):
+        if self._is_portal_resident():
+            return self._deny_portal_access()
+
         Index = request.env['geosis.inec.index'].sudo()
         Value = request.env['geosis.inec.index.value'].sudo()
 
@@ -2207,6 +2558,9 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/inec-indices/new'], type='http', auth="user", website=True, methods=['GET', 'POST'])
     def portal_my_inec_index_new(self, **kw):
+        if not self._can_manage_admin_portal():
+            return self._deny_portal_access()
+
         if request.httprequest.method == 'POST':
             try:
                 index_record = request.env['geosis.inec.index'].sudo().create({
@@ -2236,6 +2590,9 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/inec-indices/<int:index_id>'], type='http', auth="user", website=True)
     def portal_my_inec_index_detail(self, index_id, **kw):
+        if self._is_portal_resident():
+            return self._deny_portal_access()
+
         index_record = request.env['geosis.inec.index'].sudo().browse(index_id)
         if not index_record.exists():
             return request.redirect('/my/inec-indices')
@@ -2253,6 +2610,9 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/inec-indices/<int:index_id>/edit'], type='http', auth="user", website=True, methods=['GET', 'POST'])
     def portal_my_inec_index_edit(self, index_id, **kw):
+        if not self._can_manage_admin_portal():
+            return self._deny_portal_access()
+
         index_record = request.env['geosis.inec.index'].sudo().browse(index_id)
         if not index_record.exists():
             return request.redirect('/my/inec-indices')
@@ -2286,6 +2646,9 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/inec-indices/<int:index_id>/values/add'], type='http', auth="user", website=True, methods=['POST'])
     def portal_my_inec_value_add(self, index_id, **kw):
+        if not self._can_manage_admin_portal():
+            return self._deny_portal_access()
+
         index_record = request.env['geosis.inec.index'].sudo().browse(index_id)
         if not index_record.exists():
             return request.redirect('/my/inec-indices')
@@ -2302,6 +2665,9 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/inec-indices/<int:index_id>/values/<int:value_id>/update'], type='http', auth="user", website=True, methods=['POST'])
     def portal_my_inec_value_update(self, index_id, value_id, **kw):
+        if not self._can_manage_admin_portal():
+            return self._deny_portal_access()
+
         value_record = request.env['geosis.inec.index.value'].sudo().browse(value_id)
         if value_record.exists() and value_record.index_id.id == index_id:
             try:
@@ -2317,6 +2683,9 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/inec-indices/<int:index_id>/values/<int:value_id>/delete'], type='http', auth="user", website=True, methods=['POST'])
     def portal_my_inec_value_delete(self, index_id, value_id, **kw):
+        if not self._can_manage_admin_portal():
+            return self._deny_portal_access()
+
         value_record = request.env['geosis.inec.index.value'].sudo().browse(value_id)
         if value_record.exists() and value_record.index_id.id == index_id:
             value_record.unlink()
@@ -2325,6 +2694,9 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/estimations', '/my/estimations/page/<int:page>'], type='http', auth="user", website=True)
     def portal_my_estimations(self, page=1, search=None, state='all', **kw):
+        if self._is_portal_resident():
+            return self._deny_portal_access()
+
         values = self._prepare_portal_layout_values()
         Estimation = request.env['geosis.estimation'].sudo()
         
@@ -2362,7 +2734,10 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/estimations/<int:estimation_id>'], type='http', auth="user", website=True)
     def portal_my_estimation_detail(self, estimation_id, **kw):
-        estimation = request.env['geosis.estimation'].sudo().browse(estimation_id)
+        if self._is_portal_resident():
+            return self._deny_portal_access()
+
+        estimation = self._get_accessible_estimation(estimation_id)
         if not estimation.exists():
             return request.redirect('/my/estimations')
             
@@ -2376,10 +2751,13 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/estimations/create'], type='http', auth="user", website=True, methods=['POST'])
     def portal_my_estimation_create(self, **kw):
+        if not self._can_manage_admin_portal():
+            return self._deny_portal_access()
+
         project_id = int(kw.get('project_id'))
         budget_id = int(kw.get('budget_id'))
         
-        budget = request.env['geosis.budget'].sudo().browse(budget_id)
+        budget = self._get_accessible_budget(budget_id)
         if not budget.exists():
             return request.redirect('/my/project/%s' % project_id)
             
@@ -2413,6 +2791,13 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/estimations/<int:estimation_id>/line/<int:line_id>/update'], type='http', auth="user", website=True, methods=['POST'])
     def portal_my_estimation_line_update(self, estimation_id, line_id, **kw):
+        if self._is_portal_resident():
+            return self._deny_portal_access()
+
+        estimation = self._get_accessible_estimation(estimation_id)
+        if not estimation.exists():
+            return request.redirect('/my/estimations')
+
         line = request.env['geosis.estimation.line'].sudo().browse(line_id)
         if line.exists() and line.estimation_id.id == estimation_id:
             try:
@@ -2426,7 +2811,10 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/estimations/<int:estimation_id>/action/<string:action>'], type='http', auth="user", website=True, methods=['POST'])
     def portal_my_estimation_state_action(self, estimation_id, action, **kw):
-        estimation = request.env['geosis.estimation'].sudo().browse(estimation_id)
+        if self._is_portal_resident():
+            return self._deny_portal_access()
+
+        estimation = self._get_accessible_estimation(estimation_id)
         if estimation.exists():
             if action == 'submit':
                 estimation.action_submit()
@@ -2440,7 +2828,10 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/map'], type='http', auth="user", website=True)
     def portal_my_map(self, **kw):
-        projects = request.env['geosis.project'].sudo().search([
+        if self._is_portal_resident():
+            return self._deny_portal_access()
+
+        projects = request.env['geosis.project'].sudo().search(self._partner_domain() + [
             ('latitude', '!=', 0.0),
             ('longitude', '!=', 0.0)
         ])

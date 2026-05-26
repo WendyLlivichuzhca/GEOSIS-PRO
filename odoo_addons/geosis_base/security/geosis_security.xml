@@ -17,5 +17,23 @@
             <field name="category_id" ref="base.module_category_hidden"/>
             <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
         </record>
+
+        <record id="group_geosis_portal_resident" model="res.groups">
+            <field name="name">GEOSIS Portal Residente</field>
+            <field name="category_id" ref="base.module_category_hidden"/>
+            <field name="implied_ids" eval="[(4, ref('base.group_portal'))]"/>
+        </record>
+
+        <record id="group_geosis_portal_supervisor" model="res.groups">
+            <field name="name">GEOSIS Portal Fiscalizador</field>
+            <field name="category_id" ref="base.module_category_hidden"/>
+            <field name="implied_ids" eval="[(4, ref('base.group_portal'))]"/>
+        </record>
+
+        <record id="group_geosis_portal_customer_admin" model="res.groups">
+            <field name="name">GEOSIS Portal Administrador Cliente</field>
+            <field name="category_id" ref="base.module_category_hidden"/>
+            <field name="implied_ids" eval="[(4, ref('base.group_portal'))]"/>
+        </record>
     </data>
 </odoo>

@@ -5,10 +5,6 @@
             <field name="key">geosis.hotmart_product_id</field>
             <field name="value">7786167</field>
         </record>
-        <record id="hotmart_token" model="ir.config_parameter">
-            <field name="key">geosis.hotmart_token</field>
-            <field name="value">LA89uU48qEJHgtIabTaHnlys6CIvJF5154de14-e156-44c6-add3-0b503cb27b9d</field>
-        </record>
         <record id="hotmart_offer_professional" model="ir.config_parameter">
             <field name="key">geosis.hotmart_offer_professional</field>
             <field name="value">q8o4jizl</field>

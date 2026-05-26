@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="rule_geosis_project_by_commercial_partner" model="ir.rule">
+            <field name="name">GEOSIS proyectos por cliente</field>
+            <field name="model_id" ref="model_geosis_project"/>
+            <field name="domain_force">[('partner_id', 'child_of', [user.partner_id.commercial_partner_id.id])]</field>
+            <field name="groups" eval="[(4, ref('geosis_base.group_geosis_admin')), (4, ref('geosis_base.group_geosis_user')), (4, ref('geosis_base.group_geosis_readonly'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <record id="rule_geosis_estimation_by_commercial_partner" model="ir.rule">
+            <field name="name">GEOSIS planillas por cliente</field>
+            <field name="model_id" ref="model_geosis_estimation"/>
+            <field name="domain_force">[('project_id.partner_id', 'child_of', [user.partner_id.commercial_partner_id.id])]</field>
+            <field name="groups" eval="[(4, ref('geosis_base.group_geosis_admin')), (4, ref('geosis_base.group_geosis_user')), (4, ref('geosis_base.group_geosis_readonly'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <record id="rule_geosis_estimation_line_by_commercial_partner" model="ir.rule">
+            <field name="name">GEOSIS lineas de planilla por cliente</field>
+            <field name="model_id" ref="model_geosis_estimation_line"/>
+            <field name="domain_force">[('estimation_id.project_id.partner_id', 'child_of', [user.partner_id.commercial_partner_id.id])]</field>
+            <field name="groups" eval="[(4, ref('geosis_base.group_geosis_admin')), (4, ref('geosis_base.group_geosis_user')), (4, ref('geosis_base.group_geosis_readonly'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+    </data>
+</odoo>

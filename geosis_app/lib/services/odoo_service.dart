@@ -4,7 +4,30 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class OdooService {
   final String baseUrl = "https://geosis.corporativoqbank.com";
+  final String database = "odoo-final";
   String? sessionId;
+
+  String _extractSessionCookie(String rawCookie) {
+    return rawCookie
+        .split(',')
+        .map((part) => part.trim().split(';').first)
+        .firstWhere(
+          (part) => part.startsWith('session_id='),
+          orElse: () => rawCookie.split(';').first.trim(),
+        );
+  }
+
+  Future<void> _loadSession() async {
+    if (sessionId != null && sessionId!.isNotEmpty) return;
+    final prefs = await SharedPreferences.getInstance();
+    sessionId = prefs.getString('odoo_session_cookie');
+  }
+
+  Future<void> _saveSession(String cookie) async {
+    final prefs = await SharedPreferences.getInstance();
+    sessionId = cookie;
+    await prefs.setString('odoo_session_cookie', cookie);
+  }
 
   Future<bool> login(String username, String password) async {
     final response = await http.post(
@@ -13,7 +36,7 @@ class OdooService {
       body: jsonEncode({
         "jsonrpc": "2.0",
         "params": {
-          "db": "odoo-final",
+          "db": database,
           "login": username,
           "password": password
         }
@@ -23,7 +46,9 @@ class OdooService {
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       if (data['result'] != null) {
-        sessionId = response.headers['set-cookie'];
+        final cookie = response.headers['set-cookie'];
+        if (cookie == null || cookie.isEmpty) return false;
+        await _saveSession(_extractSessionCookie(cookie));
         return true;
       }
     }
@@ -32,6 +57,7 @@ class OdooService {
 
   Future<List<dynamic>> getProjects() async {
     try {
+      await _loadSession();
       final response = await http.post(
         Uri.parse("$baseUrl/web/geosis/projects"),
         headers: {
@@ -59,6 +85,7 @@ class OdooService {
   }
   Future<bool> submitReport(Map<String, dynamic> reportData) async {
     try {
+      await _loadSession();
       final response = await http.post(
         Uri.parse("$baseUrl/web/geosis/submit_report"),
         headers: {
@@ -88,6 +115,7 @@ class OdooService {
 
   Future<List<dynamic>> getBitacoras({int? projectId}) async {
     try {
+      await _loadSession();
       final response = await http.post(
         Uri.parse("$baseUrl/web/geosis/bitacoras"),
         headers: {

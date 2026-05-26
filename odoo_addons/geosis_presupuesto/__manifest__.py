@@ -13,6 +13,7 @@
     ],
     'data': [
         'security/ir.model.access.csv',
+        'security/geosis_budget_rules.xml',
         'views/geosis_budget_views.xml',
         'wizard/geosis_budget_export_msproject_views.xml',
         'reports/geosis_budget_reports.xml',

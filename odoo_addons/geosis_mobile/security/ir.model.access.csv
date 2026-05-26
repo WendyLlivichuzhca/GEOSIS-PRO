@@ -2,3 +2,9 @@ id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_geosis_bitacora,geosis.bitacora,model_geosis_bitacora,base.group_user,1,1,1,1
 access_geosis_bitacora_task,geosis.bitacora.task,model_geosis_bitacora_task,base.group_user,1,1,1,1
 access_geosis_bitacora_photo,geosis.bitacora.photo,model_geosis_bitacora_photo,base.group_user,1,1,1,1
+access_geosis_bitacora_portal_resident,geosis.bitacora.portal.resident,model_geosis_bitacora,geosis_base.group_geosis_portal_resident,1,1,1,0
+access_geosis_bitacora_task_portal_resident,geosis.bitacora.task.portal.resident,model_geosis_bitacora_task,geosis_base.group_geosis_portal_resident,1,1,1,0
+access_geosis_bitacora_photo_portal_resident,geosis.bitacora.photo.portal.resident,model_geosis_bitacora_photo,geosis_base.group_geosis_portal_resident,1,1,1,0
+access_geosis_bitacora_portal_supervisor,geosis.bitacora.portal.supervisor,model_geosis_bitacora,geosis_base.group_geosis_portal_supervisor,1,1,0,0
+access_geosis_bitacora_task_portal_supervisor,geosis.bitacora.task.portal.supervisor,model_geosis_bitacora_task,geosis_base.group_geosis_portal_supervisor,1,1,0,0
+access_geosis_bitacora_photo_portal_supervisor,geosis.bitacora.photo.portal.supervisor,model_geosis_bitacora_photo,geosis_base.group_geosis_portal_supervisor,1,0,0,0

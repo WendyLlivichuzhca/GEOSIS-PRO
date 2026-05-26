@@ -4,9 +4,10 @@
     'summary': 'Servicios y modelos para la App Móvil de Libro de Obra',
     'category': 'Project',
     'author': 'Antigravity / GEOSIS',
-    'depends': ['base', 'geosis_proyectos'],
+    'depends': ['base', 'geosis_base', 'geosis_proyectos'],
     'data': [
         'security/ir.model.access.csv',
+        'security/geosis_bitacora_rules.xml',
         'views/geosis_bitacora_views.xml',
         'views/geosis_bitacora_report.xml',
     ],

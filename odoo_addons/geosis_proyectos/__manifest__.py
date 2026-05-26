@@ -15,6 +15,7 @@
     ],
     'data': [
         'security/ir.model.access.csv',
+        'security/geosis_project_rules.xml',
         'views/geosis_project_views.xml',
         'views/geosis_budget_extension_views.xml',
         'views/geosis_estimation_views.xml',
