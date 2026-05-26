@@ -16,6 +16,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool isLoading = true;
   bool isLoadingBitacoras = true;
   int offlineReportsCount = 0;
+  int offlineAvaluosCount = 0;
   bool isSyncing = false;
   int _currentIndex = 0;
 
@@ -29,8 +30,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _loadOfflineCount() async {
     try {
       final drafts = await odoo.getOfflineReports();
+      final avaluoDrafts = await odoo.getOfflineAvaluos();
       setState(() {
         offlineReportsCount = drafts.length;
+        offlineAvaluosCount = avaluoDrafts.length;
       });
     } catch (e) {
       print("DEBUG: Error al cargar cantidad offline: $e");
@@ -85,25 +88,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final results = await odoo.syncOfflineReports();
       final int success = results['success'] ?? 0;
       final int fail = results['fail'] ?? 0;
+
+      final avResults = await odoo.syncOfflineAvaluos();
+      final int avSuccess = avResults['success'] ?? 0;
+      final int avFail = avResults['fail'] ?? 0;
       
       setState(() => isSyncing = false);
       _loadOfflineCount();
 
-      if (success > 0 && fail == 0) {
+      final totalSuccess = success + avSuccess;
+      final totalFail = fail + avFail;
+
+      if (totalSuccess > 0 && totalFail == 0) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: Colors.greenAccent,
-            content: Text("✅ Sincronizados $success reportes correctamente con Odoo.", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            content: Text("✅ Sincronizados $totalSuccess elementos ($success reportes, $avSuccess avalúos) correctamente con Odoo.", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
           )
         );
-      } else if (success > 0 && fail > 0) {
+      } else if (totalSuccess > 0 && totalFail > 0) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: Colors.orangeAccent,
-            content: Text("⚠️ Sincronizados $success reportes, pero $fail fallaron. Inténtalo más tarde.", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            content: Text("⚠️ Sincronizados $totalSuccess elementos, pero $totalFail fallaron. Inténtalo más tarde.", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
           )
         );
-      } else if (fail > 0) {
+      } else if (totalFail > 0) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: Colors.redAccent,
@@ -114,7 +124,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: Colors.cyanAccent,
-            content: Text("ℹ️ No hay reportes offline pendientes por sincronizar.", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            content: Text("ℹ️ No hay elementos offline pendientes por sincronizar.", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
           )
         );
       }
@@ -606,6 +616,48 @@ class _DashboardScreenState extends State<DashboardScreen> {
             SizedBox(height: 20),
             _buildOfflineSyncCard(),
           ],
+          if (offlineAvaluosCount > 0) ...[
+            SizedBox(height: 20),
+            _buildOfflineAvaluosSyncCard(),
+          ],
+          SizedBox(height: 25),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0),
+            child: Text("Servicios de Campo", style: GoogleFonts.outfit(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+          ),
+          SizedBox(height: 15),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _buildServiceMenuCard(
+                    title: "Libro de Obra",
+                    subtitle: "Bitácoras Diarias",
+                    icon: Icons.edit_note,
+                    color: Colors.cyanAccent,
+                    onTap: () {
+                      setState(() {
+                        _currentIndex = 2; // Cambia a la pestaña de reportes
+                      });
+                    },
+                  ),
+                ),
+                SizedBox(width: 15),
+                Expanded(
+                  child: _buildServiceMenuCard(
+                    title: "Avalúos",
+                    subtitle: "Fichas de Campo",
+                    icon: Icons.location_city,
+                    color: Colors.blueAccent,
+                    onTap: () {
+                      Navigator.pushNamed(context, '/avaluos').then((_) => _loadOfflineCount());
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
           SizedBox(height: 30),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -1087,6 +1139,97 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         ),
       ],
+    );
+  }
+
+  Widget _buildOfflineAvaluosSyncCard() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+      child: GestureDetector(
+        onTap: _syncOffline,
+        child: Container(
+          padding: EdgeInsets.all(15),
+          decoration: BoxDecoration(
+            color: Colors.orangeAccent.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(25),
+            border: Border.all(color: Colors.orangeAccent.withOpacity(0.4), width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.orangeAccent.withOpacity(0.1),
+                blurRadius: 10,
+                spreadRadius: 1,
+              )
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.orangeAccent.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.signal_wifi_off_outlined, color: Colors.orangeAccent, size: 28),
+              ),
+              SizedBox(width: 15),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Tienes $offlineAvaluosCount Avalúos sin Enviar",
+                      style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      "Inspecciones guardadas en campo sin señal. Toca aquí para sincronizar con Odoo ahora.",
+                      style: GoogleFonts.outfit(color: Colors.white70, fontSize: 11, height: 1.3),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.arrow_forward_ios, color: Colors.orangeAccent, size: 16),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildServiceMenuCard({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.04),
+          borderRadius: BorderRadius.circular(25),
+          border: Border.all(color: Colors.white.withOpacity(0.06)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            SizedBox(height: 15),
+            Text(title, style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+            SizedBox(height: 2),
+            Text(subtitle, style: GoogleFonts.outfit(color: Colors.white38, fontSize: 12)),
+          ],
+        ),
+      ),
     );
   }
 }

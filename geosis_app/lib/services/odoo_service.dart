@@ -211,4 +211,133 @@ class OdooService {
     }
     return {'success': successCount, 'fail': failCount};
   }
+
+  Future<List<dynamic>> getAvaluos() async {
+    try {
+      await _loadSession();
+      final response = await http.post(
+        Uri.parse("$baseUrl/web/geosis/avaluos"),
+        headers: {
+          "Content-Type": "application/json",
+          "Cookie": sessionId ?? ""
+        },
+        body: jsonEncode({
+          "jsonrpc": "2.0",
+          "params": {}
+        }),
+      );
+
+      print("DEBUG: Status Odoo Avaluos: ${response.statusCode}");
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['result'] != null && data['result']['status'] == 'success') {
+          return data['result']['data'];
+        }
+      }
+    } catch (e) {
+      print("DEBUG: Error cargando avalúos: $e");
+    }
+    return [];
+  }
+
+  Future<Map<String, dynamic>?> submitAvaluo(Map<String, dynamic> avaluoData) async {
+    try {
+      await _loadSession();
+      final response = await http.post(
+        Uri.parse("$baseUrl/web/geosis/submit_avaluo"),
+        headers: {
+          "Content-Type": "application/json",
+          "Cookie": sessionId ?? ""
+        },
+        body: jsonEncode({
+          "jsonrpc": "2.0",
+          "params": {"avaluo": avaluoData}
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['result'] != null && data['result']['status'] == 'success') {
+          print("DEBUG: Avalúo subido exitosamente: ${data['result']['message']}");
+          return data['result'];
+        } else {
+          print("DEBUG: Error de Odoo en submitAvaluo: ${data['result'] != null ? data['result']['message'] : data['error']}");
+        }
+      }
+    } catch (e) {
+      print("DEBUG: Excepción en submitAvaluo: $e");
+    }
+    return null;
+  }
+
+  Future<void> saveOfflineAvaluo(Map<String, dynamic> avaluo) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? rawDrafts = prefs.getString('offline_avaluo_drafts');
+      List<dynamic> drafts = [];
+      if (rawDrafts != null) {
+        drafts = jsonDecode(rawDrafts);
+      }
+      avaluo['offline_id'] = DateTime.now().millisecondsSinceEpoch.toString();
+      drafts.add(avaluo);
+      await prefs.setString('offline_avaluo_drafts', jsonEncode(drafts));
+      print("DEBUG: Avalúo offline guardado. Total en cola: ${drafts.length}");
+    } catch (e) {
+      print("DEBUG: Error al guardar avalúo offline: $e");
+    }
+  }
+
+  Future<List<dynamic>> getOfflineAvaluos() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? rawDrafts = prefs.getString('offline_avaluo_drafts');
+      if (rawDrafts != null) {
+        return jsonDecode(rawDrafts);
+      }
+    } catch (e) {
+      print("DEBUG: Error cargando borradores offline de avalúos: $e");
+    }
+    return [];
+  }
+
+  Future<void> removeOfflineAvaluo(String offlineId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? rawDrafts = prefs.getString('offline_avaluo_drafts');
+      if (rawDrafts != null) {
+        List<dynamic> drafts = jsonDecode(rawDrafts);
+        drafts.removeWhere((item) => item['offline_id'] == offlineId);
+        await prefs.setString('offline_avaluo_drafts', jsonEncode(drafts));
+      }
+    } catch (e) {
+      print("DEBUG: Error eliminando borrador offline de avalúo: $e");
+    }
+  }
+
+  Future<Map<String, int>> syncOfflineAvaluos() async {
+    int successCount = 0;
+    int failCount = 0;
+    try {
+      final drafts = await getOfflineAvaluos();
+      if (drafts.isEmpty) return {'success': 0, 'fail': 0};
+
+      final List<dynamic> avaluosToSync = List.from(drafts);
+      for (var av in avaluosToSync) {
+        final String offlineId = av['offline_id'];
+        final Map<String, dynamic> odooData = Map.from(av);
+        odooData.remove('offline_id');
+
+        final result = await submitAvaluo(odooData);
+        if (result != null && result['status'] == 'success') {
+          successCount++;
+          await removeOfflineAvaluo(offlineId);
+        } else {
+          failCount++;
+        }
+      }
+    } catch (e) {
+      print("DEBUG: Error en proceso de sincronización offline de avalúos: $e");
+    }
+    return {'success': successCount, 'fail': failCount};
+  }
 }

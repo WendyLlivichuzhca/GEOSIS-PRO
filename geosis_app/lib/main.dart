@@ -4,6 +4,7 @@ import 'screens/login_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/bitacora_form_screen.dart';
 import 'screens/bitacora_history_screen.dart';
+import 'screens/avaluos_screen.dart';
 
 void main() {
   runApp(GeosisApp());
@@ -27,6 +28,7 @@ class GeosisApp extends StatelessWidget {
         '/dashboard': (context) => DashboardScreen(),
         '/form': (context) => BitacoraFormScreen(),
         '/history': (context) => BitacoraHistoryScreen(),
+        '/avaluos': (context) => AvaluosScreen(),
       },
     );
   }
