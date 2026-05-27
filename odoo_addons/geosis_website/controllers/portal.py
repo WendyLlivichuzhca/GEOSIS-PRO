@@ -388,6 +388,7 @@ class GeosisCustomerPortal(CustomerPortal):
         return [
             ('resident', 'Residente de Obra'),
             ('supervisor', 'Fiscalizador / Supervisor'),
+            ('perito', 'Perito Valuador'),
         ]
 
     def _get_user_team_role(self, user):
@@ -401,21 +402,26 @@ class GeosisCustomerPortal(CustomerPortal):
             return 'Residente de Obra'
         if user.has_group('geosis_base.group_geosis_readonly'):
             return 'Fiscalizador / Supervisor'
+        if user.has_group('base.group_portal'):
+            return 'Perito Valuador'
         return 'Sin rol GEOSIS'
 
     def _get_portal_team_group(self, role):
-        xmlid = (
-            'geosis_base.group_geosis_portal_resident'
-            if role == 'resident'
-            else 'geosis_base.group_geosis_portal_supervisor'
-        )
+        if role == 'resident':
+            xmlid = 'geosis_base.group_geosis_portal_resident'
+        elif role == 'supervisor':
+            xmlid = 'geosis_base.group_geosis_portal_supervisor'
+        else:
+            return request.env['res.groups']
         return request.env.ref(xmlid, raise_if_not_found=False)
 
     def _get_portal_team_group_ids(self, role):
         groups = [
             request.env.ref('base.group_portal', raise_if_not_found=False),
-            self._get_portal_team_group(role),
         ]
+        g = self._get_portal_team_group(role)
+        if g:
+            groups.append(g)
         return [group.id for group in groups if group]
 
     def _ensure_team_user_is_portal_only(self, user):

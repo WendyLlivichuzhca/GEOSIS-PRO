@@ -15,11 +15,19 @@ class GeosisAvaluoMobileAPI(http.Controller):
     @http.route('/web/geosis/avaluos', type='json', auth='user', methods=['POST'])
     def get_avaluos(self):
         """
-        Retorna la lista de avalúos asociados al usuario perito (inspector) 
-        o al cliente (solicitante).
+        Retorna la lista de avalúos asociados al usuario perito (inspector),
+        o todos los avalúos del equipo/empresa si es administrador o supervisor.
         """
         try:
-            domain = ['|', ('inspector_id', '=', request.env.user.id)] + self._partner_domain()
+            user = request.env.user
+            is_admin = user.has_group('geosis_base.group_geosis_admin')
+            is_supervisor = user.has_group('geosis_base.group_geosis_portal_supervisor')
+            
+            if is_admin or is_supervisor:
+                domain = self._partner_domain()
+            else:
+                domain = ['|', ('inspector_id', '=', user.id)] + self._partner_domain()
+                
             avaluos = request.env['geosis.avaluo'].sudo().search(domain, order='date desc, id desc')
             
             data = []

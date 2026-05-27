@@ -307,6 +307,14 @@ class _AvaluosScreenState extends State<AvaluosScreen> {
             SizedBox(height: 3),
             Row(
               children: [
+                Icon(Icons.badge_outlined, size: 14, color: Colors.white54),
+                SizedBox(width: 5),
+                Text("Perito: ${av['inspector_name'] != null && av['inspector_name'].isNotEmpty ? av['inspector_name'] : 'No asignado'}", style: GoogleFonts.outfit(color: Colors.white70, fontSize: 12)),
+              ],
+            ),
+            SizedBox(height: 3),
+            Row(
+              children: [
                 Icon(Icons.location_on_outlined, size: 14, color: Colors.white38),
                 SizedBox(width: 5),
                 Expanded(

@@ -340,4 +340,42 @@ class OdooService {
     }
     return {'success': successCount, 'fail': failCount};
   }
+
+  Future<Map<String, dynamic>?> getUserProfile() async {
+    final prefs = await SharedPreferences.getInstance();
+    try {
+      await _loadSession();
+      final response = await http.post(
+        Uri.parse("$baseUrl/web/geosis/user_profile"),
+        headers: {
+          "Content-Type": "application/json",
+          "Cookie": sessionId ?? ""
+        },
+        body: jsonEncode({
+          "jsonrpc": "2.0",
+          "params": {}
+        }),
+      );
+
+      print("DEBUG: Status Odoo UserProfile: ${response.statusCode}");
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['result'] != null && data['result']['status'] == 'success') {
+          final profileData = data['result']['data'];
+          await prefs.setString('cached_user_profile', jsonEncode(profileData));
+          return profileData;
+        }
+      }
+    } catch (e) {
+      print("DEBUG: Error cargando perfil de usuario: $e");
+    }
+
+    final cached = prefs.getString('cached_user_profile');
+    if (cached != null) {
+      try {
+        return jsonDecode(cached) as Map<String, dynamic>;
+      } catch (_) {}
+    }
+    return null;
+  }
 }

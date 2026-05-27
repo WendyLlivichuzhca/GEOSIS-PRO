@@ -20,11 +20,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool isSyncing = false;
   int _currentIndex = 0;
 
+  // Variables de perfil dinámico (Roles)
+  String name = "Cargando...";
+  String roleName = "Consultando...";
+  bool isResident = true;
+  bool isSupervisor = true;
+  bool isPerito = true;
+  bool isAdmin = true;
+
   @override
   void initState() {
     super.initState();
     _loadProjects();
     _loadOfflineCount();
+    _loadUserProfile();
+  }
+
+  Future<void> _loadUserProfile() async {
+    try {
+      final profile = await odoo.getUserProfile();
+      if (profile != null) {
+        setState(() {
+          name = profile['name'] ?? "Usuario";
+          roleName = profile['role_name'] ?? "Invitado";
+          isResident = profile['is_resident'] ?? false;
+          isSupervisor = profile['is_supervisor'] ?? false;
+          isPerito = profile['is_perito'] ?? false;
+          isAdmin = profile['is_admin'] ?? false;
+        });
+      }
+    } catch (e) {
+      print("DEBUG: Error al cargar perfil de usuario: $e");
+    }
   }
 
   Future<void> _loadOfflineCount() async {
@@ -198,8 +225,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
       bottomNavigationBar: _buildBottomNav(),
-      floatingActionButton: _buildNeonFab(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButton: (isResident || isSupervisor || isAdmin) ? _buildNeonFab() : null,
+      floatingActionButtonLocation: (isResident || isSupervisor || isAdmin) ? FloatingActionButtonLocation.centerDocked : null,
     );
   }
 
@@ -444,33 +471,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _bar(double h, Color c) => Container(margin: EdgeInsets.only(right: 4), width: 4, height: h, color: c);
 
   Widget _buildBottomNav() {
+    final List<Map<String, dynamic>> tabs = [
+      {'index': 0, 'icon': Icons.home, 'label': "Dashboard", 'visible': true},
+      {'index': 1, 'icon': Icons.folder, 'label': "Projects", 'visible': isResident || isSupervisor || isAdmin},
+      {'index': 2, 'icon': Icons.description, 'label': "Reports", 'visible': isResident || isSupervisor || isAdmin},
+      {'index': 3, 'icon': Icons.people, 'label': "Team", 'visible': true},
+      {'index': 4, 'icon': Icons.person, 'label': "Profile", 'visible': true},
+    ];
+
+    final visibleTabs = tabs.where((t) => t['visible'] == true).toList();
+
     return Container(
       height: 80,
       color: Color(0xFF0D1B2E),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          GestureDetector(
-            onTap: () => setState(() => _currentIndex = 0),
-            child: _navIcon(Icons.home, "Dashboard", _currentIndex == 0),
-          ),
-          GestureDetector(
-            onTap: () => setState(() => _currentIndex = 1),
-            child: _navIcon(Icons.folder, "Projects", _currentIndex == 1),
-          ),
-          GestureDetector(
-            onTap: () => setState(() => _currentIndex = 2),
-            child: _navIcon(Icons.description, "Reports", _currentIndex == 2),
-          ),
-          GestureDetector(
-            onTap: () => setState(() => _currentIndex = 3),
-            child: _navIcon(Icons.people, "Team", _currentIndex == 3),
-          ),
-          GestureDetector(
-            onTap: () => setState(() => _currentIndex = 4),
-            child: _navIcon(Icons.person, "Profile", _currentIndex == 4),
-          ),
-        ],
+        children: visibleTabs.map((t) {
+          final int idx = t['index'];
+          return GestureDetector(
+            onTap: () => setState(() => _currentIndex = idx),
+            child: _navIcon(t['icon'], t['label'], _currentIndex == idx),
+          );
+        }).toList(),
       ),
     );
   }
@@ -558,6 +580,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final int featuredTasksCount = projects.isNotEmpty ? (projects[0]['tasks']?.length ?? 0) : 3;
     final String featuredEndDate = projects.isNotEmpty ? _getProjectEndDate(projects[0]) : "2026-12-31";
 
+    final String displayName = name.isNotEmpty ? name : "Usuario";
+    final String displayRole = roleName.isNotEmpty ? roleName : "Invitado";
+    final String firstName = name.isNotEmpty && name != "Cargando..." ? name.split(' ').first : "Usuario";
+
     return SingleChildScrollView(
       physics: BouncingScrollPhysics(),
       child: Column(
@@ -594,8 +620,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("Wendy L.", style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                    Text("Directora de Obra", style: GoogleFonts.outfit(color: Colors.white54, fontSize: 12)),
+                    Text(displayName, style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                    Text(displayRole, style: GoogleFonts.outfit(color: Colors.white54, fontSize: 12)),
                   ],
                 ),
               ],
@@ -607,7 +633,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text("Buenos Días,", style: GoogleFonts.outfit(color: Colors.white70, fontSize: 24)),
-                Text("Wendy", style: GoogleFonts.outfit(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
+                Text(firstName, style: GoogleFonts.outfit(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
               ],
             ),
           ),
@@ -620,75 +646,92 @@ class _DashboardScreenState extends State<DashboardScreen> {
             SizedBox(height: 20),
             _buildOfflineAvaluosSyncCard(),
           ],
-          SizedBox(height: 25),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0),
-            child: Text("Servicios de Campo", style: GoogleFonts.outfit(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-          ),
-          SizedBox(height: 15),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _buildServiceMenuCard(
-                    title: "Libro de Obra",
-                    subtitle: "Bitácoras Diarias",
-                    icon: Icons.edit_note,
-                    color: Colors.cyanAccent,
-                    onTap: () {
-                      setState(() {
-                        _currentIndex = 2; // Cambia a la pestaña de reportes
-                      });
-                    },
-                  ),
+          // Build list of service cards dynamically based on roles
+          final List<Widget> serviceCards = [];
+          if (isResident || isSupervisor || isAdmin) {
+            serviceCards.add(
+              Expanded(
+                child: _buildServiceMenuCard(
+                  title: "Libro de Obra",
+                  subtitle: "Bitácoras Diarias",
+                  icon: Icons.edit_note,
+                  color: Colors.cyanAccent,
+                  onTap: () {
+                    setState(() {
+                      _currentIndex = 2; // Cambia a la pestaña de reportes
+                    });
+                  },
                 ),
-                SizedBox(width: 15),
-                Expanded(
-                  child: _buildServiceMenuCard(
-                    title: "Avalúos",
-                    subtitle: "Fichas de Campo",
-                    icon: Icons.location_city,
-                    color: Colors.blueAccent,
-                    onTap: () {
-                      Navigator.pushNamed(context, '/avaluos').then((_) => _loadOfflineCount());
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(height: 30),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0),
-            child: Text("Mis Proyectos", style: GoogleFonts.outfit(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-          ),
-          SizedBox(height: 15),
-          Container(
-            height: 280,
-            child: isLoading
-            ? Center(child: CircularProgressIndicator(color: Colors.cyanAccent))
-            : ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: EdgeInsets.only(left: 20),
-                itemCount: projects.length,
-                itemBuilder: (context, index) {
-                  return _buildProjectCard(projects[index], (index + 1).toString(), index);
-                },
               ),
-          ),
-          _buildFeaturedProjectCard(featuredTitle, featuredTasksCount.toString(), "Activo", featuredProgressVal / 100.0, featuredEndDate),
-          SizedBox(height: 20),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0),
-            child: Row(
-              children: [
-                Expanded(child: _buildSmallStatCard("Cronograma de Obra", true)),
-                SizedBox(width: 15),
-                Expanded(child: _buildSmallStatCard("Seguridad SSO", false)),
-              ],
+            );
+          }
+          if (isPerito || isAdmin) {
+            if (serviceCards.isNotEmpty) {
+              serviceCards.add(SizedBox(width: 15));
+            }
+            serviceCards.add(
+              Expanded(
+                child: _buildServiceMenuCard(
+                  title: "Avalúos",
+                  subtitle: "Fichas de Campo",
+                  icon: Icons.location_city,
+                  color: Colors.blueAccent,
+                  onTap: () {
+                    Navigator.pushNamed(context, '/avaluos').then((_) => _loadOfflineCount());
+                  },
+                ),
+              ),
+            );
+          }
+
+          if (serviceCards.isNotEmpty) ...[
+            SizedBox(height: 25),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              child: Text("Servicios de Campo", style: GoogleFonts.outfit(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
             ),
-          ),
+            SizedBox(height: 15),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              child: Row(
+                children: serviceCards,
+              ),
+            ),
+          ],
+
+          if (isResident || isSupervisor || isAdmin) ...[
+            SizedBox(height: 30),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              child: Text("Mis Proyectos", style: GoogleFonts.outfit(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+            ),
+            SizedBox(height: 15),
+            Container(
+              height: 280,
+              child: isLoading
+              ? Center(child: CircularProgressIndicator(color: Colors.cyanAccent))
+              : ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: EdgeInsets.only(left: 20),
+                  itemCount: projects.length,
+                  itemBuilder: (context, index) {
+                    return _buildProjectCard(projects[index], (index + 1).toString(), index);
+                  },
+                ),
+            ),
+            _buildFeaturedProjectCard(featuredTitle, featuredTasksCount.toString(), "Activo", featuredProgressVal / 100.0, featuredEndDate),
+            SizedBox(height: 20),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              child: Row(
+                children: [
+                  Expanded(child: _buildSmallStatCard("Cronograma de Obra", true)),
+                  SizedBox(width: 15),
+                  Expanded(child: _buildSmallStatCard("Seguridad SSO", false)),
+                ],
+              ),
+            ),
+          ],
           SizedBox(height: 120),
         ],
       ),
@@ -1065,8 +1108,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
                 SizedBox(height: 15),
-                Text("Wendy Llivichuzhca", style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
-                Text("Residente de Obra / Administradora", style: TextStyle(color: Colors.white54, fontSize: 12)),
+                Text(name, style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+                Text(roleName, style: TextStyle(color: Colors.white54, fontSize: 12)),
                 SizedBox(height: 10),
                 Chip(
                   backgroundColor: Colors.blueAccent.withOpacity(0.1),

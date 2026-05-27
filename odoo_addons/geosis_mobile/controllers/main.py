@@ -228,3 +228,35 @@ class GeosisMobileAPI(http.Controller):
             return {'status': 'success', 'data': data}
         except Exception as exc:
             return {'status': 'error', 'message': str(exc)}
+
+    @http.route('/web/geosis/user_profile', type='json', auth='user', methods=['POST'])
+    def get_user_profile(self):
+        try:
+            user = request.env.user
+            is_resident = user.has_group('geosis_base.group_geosis_portal_resident')
+            is_supervisor = user.has_group('geosis_base.group_geosis_portal_supervisor')
+            is_admin = user.has_group('geosis_base.group_geosis_admin')
+            
+            is_perito = not (is_resident or is_supervisor) or is_admin
+
+            role_name = "Perito Valuador"
+            if is_admin:
+                role_name = "Administrador GEOSIS"
+            elif is_resident:
+                role_name = "Residente de Obra"
+            elif is_supervisor:
+                role_name = "Fiscalizador / Supervisor"
+
+            return {
+                'status': 'success',
+                'data': {
+                    'name': user.name,
+                    'role_name': role_name,
+                    'is_resident': is_resident,
+                    'is_supervisor': is_supervisor,
+                    'is_perito': is_perito,
+                    'is_admin': is_admin
+                }
+            }
+        except Exception as exc:
+            return {'status': 'error', 'message': str(exc)}
