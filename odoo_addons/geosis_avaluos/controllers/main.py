@@ -12,6 +12,29 @@ class GeosisAvaluoMobileAPI(http.Controller):
         commercial_partner = request.env.user.partner_id.commercial_partner_id
         return [('partner_id', 'child_of', commercial_partner.id)]
 
+    def _is_company_admin(self):
+        user = request.env.user
+        partner = user.partner_id
+        commercial_partner = partner.commercial_partner_id
+        return bool(
+            user.has_group('geosis_base.group_geosis_admin')
+            or user.has_group('geosis_base.group_geosis_portal_customer_admin')
+            or (partner and commercial_partner and partner.id == commercial_partner.id)
+        )
+
+    def _is_appraiser(self):
+        return request.env.user.has_group('geosis_base.group_geosis_portal_appraiser')
+
+    def _can_access_avaluos(self):
+        return self._is_company_admin() or self._is_appraiser()
+
+    def _avaluo_domain_for_current_user(self):
+        if self._is_company_admin():
+            return self._partner_domain()
+        if self._is_appraiser():
+            return [('inspector_id', '=', request.env.user.id)] + self._partner_domain()
+        return [('id', '=', 0)]
+
     @http.route('/web/geosis/avaluos', type='json', auth='user', methods=['POST'])
     def get_avaluos(self):
         """
@@ -19,14 +42,10 @@ class GeosisAvaluoMobileAPI(http.Controller):
         o todos los avalúos del equipo/empresa si es administrador o supervisor.
         """
         try:
-            user = request.env.user
-            is_admin = user.has_group('geosis_base.group_geosis_admin')
-            is_supervisor = user.has_group('geosis_base.group_geosis_portal_supervisor')
-            
-            if is_admin or is_supervisor:
-                domain = self._partner_domain()
-            else:
-                domain = ['|', ('inspector_id', '=', user.id)] + self._partner_domain()
+            if not self._can_access_avaluos():
+                return {'status': 'error', 'message': 'No tienes permisos para acceder a avaluos'}
+
+            domain = self._avaluo_domain_for_current_user()
                 
             avaluos = request.env['geosis.avaluo'].sudo().search(domain, order='date desc, id desc')
             
@@ -111,6 +130,15 @@ class GeosisAvaluoMobileAPI(http.Controller):
                 return {'status': 'error', 'message': 'El avalúo especificado no existe'}
 
             # Valores generales e inspección
+            user = request.env.user
+            same_company = (
+                avaluo.partner_id.commercial_partner_id.id
+                == user.partner_id.commercial_partner_id.id
+            )
+            assigned_appraiser = self._is_appraiser() and avaluo.inspector_id.id == user.id
+            if not same_company or not (self._is_company_admin() or assigned_appraiser):
+                return {'status': 'error', 'message': 'No tienes permisos para modificar este avaluo'}
+
             vals = {
                 'location': data.get('location') or avaluo.location,
                 'latitude': float(data.get('latitude', 0.0) or avaluo.latitude),

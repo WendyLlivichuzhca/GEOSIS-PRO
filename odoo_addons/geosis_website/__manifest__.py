@@ -14,6 +14,7 @@
         'geosis_presupuesto',
         'geosis_proyectos',
         'geosis_import_excel',
+        'geosis_avaluos',
     ],
     'data': [
         'views/geosis_portal_templates.xml',

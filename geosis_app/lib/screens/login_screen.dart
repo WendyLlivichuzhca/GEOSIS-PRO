@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/odoo_service.dart';
 import 'dart:ui';
 
@@ -12,6 +13,66 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final odoo = OdooService();
+  bool _obscurePassword = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAutoLogin();
+  }
+
+  Future<void> _checkAutoLogin() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? session = prefs.getString('odoo_session_cookie');
+      if (session != null && session.isNotEmpty) {
+        final profile = await odoo.getUserProfile();
+        if (profile != null && mounted) {
+          Navigator.pushReplacementNamed(context, '/dashboard');
+        }
+      }
+    } catch (e) {
+      print("DEBUG: Error en inicio de sesión automático: $e");
+    }
+  }
+
+  void _showForgotPasswordDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Color(0xFF0D1B2E),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+            side: BorderSide(color: Colors.cyanAccent.withOpacity(0.3), width: 1),
+          ),
+          title: Text(
+            "Recuperar Contraseña",
+            style: GoogleFonts.outfit(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Text(
+            "Por favor, comuníquese con el administrador (Wendy Llivichuzhca) para restablecer sus credenciales de acceso.",
+            style: GoogleFonts.outfit(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                "Entendido",
+                style: GoogleFonts.outfit(
+                  color: Colors.cyanAccent,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +120,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
-                      onPressed: () {},
+                      onPressed: _showForgotPasswordDialog,
                       child: Text("¿Olvidaste tu contraseña?", style: TextStyle(color: Colors.white38, fontSize: 13)),
                     ),
                   ),
@@ -67,15 +128,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   // BOTON SIGN IN (Funcional)
                   _buildSignInButton(),
-                  
-                  SizedBox(height: 20),
-                  _buildSocialButton("Iniciar sesión con Microsoft 365", Icons.grid_view_rounded, Colors.orange),
-                  SizedBox(height: 15),
-                  _buildSocialButton("SSO (Inicio Único)", null, null),
 
                   SizedBox(height: 40),
                   GestureDetector(
-                    onTap: () {},
+                    onTap: _showForgotPasswordDialog,
                     child: RichText(
                       text: TextSpan(
                         text: "¿No tienes una cuenta? ",
@@ -127,13 +183,25 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           child: TextField(
             controller: controller,
-            obscureText: isPass,
+            obscureText: isPass ? _obscurePassword : false,
             style: TextStyle(color: Colors.white),
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: TextStyle(color: Colors.white38),
               prefixIcon: Icon(icon, color: Colors.white38),
-              suffixIcon: isPass ? Icon(Icons.visibility_off_outlined, color: Colors.white24) : null,
+              suffixIcon: isPass
+                  ? IconButton(
+                      icon: Icon(
+                        _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                        color: Colors.white38,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      },
+                    )
+                  : null,
               border: InputBorder.none,
               contentPadding: EdgeInsets.symmetric(vertical: 20),
             ),
@@ -163,24 +231,6 @@ class _LoginScreenState extends State<LoginScreen> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         ),
         child: Text("Iniciar Sesión", style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-      ),
-    );
-  }
-
-  Widget _buildSocialButton(String text, IconData? icon, Color? iconColor) {
-    return Container(
-      width: double.infinity,
-      height: 55,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: Colors.white12),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          if (icon != null) ...[Icon(icon, color: iconColor, size: 20), SizedBox(width: 10)],
-          Text(text, style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
-        ],
       ),
     );
   }

@@ -298,11 +298,28 @@ class GeosisCustomerPortal(CustomerPortal):
     def _is_portal_supervisor(self):
         return request.env.user.has_group('geosis_base.group_geosis_portal_supervisor')
 
+    def _is_portal_appraiser(self):
+        return request.env.user.has_group('geosis_base.group_geosis_portal_appraiser')
+
     def _is_portal_worker(self):
-        return self._is_portal_resident() or self._is_portal_supervisor()
+        return (
+            self._is_portal_resident()
+            or self._is_portal_supervisor()
+            or self._is_portal_appraiser()
+        )
 
     def _can_manage_admin_portal(self):
         return self._is_team_admin() and not self._is_portal_worker()
+
+    def _can_access_avaluos(self):
+        return self._can_manage_admin_portal() or self._is_portal_appraiser()
+
+    def _get_avaluo_domain_for_current_user(self):
+        if self._can_manage_admin_portal():
+            return self._partner_domain()
+        if self._is_portal_appraiser():
+            return [('inspector_id', '=', request.env.user.id)] + self._partner_domain()
+        return [('id', '=', 0)]
 
     def _deny_portal_access(self):
         return request.redirect('/geosis/dashboard?error=access_denied')
@@ -367,6 +384,7 @@ class GeosisCustomerPortal(CustomerPortal):
             request.env.ref('geosis_base.group_geosis_readonly', raise_if_not_found=False),
             request.env.ref('geosis_base.group_geosis_portal_resident', raise_if_not_found=False),
             request.env.ref('geosis_base.group_geosis_portal_supervisor', raise_if_not_found=False),
+            request.env.ref('geosis_base.group_geosis_portal_appraiser', raise_if_not_found=False),
         ]
         geosis_group_ids = [group.id for group in geosis_groups if group]
         domain = [
@@ -398,12 +416,12 @@ class GeosisCustomerPortal(CustomerPortal):
             return 'Residente de Obra'
         if user.has_group('geosis_base.group_geosis_portal_supervisor'):
             return 'Fiscalizador / Supervisor'
+        if user.has_group('geosis_base.group_geosis_portal_appraiser'):
+            return 'Perito Valuador'
         if user.has_group('geosis_base.group_geosis_user'):
             return 'Residente de Obra'
         if user.has_group('geosis_base.group_geosis_readonly'):
             return 'Fiscalizador / Supervisor'
-        if user.has_group('base.group_portal'):
-            return 'Perito Valuador'
         return 'Sin rol GEOSIS'
 
     def _get_portal_team_group(self, role):
@@ -411,6 +429,8 @@ class GeosisCustomerPortal(CustomerPortal):
             xmlid = 'geosis_base.group_geosis_portal_resident'
         elif role == 'supervisor':
             xmlid = 'geosis_base.group_geosis_portal_supervisor'
+        elif role == 'perito':
+            xmlid = 'geosis_base.group_geosis_portal_appraiser'
         else:
             return request.env['res.groups']
         return request.env.ref(xmlid, raise_if_not_found=False)
@@ -436,6 +456,8 @@ class GeosisCustomerPortal(CustomerPortal):
             role = 'resident'
         elif user.has_group('geosis_base.group_geosis_portal_supervisor'):
             role = 'supervisor'
+        elif user.has_group('geosis_base.group_geosis_portal_appraiser'):
+            role = 'perito'
         elif user.has_group('geosis_base.group_geosis_user'):
             role = 'resident'
         elif user.has_group('geosis_base.group_geosis_readonly'):
@@ -676,7 +698,7 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/projects', '/my/projects/page/<int:page>'], type='http', auth="user", website=True)
     def portal_my_projects(self, page=1, search=None, state='all', sort_by='date', **kw):
-        if self._is_portal_resident():
+        if self._is_portal_resident() or self._is_portal_appraiser():
             return self._deny_portal_access()
 
         values = self._prepare_portal_layout_values()
@@ -724,6 +746,9 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/bitacoras', '/my/bitacoras/page/<int:page>'], type='http', auth="user", website=True)
     def portal_my_bitacoras(self, page=1, search=None, sort_by='date', **kw):
+        if self._is_portal_appraiser():
+            return self._deny_portal_access()
+
         values = self._prepare_portal_layout_values()
         Bitacora = request.env['geosis.bitacora'].sudo()
         domain = self._partner_domain()
@@ -783,6 +808,9 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/bitacora/<int:bitacora_id>'], type='http', auth="user", website=True, methods=['GET', 'POST'])
     def portal_my_bitacora_detail(self, bitacora_id, **kw):
+        if self._is_portal_appraiser():
+            return self._deny_portal_access()
+
         Bitacora = request.env['geosis.bitacora'].sudo()
         bitacora = Bitacora.browse(bitacora_id)
         if not bitacora.exists():
@@ -823,6 +851,9 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/bitacora/print/<int:bitacora_id>'], type='http', auth="user", website=True)
     def portal_my_bitacora_print(self, bitacora_id, **kw):
+        if self._is_portal_appraiser():
+            return self._deny_portal_access()
+
         Bitacora = request.env['geosis.bitacora'].sudo()
         bitacora = Bitacora.browse(bitacora_id)
         if not bitacora.exists():
@@ -975,6 +1006,9 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/gantt'], type='http', auth="user", website=True)
     def portal_my_gantt(self, project_id=None, **kw):
+        if self._is_portal_appraiser():
+            return self._deny_portal_access()
+
         import json
         values = self._prepare_project_tasks_context(project_id)
         
@@ -1041,6 +1075,9 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/tasks'], type='http', auth="user", website=True)
     def portal_my_tasks(self, project_id=None, **kw):
+        if self._is_portal_appraiser():
+            return self._deny_portal_access()
+
         values = self._prepare_project_tasks_context(project_id)
         values.update({
             'page_name': 'tasks',
@@ -1432,7 +1469,7 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/project/<int:project_id>'], type='http', auth="user", website=True)
     def portal_my_project_detail(self, project_id, **kw):
-        if self._is_portal_resident():
+        if self._is_portal_resident() or self._is_portal_appraiser():
             return self._deny_portal_access()
 
         project = self._get_accessible_project(project_id)
@@ -1540,7 +1577,7 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/budgets', '/my/budgets/page/<int:page>'], type='http', auth="user", website=True)
     def portal_my_budgets(self, page=1, search=None, state='all', sort_by='date', **kw):
-        if self._is_portal_resident():
+        if self._is_portal_resident() or self._is_portal_appraiser():
             return self._deny_portal_access()
 
         values = self._prepare_portal_layout_values()
@@ -1593,7 +1630,7 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/budgets/<int:budget_id>'], type='http', auth="user", website=True)
     def portal_my_budget_detail(self, budget_id, **kw):
-        if self._is_portal_resident():
+        if self._is_portal_resident() or self._is_portal_appraiser():
             return self._deny_portal_access()
 
         budget = self._get_accessible_budget(budget_id)
@@ -1873,7 +1910,7 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/budgets/<int:budget_id>/pdf'], type='http', auth="user", website=True)
     def portal_my_budget_report_pdf(self, budget_id, **kw):
-        if self._is_portal_resident():
+        if self._is_portal_resident() or self._is_portal_appraiser():
             return self._deny_portal_access()
 
         budget = self._get_accessible_budget(budget_id)
@@ -1901,7 +1938,7 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/rubro/<int:apu_id>/pdf', '/my/rubros/<int:apu_id>/pdf'], type='http', auth="user", website=True)
     def portal_my_rubro_pdf(self, apu_id, **kw):
-        if self._is_portal_resident():
+        if self._is_portal_resident() or self._is_portal_appraiser():
             return self._deny_portal_access()
 
         apu = request.env['geosis.apu'].sudo().browse(apu_id)
@@ -1993,7 +2030,7 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/rubros', '/my/rubros/page/<int:page>'], type='http', auth="user", website=True)
     def portal_my_rubros(self, page=1, search=None, active='active', sort_by='name', location='all', **kw):
-        if self._is_portal_resident():
+        if self._is_portal_resident() or self._is_portal_appraiser():
             return self._deny_portal_access()
 
         Apu = request.env['geosis.apu'].sudo()
@@ -2050,7 +2087,7 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/rubro/<int:apu_id>'], type='http', auth="user", website=True)
     def portal_my_rubro_detail(self, apu_id, **kw):
-        if self._is_portal_resident():
+        if self._is_portal_resident() or self._is_portal_appraiser():
             return self._deny_portal_access()
 
         apu = request.env['geosis.apu'].sudo().browse(apu_id)
@@ -2297,7 +2334,7 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/resources', '/my/resources/page/<int:page>'], type='http', auth="user", website=True)
     def portal_my_resources(self, page=1, search=None, category='all', sort_by='name', location='all', **kw):
-        if self._is_portal_resident():
+        if self._is_portal_resident() or self._is_portal_appraiser():
             return self._deny_portal_access()
 
         Resource = request.env['geosis.resource'].sudo()
@@ -2420,7 +2457,7 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/resources/<int:resource_id>'], type='http', auth="user", website=True)
     def portal_my_resource_detail(self, resource_id, **kw):
-        if self._is_portal_resident():
+        if self._is_portal_resident() or self._is_portal_appraiser():
             return self._deny_portal_access()
 
         resource = request.env['geosis.resource'].sudo().browse(resource_id)
@@ -2515,7 +2552,7 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/inec-indices', '/my/inec-indices/page/<int:page>'], type='http', auth="user", website=True)
     def portal_my_inec_indices(self, page=1, search=None, status='active', sort_by='code', **kw):
-        if self._is_portal_resident():
+        if self._is_portal_resident() or self._is_portal_appraiser():
             return self._deny_portal_access()
 
         Index = request.env['geosis.inec.index'].sudo()
@@ -2596,7 +2633,7 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/inec-indices/<int:index_id>'], type='http', auth="user", website=True)
     def portal_my_inec_index_detail(self, index_id, **kw):
-        if self._is_portal_resident():
+        if self._is_portal_resident() or self._is_portal_appraiser():
             return self._deny_portal_access()
 
         index_record = request.env['geosis.inec.index'].sudo().browse(index_id)
@@ -2700,7 +2737,7 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/estimations', '/my/estimations/page/<int:page>'], type='http', auth="user", website=True)
     def portal_my_estimations(self, page=1, search=None, state='all', **kw):
-        if self._is_portal_resident():
+        if self._is_portal_resident() or self._is_portal_appraiser():
             return self._deny_portal_access()
 
         values = self._prepare_portal_layout_values()
@@ -2740,7 +2777,7 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/estimations/<int:estimation_id>'], type='http', auth="user", website=True)
     def portal_my_estimation_detail(self, estimation_id, **kw):
-        if self._is_portal_resident():
+        if self._is_portal_resident() or self._is_portal_appraiser():
             return self._deny_portal_access()
 
         estimation = self._get_accessible_estimation(estimation_id)
@@ -2797,7 +2834,7 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/estimations/<int:estimation_id>/line/<int:line_id>/update'], type='http', auth="user", website=True, methods=['POST'])
     def portal_my_estimation_line_update(self, estimation_id, line_id, **kw):
-        if self._is_portal_resident():
+        if self._is_portal_resident() or self._is_portal_appraiser():
             return self._deny_portal_access()
 
         estimation = self._get_accessible_estimation(estimation_id)
@@ -2817,7 +2854,7 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/estimations/<int:estimation_id>/action/<string:action>'], type='http', auth="user", website=True, methods=['POST'])
     def portal_my_estimation_state_action(self, estimation_id, action, **kw):
-        if self._is_portal_resident():
+        if self._is_portal_resident() or self._is_portal_appraiser():
             return self._deny_portal_access()
 
         estimation = self._get_accessible_estimation(estimation_id)
@@ -2834,7 +2871,7 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/my/map'], type='http', auth="user", website=True)
     def portal_my_map(self, **kw):
-        if self._is_portal_resident():
+        if self._is_portal_resident() or self._is_portal_appraiser():
             return self._deny_portal_access()
 
         projects = request.env['geosis.project'].sudo().search(self._partner_domain() + [
@@ -2849,3 +2886,84 @@ class GeosisCustomerPortal(CustomerPortal):
             'page_subtitle': 'Explora precios y presupuestos por ubicacion geografica',
         }
         return request.render("geosis_website.portal_my_map", values)
+
+    @http.route(['/my/avaluos', '/my/avaluos/page/<int:page>'], type='http', auth="user", website=True)
+    def portal_my_avaluos(self, page=1, search=None, sort_by='date', **kw):
+        if not self._can_access_avaluos():
+            return self._deny_portal_access()
+
+        values = self._prepare_portal_layout_values()
+        Avaluo = request.env['geosis.avaluo'].sudo()
+        domain = self._get_avaluo_domain_for_current_user()
+            
+        if search:
+            domain += ['|', '|', '|',
+                ('name', 'ilike', search),
+                ('title', 'ilike', search),
+                ('owner_name', 'ilike', search),
+                ('location', 'ilike', search)
+            ]
+            
+        sortings = {
+            'date': {'label': 'Fecha Reciente', 'order': 'date desc, id desc'},
+            'name': {'label': 'Código', 'order': 'name asc'},
+            'owner': {'label': 'Propietario', 'order': 'owner_name asc'},
+        }
+        order = sortings.get(sort_by, sortings['date'])['order']
+        
+        avaluo_count = Avaluo.search_count(domain)
+        pager = portal_pager(
+            url="/my/avaluos",
+            url_args={'search': search, 'sort_by': sort_by},
+            total=avaluo_count,
+            page=page,
+            step=10
+        )
+        avaluos = Avaluo.search(domain, order=order, limit=10, offset=pager['offset'])
+        
+        # Calcular métricas globales para las tarjetas superiores
+        total_count = Avaluo.search_count(domain)
+        inspected_count = Avaluo.search_count(domain + [('state', '=', 'inspected')])
+        calculated_count = Avaluo.search_count(domain + [('state', '=', 'calculated')])
+        approved_count = Avaluo.search_count(domain + [('state', '=', 'approved')])
+        
+        values.update({
+            'avaluos': avaluos,
+            'page_name': 'avaluo',
+            'pager': pager,
+            'search': search,
+            'sort_by': sort_by,
+            'sortings': sortings,
+            'page_title': 'Avalúos Inmobiliarios',
+            'page_subtitle': 'Seguimiento, inspección de campo y valoraciones de terrenos y edificaciones',
+            'dashboard_metrics': {
+                'total_count': total_count,
+                'inspected_count': inspected_count,
+                'calculated_count': calculated_count,
+                'approved_count': approved_count,
+            }
+        })
+        return request.render("geosis_website.portal_my_avaluos", values)
+
+    @http.route(['/my/avaluo/<int:avaluo_id>'], type='http', auth="user", website=True)
+    def portal_my_avaluo_detail(self, avaluo_id, **kw):
+        if not self._can_access_avaluos():
+            return self._deny_portal_access()
+
+        Avaluo = request.env['geosis.avaluo'].sudo()
+        avaluo = Avaluo.browse(avaluo_id)
+        if not avaluo.exists():
+            return request.redirect('/my/avaluos')
+
+        domain = self._get_avaluo_domain_for_current_user() + [('id', '=', avaluo.id)]
+        if not Avaluo.search_count(domain):
+            return request.redirect('/my/avaluos')
+            
+        values = self._prepare_portal_layout_values()
+        values.update({
+            'avaluo': avaluo,
+            'page_name': 'avaluo',
+            'page_title': f"Detalle de Avalúo - {avaluo.name}",
+            'page_subtitle': avaluo.title or 'Avalúo General',
+        })
+        return request.render("geosis_website.portal_my_avaluo_detail", values)

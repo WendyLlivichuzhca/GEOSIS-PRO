@@ -55,7 +55,9 @@
                             <t t-set="is_geosis_team_admin" t-value="request.env.user.has_group('geosis_base.group_geosis_admin') or request.env.user.partner_id.id == request.env.user.partner_id.commercial_partner_id.id"/>
                             <t t-set="is_geosis_portal_resident" t-value="request.env.user.has_group('geosis_base.group_geosis_portal_resident')"/>
                             <t t-set="is_geosis_portal_supervisor" t-value="request.env.user.has_group('geosis_base.group_geosis_portal_supervisor')"/>
-                            <t t-set="is_geosis_portal_worker" t-value="is_geosis_portal_resident or is_geosis_portal_supervisor"/>
+                            <t t-set="is_geosis_portal_appraiser" t-value="request.env.user.has_group('geosis_base.group_geosis_portal_appraiser')"/>
+                            <t t-set="is_geosis_portal_worker" t-value="is_geosis_portal_resident or is_geosis_portal_supervisor or is_geosis_portal_appraiser"/>
+                            <t t-set="is_geosis_avaluo_user" t-value="is_geosis_team_admin or is_geosis_portal_appraiser"/>
                             <div class="geosis-app-menu__group">1. Inicio</div>
                             <a href="/geosis/dashboard" t-attf-class="geosis-app-menu__item #{'is-active' if page_name == 'home' else ''}">
                                 <i class="fa fa-th-large"/> Dashboard
@@ -89,19 +91,23 @@
                                 <i class="fa fa-file-excel-o"/> Importar Excel
                             </a>
 
-                            <div class="geosis-app-menu__group">4. Ejecución</div>
-                            <a href="/my/gantt" t-attf-class="geosis-app-menu__item #{'is-active' if page_name == 'gantt' else ''}">
+                            <div t-if="not is_geosis_portal_appraiser" class="geosis-app-menu__group">4. Ejecución</div>
+                            <a t-if="not is_geosis_portal_appraiser" href="/my/gantt" t-attf-class="geosis-app-menu__item #{'is-active' if page_name == 'gantt' else ''}">
                                 <i class="fa fa-tasks"/> Cronograma (Gantt)
                             </a>
-                            <a href="/my/tasks" t-attf-class="geosis-app-menu__item #{'is-active' if page_name == 'tasks' else ''}">
+                            <a t-if="not is_geosis_portal_appraiser" href="/my/tasks" t-attf-class="geosis-app-menu__item #{'is-active' if page_name == 'tasks' else ''}">
                                 <i class="fa fa-tasks"/> Tablero de Tareas
                             </a>
-                            <a href="/my/bitacoras" t-attf-class="geosis-app-menu__item #{'is-active' if page_name == 'bitacora' else ''}">
+                            <a t-if="not is_geosis_portal_appraiser" href="/my/bitacoras" t-attf-class="geosis-app-menu__item #{'is-active' if page_name == 'bitacora' else ''}">
                                 <i class="fa fa-book"/> Libro de Obra
                             </a>
+                            <div t-if="is_geosis_portal_appraiser" class="geosis-app-menu__group">4. Avalúos</div>
+                            <a t-if="is_geosis_avaluo_user" href="/my/avaluos" t-attf-class="geosis-app-menu__item #{'is-active' if page_name == 'avaluo' else ''}">
+                                <i class="fa fa-home"/> Avalúos
+                            </a>
 
-                            <div t-if="not is_geosis_portal_resident" class="geosis-app-menu__group">5. Control</div>
-                            <a t-if="not is_geosis_portal_resident" href="/my/estimations" t-attf-class="geosis-app-menu__item #{'is-active' if page_name == 'estimation' else ''}">
+                            <div t-if="not is_geosis_portal_resident and not is_geosis_portal_appraiser" class="geosis-app-menu__group">5. Control</div>
+                            <a t-if="not is_geosis_portal_resident and not is_geosis_portal_appraiser" href="/my/estimations" t-attf-class="geosis-app-menu__item #{'is-active' if page_name == 'estimation' else ''}">
                                 <i class="fa fa-line-chart"/> Planillas de Avance
                             </a>
                         </nav>
@@ -6958,7 +6964,7 @@
                 <div class="geosis-team-card">
                     <div class="geosis-team-card__header">
                         <h3><i class="fa fa-user-plus"/> Agregar Miembro al Equipo</h3>
-                        <p>Crea el acceso de residentes y supervisores directamente desde el portal.</p>
+                        <p>Crea el acceso de residentes, supervisores y peritos directamente desde el portal.</p>
                     </div>
                     <form action="/my/team/create" method="post" class="geosis-team-form">
                         <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
@@ -7205,6 +7211,389 @@
                 </div>
             </section>
         </xpath>
+    </template>
+    <template id="portal_my_avaluos" name="Avalúos Portal">
+        <t t-call="geosis_website.geosis_portal_layout">
+            <t t-set="page_name" t-value="'avaluo'"/>
+            <t t-set="page_title" t-value="'Avalúos'"/>
+            <t t-set="page_subtitle" t-value="'Seguimiento, inspección de campo y valoraciones de terrenos y edificaciones'"/>
+
+            <!-- Dashboard de Resumen Visual -->
+            <div class="row g-3 mb-4" t-if="dashboard_metrics">
+                <div class="col-md-3 col-sm-6">
+                    <div class="card border-0 text-white shadow-sm" style="background: linear-gradient(135deg, #1b263b, #0d1b2a); border-radius: 15px; min-height: 100px; border: 1px solid rgba(255,255,255,0.05) !important;">
+                        <div class="card-body d-flex align-items-center justify-content-between p-3">
+                            <div>
+                                <h6 class="text-white-50 small mb-1" style="font-weight: bold; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px;">Avalúos Totales</h6>
+                                <h3 class="mb-0 font-weight-bold text-white" style="font-size: 26px;"><t t-esc="dashboard_metrics['total_count']"/></h3>
+                            </div>
+                            <div class="rounded-circle p-2" style="background: rgba(255,255,255,0.05);">
+                                <i class="fa fa-home fa-2x text-primary" style="color: #007bff !important;"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <div class="card border-0 text-white shadow-sm" style="background: linear-gradient(135deg, #1b263b, #0d1b2a); border-radius: 15px; min-height: 100px; border: 1px solid rgba(255,255,255,0.05) !important;">
+                        <div class="card-body d-flex align-items-center justify-content-between p-3">
+                            <div>
+                                <h6 class="text-white-50 small mb-1" style="font-weight: bold; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px;">Pendientes</h6>
+                                <h3 class="mb-0 font-weight-bold text-warning" style="font-size: 26px; color: #ffc107 !important;"><t t-esc="dashboard_metrics['total_count'] - dashboard_metrics['inspected_count'] - dashboard_metrics['calculated_count'] - dashboard_metrics['approved_count']"/></h3>
+                            </div>
+                            <div class="rounded-circle p-2" style="background: rgba(255,193,7,0.1);">
+                                <i class="fa fa-clock-o fa-2x text-warning" style="color: #ffc107 !important;"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <div class="card border-0 text-white shadow-sm" style="background: linear-gradient(135deg, #1b263b, #0d1b2a); border-radius: 15px; min-height: 100px; border: 1px solid rgba(255,255,255,0.05) !important;">
+                        <div class="card-body d-flex align-items-center justify-content-between p-3">
+                            <div>
+                                <h6 class="text-white-50 small mb-1" style="font-weight: bold; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px;">Inspeccionados</h6>
+                                <h3 class="mb-0 font-weight-bold text-info" style="font-size: 26px; color: #17a2b8 !important;"><t t-esc="dashboard_metrics['inspected_count']"/></h3>
+                            </div>
+                            <div class="rounded-circle p-2" style="background: rgba(23,162,184,0.1);">
+                                <i class="fa fa-map-marker fa-2x text-info" style="color: #17a2b8 !important;"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <div class="card border-0 text-white shadow-sm" style="background: linear-gradient(135deg, #1b263b, #0d1b2a); border-radius: 15px; min-height: 100px; border: 1px solid rgba(255,255,255,0.05) !important;">
+                        <div class="card-body d-flex align-items-center justify-content-between p-3">
+                            <div>
+                                <h6 class="text-white-50 small mb-1" style="font-weight: bold; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px;">Calculados/Aprobados</h6>
+                                <h3 class="mb-0 font-weight-bold text-success" style="font-size: 26px; color: #28a745 !important;"><t t-esc="dashboard_metrics['calculated_count'] + dashboard_metrics['approved_count']"/></h3>
+                            </div>
+                            <div class="rounded-circle p-2" style="background: rgba(40,167,69,0.1);">
+                                <i class="fa fa-check-circle fa-2x text-success" style="color: #28a745 !important;"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <section class="geosis-panel geosis-apu-sheet mb-4">
+                <div class="geosis-panel__header d-flex justify-content-between align-items-center">
+                    <h3>Listado de Avalúos</h3>
+                    <div class="geosis-app-topbar__search d-flex gap-2">
+                        <form action="/my/avaluos" method="get" class="d-flex gap-2">
+                            <input type="text" name="search" t-att-value="search or ''" class="form-control form-control-sm" placeholder="Buscar avalúo..."/>
+                            <button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-search"/></button>
+                        </form>
+                    </div>
+                </div>
+                <div class="geosis-panel__body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" style="background: transparent; color: #e2e8f0;">
+                            <thead>
+                                <tr style="border-bottom: 2px solid rgba(255,255,255,0.05);">
+                                    <th>Código</th>
+                                    <th>Título</th>
+                                    <th>Propietario</th>
+                                    <th>Perito</th>
+                                    <th>Fecha</th>
+                                    <th class="text-end">Valor Comercial</th>
+                                    <th class="text-center">Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-if="avaluos">
+                                    <t t-foreach="avaluos" t-as="av">
+                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+                                            <td>
+                                                <a t-attf-href="/my/avaluo/#{av.id}" style="font-weight: bold; color: #00f0ff; text-decoration: none;">
+                                                    <t t-esc="av.name"/>
+                                                </a>
+                                            </td>
+                                            <td><t t-esc="av.title or 'Avalúo General'"/></td>
+                                            <td><t t-esc="av.owner_name or 'No definido'"/></td>
+                                            <td>
+                                                <span class="badge rounded-pill bg-dark text-light p-2" style="font-size: 11px;">
+                                                    <i class="fa fa-user-circle-o mr-1"/> <t t-esc="av.inspector_id.name or 'No asignado'"/>
+                                                </span>
+                                            </td>
+                                            <td><t t-esc="av.date"/></td>
+                                            <td class="text-end font-weight-bold text-success" style="font-size: 15px; font-weight: bold; color: #1ad1a5 !important;">
+                                                $<t t-esc="'{0:,.2f}'.format(av.total_value)"/>
+                                            </td>
+                                            <td class="text-center">
+                                                <span t-if="av.state == 'draft'" class="badge bg-warning text-dark p-2" style="font-size: 10px; font-weight: bold;">PENDIENTE</span>
+                                                <span t-if="av.state == 'inspected'" class="badge bg-info text-white p-2" style="font-size: 10px; font-weight: bold;">INSPECCIONADO</span>
+                                                <span t-if="av.state == 'calculated'" class="badge bg-primary text-white p-2" style="font-size: 10px; font-weight: bold;">CALCULADO</span>
+                                                <span t-if="av.state == 'approved'" class="badge bg-success text-white p-2" style="font-size: 10px; font-weight: bold;">APROBADO</span>
+                                                <span t-if="av.state == 'cancelled'" class="badge bg-danger text-white p-2" style="font-size: 10px; font-weight: bold;">CANCELADO</span>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </t>
+                                <t t-else="">
+                                    <tr>
+                                        <td colspan="7" class="text-center py-4 text-muted">
+                                            No se encontraron fichas de avalúos.
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="geosis-panel__footer d-flex justify-content-center p-3" t-if="pager">
+                    <t t-call="geosis_website.portal_simple_pager"/>
+                </div>
+            </section>
+        </t>
+    </template>
+
+    <template id="portal_my_avaluo_detail" name="Detalle de Avalúo Portal">
+        <t t-call="geosis_website.geosis_portal_layout">
+            <t t-set="page_name" t-value="'avaluo'"/>
+            <t t-set="page_title" t-value="'Ficha Detallada de Avalúo'"/>
+            <t t-set="page_subtitle" t-value="avaluo.name"/>
+
+            <div class="row g-4">
+                <!-- Columna Izquierda: Ficha de Resultados de Valoración -->
+                <div class="col-lg-8">
+                    <div class="card border-0 mb-4" style="background: rgba(20, 30, 48, 0.5); backdrop-filter: blur(10px); border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); color: #e2e8f0;">
+                        <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center p-4">
+                            <h4 class="mb-0 text-white font-weight-bold"><t t-esc="avaluo.title or 'Ficha de Valoración Inmobiliaria'"/></h4>
+                            <div>
+                                <span t-if="avaluo.state == 'draft'" class="badge bg-warning text-dark p-2" style="font-size: 11px; font-weight: bold;">PENDIENTE</span>
+                                <span t-if="avaluo.state == 'inspected'" class="badge bg-info text-white p-2" style="font-size: 11px; font-weight: bold;">INSPECCIONADO</span>
+                                <span t-if="avaluo.state == 'calculated'" class="badge bg-primary text-white p-2" style="font-size: 11px; font-weight: bold;">CALCULADO</span>
+                                <span t-if="avaluo.state == 'approved'" class="badge bg-success text-white p-2" style="font-size: 11px; font-weight: bold;">APROBADO</span>
+                                <span t-if="avaluo.state == 'cancelled'" class="badge bg-danger text-white p-2" style="font-size: 11px; font-weight: bold;">CANCELADO</span>
+                            </div>
+                        </div>
+                        <div class="card-body p-4">
+                            <!-- Pestañas de Navegación -->
+                            <ul class="nav nav-pills mb-4 gap-2" id="avaluoTab" role="tablist" style="background: rgba(255,255,255,0.03); padding: 5px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active text-white" id="general-tab" data-bs-toggle="tab" data-bs-target="#general" type="button" role="tab" aria-controls="general" aria-selected="true" style="border-radius: 8px;">Información General</button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link text-white" id="terreno-tab" data-bs-toggle="tab" data-bs-target="#terreno" type="button" role="tab" aria-controls="terreno" aria-selected="false" style="border-radius: 8px;">Valoración Terreno</button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link text-white" id="construccion-tab" data-bs-toggle="tab" data-bs-target="#construccion" type="button" role="tab" aria-controls="construccion" aria-selected="false" style="border-radius: 8px;">Valoración Edificación</button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link text-white" id="comparables-tab" data-bs-toggle="tab" data-bs-target="#comparables" type="button" role="tab" aria-controls="comparables" aria-selected="false" style="border-radius: 8px;">Comparables de Mercado</button>
+                                </li>
+                            </ul>
+
+                            <div class="tab-content" id="avaluoTabContent">
+                                <!-- TAB 1: General -->
+                                <div class="tab-pane fade show active" id="general" role="tabpanel" aria-labelledby="general-tab">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="text-white-50 small d-block">Propietario:</label>
+                                            <strong class="text-white" style="font-size: 15px;"><t t-esc="avaluo.owner_name or 'No definido'"/></strong>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="text-white-50 small d-block">Cliente Solicitante:</label>
+                                            <strong class="text-white" style="font-size: 15px;"><t t-esc="avaluo.partner_id.name or 'No definido'"/></strong>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="text-white-50 small d-block">Perito Valuador:</label>
+                                            <strong class="text-white" style="font-size: 15px;"><t t-esc="avaluo.inspector_id.name or 'No asignado'"/></strong>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="text-white-50 small d-block">Fecha de Valoración:</label>
+                                            <strong class="text-white" style="font-size: 15px;"><t t-esc="avaluo.date"/></strong>
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="text-white-50 small d-block">Dirección y Ubicación:</label>
+                                            <strong class="text-white" style="font-size: 15px;"><t t-esc="avaluo.location or 'Sin ubicación registrada'"/></strong>
+                                        </div>
+                                        <div class="col-md-6" t-if="avaluo.latitude and avaluo.longitude">
+                                            <label class="text-white-50 small d-block">Coordenadas GPS de Campo:</label>
+                                            <strong class="text-white" style="font-size: 15px;">
+                                                Lat: <t t-esc="'{0:.6f}'.format(avaluo.latitude)"/>, Long: <t t-esc="'{0:.6f}'.format(avaluo.longitude)"/>
+                                            </strong>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- TAB 2: Terreno -->
+                                <div class="tab-pane fade" id="terreno" role="tabpanel" aria-labelledby="terreno-tab">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="text-white-50 small d-block">Área del Terreno (m²):</label>
+                                            <strong class="text-white" style="font-size: 15px;"><t t-esc="avaluo.land_area"/> m²</strong>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="text-white-50 small d-block">Valor Unitario Homogéneo ($/m²):</label>
+                                            <strong class="text-white" style="font-size: 15px;">$<t t-esc="'{0:,.2f}'.format(avaluo.land_unit_value)"/> USD</strong>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="text-white-50 small d-block">Factor Topografía:</label>
+                                            <strong class="text-white" style="font-size: 15px;"><t t-esc="avaluo.land_topography_factor"/></strong>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="text-white-50 small d-block">Factor Forma:</label>
+                                            <strong class="text-white" style="font-size: 15px;"><t t-esc="avaluo.land_shape_factor"/></strong>
+                                        </div>
+                                        <div class="col-12 mt-4 pt-3" style="border-top: 1px solid rgba(255,255,255,0.05);">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <h5 class="mb-0 text-white-50">Valor del Terreno Ajustado:</h5>
+                                                <h4 class="mb-0 text-success" style="font-weight: bold; color: #1ad1a5 !important;">
+                                                    $<t t-esc="'{0:,.2f}'.format(avaluo.land_value)"/> USD
+                                                </h4>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- TAB 3: Construcción -->
+                                <div class="tab-pane fade" id="construccion" role="tabpanel" aria-labelledby="construccion-tab">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="text-white-50 small d-block">Área de Construcción (m²):</label>
+                                            <strong class="text-white" style="font-size: 15px;"><t t-esc="avaluo.construction_area"/> m²</strong>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="text-white-50 small d-block">Costo Unitario Reposición (CRN):</label>
+                                            <strong class="text-white" style="font-size: 15px;">$<t t-esc="'{0:,.2f}'.format(avaluo.construction_replacement_cost)"/> USD/m²</strong>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="text-white-50 small d-block">Antigüedad (Años):</label>
+                                            <strong class="text-white" style="font-size: 15px;"><t t-esc="avaluo.construction_age"/> Años</strong>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="text-white-50 small d-block">Vida Útil Estimada:</label>
+                                            <strong class="text-white" style="font-size: 15px;"><t t-esc="avaluo.construction_life_expectancy"/> Años</strong>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="text-white-50 small d-block">Coeficiente de Estado:</label>
+                                            <strong class="text-white" style="font-size: 15px;">
+                                                <t t-if="avaluo.construction_state_coef == '1.00'">Excelente (1.00)</t>
+                                                <t t-if="avaluo.construction_state_coef == '0.95'">Bueno (0.95)</t>
+                                                <t t-if="avaluo.construction_state_coef == '0.75'">Regular (0.75)</t>
+                                                <t t-if="avaluo.construction_state_coef == '0.40'">Malo (0.40)</t>
+                                                <t t-if="avaluo.construction_state_coef == '0.00'">Ruina (0.00)</t>
+                                            </strong>
+                                        </div>
+                                        <div class="col-md-6 mt-3">
+                                            <label class="text-white-50 small d-block">Depreciación Ross-Heidecke (%):</label>
+                                            <strong class="text-white" style="font-size: 15px;"><t t-esc="'{0:.2f}'.format(avaluo.construction_depreciation_percent)"/>%</strong>
+                                        </div>
+                                        <div class="col-12 mt-4 pt-3" style="border-top: 1px solid rgba(255,255,255,0.05);">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <h5 class="mb-0 text-white-50">Valor Edificación Depreciado:</h5>
+                                                <h4 class="mb-0 text-success" style="font-weight: bold; color: #1ad1a5 !important;">
+                                                    $<t t-esc="'{0:,.2f}'.format(avaluo.construction_value)"/> USD
+                                                </h4>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- TAB 4: Comparables -->
+                                <div class="tab-pane fade" id="comparables" role="tabpanel" aria-labelledby="comparables-tab">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover align-middle mb-0" style="color: #e2e8f0;">
+                                            <thead>
+                                                <tr style="border-bottom: 2px solid rgba(255,255,255,0.05);">
+                                                    <th>Referencia comparable</th>
+                                                    <th class="text-end">Área (m²)</th>
+                                                    <th class="text-end">Precio de Oferta</th>
+                                                    <th class="text-end">Valor Unitario ($/m²)</th>
+                                                    <th class="text-end">Distancia (km)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <t t-if="avaluo.comparable_ids">
+                                                    <t t-foreach="avaluo.comparable_ids" t-as="comp">
+                                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+                                                            <td><t t-esc="comp.name"/></td>
+                                                            <td class="text-end"><t t-esc="comp.area"/> m²</td>
+                                                            <td class="text-end">$<t t-esc="'{0:,.2f}'.format(comp.price)"/></td>
+                                                            <td class="text-end" style="color: #00f0ff;">$<t t-esc="'{0:,.2f}'.format(comp.price_m2)"/>/m²</td>
+                                                            <td class="text-end"><t t-esc="comp.distance_km"/> km</td>
+                                                        </tr>
+                                                    </t>
+                                                </t>
+                                                <t t-else="">
+                                                    <tr>
+                                                        <td colspan="5" class="text-center py-3 text-muted">
+                                                            No se han registrado inmuebles comparables.
+                                                        </td>
+                                                    </tr>
+                                                </t>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Galería de Fotos de la Inspección de Campo -->
+                    <div class="card border-0" style="background: rgba(20, 30, 48, 0.5); backdrop-filter: blur(10px); border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); color: #e2e8f0;">
+                        <div class="card-header bg-transparent border-0 p-4">
+                            <h4 class="mb-0 text-white font-weight-bold">Registro Fotográfico Georreferenciado</h4>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="row g-3">
+                                <t t-if="avaluo.photo_ids">
+                                    <t t-foreach="avaluo.photo_ids" t-as="photo">
+                                        <div class="col-sm-6 col-md-4">
+                                            <div class="card bg-dark border-0 p-2 text-center" style="border-radius: 12px; border: 1px solid rgba(255,255,255,0.05) !important;">
+                                                <img t-attf-src="data:image/png;base64,#{photo.image}" style="max-height: 140px; object-fit: cover; border-radius: 8px;" class="img-fluid"/>
+                                                <div class="mt-2 text-truncate text-white" style="font-size: 12px; font-weight: bold;"><t t-esc="photo.name"/></div>
+                                                <div class="text-muted small" t-if="photo.latitude and photo.longitude" style="font-size: 10px;">
+                                                    GPS: <t t-esc="'{0:.4f}'.format(photo.latitude)"/>, <t t-esc="'{0:.4f}'.format(photo.longitude)"/>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </t>
+                                </t>
+                                <t t-else="">
+                                    <div class="col-12 py-3 text-center text-muted">
+                                        No se han cargado fotografías de campo.
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Columna Derecha: Tarjeta de Resumen Comercial Final -->
+                <div class="col-lg-4">
+                    <div class="card border-0 mb-4 text-center text-white" style="background: linear-gradient(135deg, #1b263b, #0d1b2a); border-radius: 20px; border: 1px solid rgba(255,255,255,0.05);">
+                        <div class="card-body p-4">
+                            <i class="fa fa-calculator fa-3x text-info mb-3" style="color: #00f0ff !important;"/>
+                            <h5 class="text-white-50 text-uppercase small font-weight-bold letter-spacing-1">Cálculo de Valoración</h5>
+                            <h2 class="mb-3 text-white" style="font-weight: 800; font-size: 32px;">
+                                $<t t-esc="'{0:,.2f}'.format(avaluo.total_value)"/> USD
+                            </h2>
+                            <p class="text-white-50 small mb-4">
+                                Estimación final del inmueble sumando valor de terreno homogeneizado y valor de la edificación depreciado científicamente (Ross-Heidecke).
+                            </p>
+                            <div class="w-100 text-start bg-dark p-3 rounded-3" style="background: rgba(0,0,0,0.15) !important;">
+                                <div class="d-flex justify-content-between mb-2" style="font-size: 12px;">
+                                    <span class="text-white-50">Valor Terreno:</span>
+                                    <strong class="text-white">$<t t-esc="'{0:,.2f}'.format(avaluo.land_value)"/></strong>
+                                </div>
+                                <div class="d-flex justify-content-between" style="font-size: 12px;">
+                                    <span class="text-white-50">Valor Edificación:</span>
+                                    <strong class="text-white">$<t t-esc="'{0:,.2f}'.format(avaluo.construction_value)"/></strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Acciones / Opciones de Retorno -->
+                    <div class="d-grid gap-2">
+                        <a href="/my/avaluos" class="btn btn-outline-light" style="border-radius: 12px; font-weight: bold; border-color: rgba(255,255,255,0.15);">
+                            <i class="fa fa-chevron-left mr-1"/> Volver a la Lista
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </t>
     </template>
 </odoo>
 

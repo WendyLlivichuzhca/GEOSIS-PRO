@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/odoo_service.dart';
 import 'dart:ui';
 import 'bitacora_history_screen.dart';
@@ -584,6 +585,43 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final String displayRole = roleName.isNotEmpty ? roleName : "Invitado";
     final String firstName = name.isNotEmpty && name != "Cargando..." ? name.split(' ').first : "Usuario";
 
+    final List<Widget> serviceCards = [];
+    if (isResident || isSupervisor || isAdmin) {
+      serviceCards.add(
+        Expanded(
+          child: _buildServiceMenuCard(
+            title: "Libro de Obra",
+            subtitle: "Bitácoras Diarias",
+            icon: Icons.edit_note,
+            color: Colors.cyanAccent,
+            onTap: () {
+              setState(() {
+                _currentIndex = 2; // Cambia a la pestaña de reportes
+              });
+            },
+          ),
+        ),
+      );
+    }
+    if (isPerito || isAdmin) {
+      if (serviceCards.isNotEmpty) {
+        serviceCards.add(SizedBox(width: 15));
+      }
+      serviceCards.add(
+        Expanded(
+          child: _buildServiceMenuCard(
+            title: "Avalúos",
+            subtitle: "Fichas de Campo",
+            icon: Icons.location_city,
+            color: Colors.blueAccent,
+            onTap: () {
+              Navigator.pushNamed(context, '/avaluos').then((_) => _loadOfflineCount());
+            },
+          ),
+        ),
+      );
+    }
+
     return SingleChildScrollView(
       physics: BouncingScrollPhysics(),
       child: Column(
@@ -646,43 +684,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             SizedBox(height: 20),
             _buildOfflineAvaluosSyncCard(),
           ],
-          // Build list of service cards dynamically based on roles
-          final List<Widget> serviceCards = [];
-          if (isResident || isSupervisor || isAdmin) {
-            serviceCards.add(
-              Expanded(
-                child: _buildServiceMenuCard(
-                  title: "Libro de Obra",
-                  subtitle: "Bitácoras Diarias",
-                  icon: Icons.edit_note,
-                  color: Colors.cyanAccent,
-                  onTap: () {
-                    setState(() {
-                      _currentIndex = 2; // Cambia a la pestaña de reportes
-                    });
-                  },
-                ),
-              ),
-            );
-          }
-          if (isPerito || isAdmin) {
-            if (serviceCards.isNotEmpty) {
-              serviceCards.add(SizedBox(width: 15));
-            }
-            serviceCards.add(
-              Expanded(
-                child: _buildServiceMenuCard(
-                  title: "Avalúos",
-                  subtitle: "Fichas de Campo",
-                  icon: Icons.location_city,
-                  color: Colors.blueAccent,
-                  onTap: () {
-                    Navigator.pushNamed(context, '/avaluos').then((_) => _loadOfflineCount());
-                  },
-                ),
-              ),
-            );
-          }
 
           if (serviceCards.isNotEmpty) ...[
             SizedBox(height: 25),
@@ -1148,8 +1149,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                 side: BorderSide(color: Colors.redAccent.withOpacity(0.5)),
               ),
-              onPressed: () {
-                Navigator.pushReplacementNamed(context, '/login');
+              onPressed: () async {
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.remove('odoo_session_cookie');
+                await prefs.remove('cached_user_profile');
+                if (mounted) {
+                  Navigator.pushReplacementNamed(context, '/login');
+                }
               },
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
