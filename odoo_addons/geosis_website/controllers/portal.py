@@ -270,6 +270,16 @@ class GeosisCustomerPortal(CustomerPortal):
             'stage_progress': stage_progress,
         }
 
+    def _prepare_portal_layout_values(self):
+        values = super(GeosisCustomerPortal, self)._prepare_portal_layout_values()
+        values.update({
+            'is_geosis_team_admin': self._is_team_admin(),
+            'is_geosis_portal_resident': self._is_portal_resident(),
+            'is_geosis_portal_supervisor': self._is_portal_supervisor(),
+            'is_geosis_portal_appraiser': self._is_portal_appraiser(),
+        })
+        return values
+
     def _prepare_home_portal_values(self, counters):
         values = super(GeosisCustomerPortal, self)._prepare_home_portal_values(counters)
         partner = request.env.user.partner_id
@@ -2959,8 +2969,19 @@ class GeosisCustomerPortal(CustomerPortal):
         calculated_count = Avaluo.search_count(domain + [('state', '=', 'calculated')])
         approved_count = Avaluo.search_count(domain + [('state', '=', 'approved')])
         
+        # Obtener peritos de la empresa del usuario
+        commercial_partner = request.env.user.partner_id.commercial_partner_id
+        has_perito_group = request.env.ref('geosis_base.group_geosis_portal_appraiser', raise_if_not_found=False)
+        peritos = request.env['res.users'].sudo()
+        if has_perito_group:
+            peritos = request.env['res.users'].sudo().search([
+                ('partner_id', 'child_of', commercial_partner.id),
+                ('groups_id', 'in', has_perito_group.id)
+            ])
+            
         values.update({
             'avaluos': avaluos,
+            'peritos': peritos,
             'page_name': 'avaluo',
             'pager': pager,
             'search': search,
@@ -2999,3 +3020,30 @@ class GeosisCustomerPortal(CustomerPortal):
             'page_subtitle': avaluo.title or 'Avalúo General',
         })
         return request.render("geosis_website.portal_my_avaluo_detail", values)
+
+    @http.route('/my/avaluos/nueva', type='http', auth="user", methods=['POST'], website=True)
+    def portal_my_avaluos_nueva(self, **post):
+        if not self._can_access_avaluos():
+            return self._deny_portal_access()
+
+        title = post.get('title')
+        owner_name = post.get('owner_name')
+        location = post.get('location')
+        appraiser_id = post.get('appraiser_id')
+        date_avaluo = post.get('date_avaluo')
+
+        if not all([title, appraiser_id, date_avaluo]):
+            return request.redirect('/my/avaluos?error=missing_fields')
+
+        Avaluo = request.env['geosis.avaluo'].sudo()
+        Avaluo.create({
+            'title': title,
+            'owner_name': owner_name,
+            'location': location,
+            'inspector_id': int(appraiser_id),
+            'date': date_avaluo,
+            'state': 'draft',
+            'partner_id': request.env.user.partner_id.id
+        })
+
+        return request.redirect('/my/avaluos?success=created')

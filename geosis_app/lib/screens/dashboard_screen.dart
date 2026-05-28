@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/odoo_service.dart';
 import 'dart:ui';
+import 'dart:convert';
 import 'bitacora_history_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -20,6 +21,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int offlineAvaluosCount = 0;
   bool isSyncing = false;
   int _currentIndex = 0;
+  List<dynamic> teamMembers = [];
+  bool isLoadingTeam = true;
 
   // Variables de perfil dinámico (Roles)
   String name = "Cargando...";
@@ -35,6 +38,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _loadProjects();
     _loadOfflineCount();
     _loadUserProfile();
+    _loadTeamMembers();
+  }
+
+  Future<void> _loadTeamMembers() async {
+    try {
+      final team = await odoo.getTeamMembers();
+      if (mounted) {
+        setState(() {
+          teamMembers = team;
+          isLoadingTeam = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          isLoadingTeam = false;
+        });
+      }
+    }
   }
 
   Future<void> _loadUserProfile() async {
@@ -1000,31 +1022,50 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildTabHeader("Equipo de Trabajo", "Personal de fiscalización, residencia y obra"),
+          _buildTabHeader("Equipo de Trabajo", "Personal asignado de la empresa"),
           SizedBox(height: 20),
           _buildSearchBar("Buscar miembro del equipo..."),
           SizedBox(height: 25),
-          _buildTeamMemberCard("Wendy Llivichuzhca", "Residente de Obra / Directora", "Riverside Plaza", "https://i.pravatar.cc/150?u=wendy"),
-          _buildTeamMemberCard("Ing. Carlos Andrade", "Fiscalizador / Supervisor MIDUVI", "Fiscalización GAD", "https://i.pravatar.cc/150?u=carlos"),
-          _buildTeamMemberCard("Arq. Sofía Méndez", "Representante del Contratista", "Riverside Plaza", "https://i.pravatar.cc/150?u=sofia"),
-          _buildTeamMemberCard("Ing. Pedro Torres", "Inspector de Seguridad y SSO", "Riverside Plaza", "https://i.pravatar.cc/150?u=pedro"),
+          if (isLoadingTeam)
+            Center(child: CircularProgressIndicator())
+          else if (teamMembers.isEmpty)
+            Center(child: Text("No se encontró personal asignado", style: TextStyle(color: Colors.white70)))
+          else
+            ...teamMembers.map((member) => _buildTeamMemberCard(
+              member['name'] ?? 'Sin nombre',
+              member['role_name'] ?? 'Colaborador',
+              member['email'] ?? '',
+              member['phone'] ?? '',
+              member['image_128'] is String ? member['image_128'] as String : null,
+            )).toList(),
         ],
       ),
     );
   }
 
-  Widget _buildTeamMemberCard(String name, String role, String project, String avatarUrl) {
+  Widget _buildTeamMemberCard(String name, String role, String email, String phone, String? base64Image) {
+    Widget avatarWidget;
+    if (base64Image != null && base64Image.isNotEmpty) {
+      try {
+        avatarWidget = CircleAvatar(radius: 26, backgroundImage: MemoryImage(base64Decode(base64Image)));
+      } catch (e) {
+        avatarWidget = CircleAvatar(radius: 26, backgroundColor: Colors.blueAccent, child: Text(name.isNotEmpty ? name[0].toUpperCase() : '?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20)));
+      }
+    } else {
+      avatarWidget = CircleAvatar(radius: 26, backgroundColor: Colors.blueAccent, child: Text(name.isNotEmpty ? name[0].toUpperCase() : '?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20)));
+    }
+
     return Container(
       margin: EdgeInsets.only(bottom: 15),
       padding: EdgeInsets.all(15),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.03),
+        color: Colors.white.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.04)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
       ),
       child: Row(
         children: [
-          CircleAvatar(radius: 26, backgroundImage: NetworkImage(avatarUrl)),
+          avatarWidget,
           SizedBox(width: 15),
           Expanded(
             child: Column(
@@ -1036,9 +1077,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 SizedBox(height: 5),
                 Row(
                   children: [
-                    Icon(Icons.business_center_outlined, color: Colors.white38, size: 12),
+                    Icon(Icons.email_outlined, color: Colors.white38, size: 12),
                     SizedBox(width: 5),
-                    Text(project, style: TextStyle(color: Colors.white38, fontSize: 11)),
+                    Text(email, style: TextStyle(color: Colors.white38, fontSize: 11)),
                   ],
                 ),
               ],
@@ -1046,8 +1087,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           Row(
             children: [
-              _circleActionButton(Icons.phone, Colors.blueAccent),
-              SizedBox(width: 8),
+              if (phone.isNotEmpty) ...[
+                _circleActionButton(Icons.phone, Colors.blueAccent),
+                SizedBox(width: 8),
+              ],
               _circleActionButton(Icons.message, Colors.greenAccent),
             ],
           ),

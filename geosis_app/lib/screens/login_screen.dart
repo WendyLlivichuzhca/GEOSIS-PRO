@@ -28,6 +28,11 @@ class _LoginScreenState extends State<LoginScreen> {
       if (session != null && session.isNotEmpty) {
         final profile = await odoo.getUserProfile();
         if (profile != null && mounted) {
+          if (profile['is_direction'] == true && profile['is_admin'] == false) {
+            await prefs.remove('odoo_session_cookie');
+            await prefs.remove('cached_user_profile');
+            return;
+          }
           Navigator.pushReplacementNamed(context, '/dashboard');
         }
       }
@@ -219,10 +224,41 @@ class _LoginScreenState extends State<LoginScreen> {
         onPressed: () async {
           showDialog(context: context, builder: (c) => Center(child: CircularProgressIndicator()));
           bool success = await odoo.login(_emailController.text.trim(), _passwordController.text.trim());
-          Navigator.pop(context);
+          
           if (success) {
-            Navigator.pushReplacementNamed(context, '/dashboard');
+            final profile = await odoo.getUserProfile();
+            Navigator.pop(context);
+            
+            if (profile != null && profile['is_direction'] == true && profile['is_admin'] == false) {
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.remove('odoo_session_cookie');
+              await prefs.remove('cached_user_profile');
+              
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return AlertDialog(
+                    backgroundColor: Color(0xFF0D1B2E),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15), side: BorderSide(color: Colors.redAccent.withOpacity(0.5))),
+                    title: Text("Acceso Restringido", style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
+                    content: Text(
+                      "Esta aplicación es exclusiva para personal de campo (Residentes, Supervisores y Peritos). Por favor, ingrese al Portal Web para acceder a su Centro de Control de Obra.",
+                      style: GoogleFonts.outfit(color: Colors.white70),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: Text("Entendido", style: GoogleFonts.outfit(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  );
+                }
+              );
+            } else {
+              Navigator.pushReplacementNamed(context, '/dashboard');
+            }
           } else {
+            Navigator.pop(context);
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Credenciales incorrectas")));
           }
         },

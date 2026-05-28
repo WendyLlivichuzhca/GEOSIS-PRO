@@ -229,23 +229,91 @@ class GeosisMobileAPI(http.Controller):
         except Exception as exc:
             return {'status': 'error', 'message': str(exc)}
 
+    @http.route('/web/geosis/team', type='json', auth='user', methods=['POST'])
+    def get_team(self):
+        try:
+            current_user = request.env.user
+            is_resident = current_user.has_group('geosis_base.group_geosis_portal_resident')
+            is_supervisor = current_user.has_group('geosis_base.group_geosis_portal_supervisor')
+            is_admin = current_user.has_group('geosis_base.group_geosis_admin')
+            
+            # Chequeo seguro del rol perito
+            has_perito_group = request.env.ref('geosis_base.group_geosis_perito', raise_if_not_found=False)
+            is_perito = current_user.has_group('geosis_base.group_geosis_perito') if has_perito_group else (not (is_resident or is_supervisor) or is_admin)
+
+            User = request.env['res.users'].sudo()
+            
+            # Usuarios de la misma compañía
+            domain = [('company_ids', 'in', [current_user.company_id.id])]
+            users = User.search(domain)
+            
+            filtered_users = []
+            for u in users:
+                u_is_admin = u.has_group('geosis_base.group_geosis_admin')
+                u_is_supervisor = u.has_group('geosis_base.group_geosis_portal_supervisor')
+                u_is_resident = u.has_group('geosis_base.group_geosis_portal_resident')
+                u_is_perito = u.has_group('geosis_base.group_geosis_perito') if has_perito_group else (not (u_is_resident or u_is_supervisor) or u_is_admin)
+                
+                # Reglas de visibilidad
+                if is_admin:
+                    filtered_users.append(u)
+                elif is_perito and u_is_perito:
+                    filtered_users.append(u)
+                elif is_supervisor and (u_is_resident or u_is_supervisor):
+                    filtered_users.append(u)
+                elif is_resident and (u_is_supervisor or u_is_resident):
+                    filtered_users.append(u)
+
+            data = []
+            for u in filtered_users:
+                if u.login == 'admin':
+                    continue
+
+                role_name = u.partner_id.function or "Dirección de Proyecto"
+                if not u.partner_id.function:
+                    if u.has_group('geosis_base.group_geosis_admin'):
+                        role_name = "Administrador GEOSIS"
+                    elif u.has_group('geosis_base.group_geosis_portal_appraiser'):
+                        role_name = "Perito Valuador"
+                    elif u.has_group('geosis_base.group_geosis_portal_resident'):
+                        role_name = "Residente de Obra"
+                    elif u.has_group('geosis_base.group_geosis_portal_supervisor'):
+                        role_name = "Fiscalizador / Supervisor"
+
+                data.append({
+                    'id': u.id,
+                    'name': u.name,
+                    'role_name': role_name,
+                    'email': u.login,
+                    'phone': u.partner_id.phone or u.partner_id.mobile or '',
+                    'image_128': u.image_128.decode('utf-8') if u.image_128 else False,
+                })
+
+            return {'status': 'success', 'data': data}
+        except Exception as exc:
+            return {'status': 'error', 'message': str(exc)}
+
     @http.route('/web/geosis/user_profile', type='json', auth='user', methods=['POST'])
     def get_user_profile(self):
         try:
             user = request.env.user
             is_resident = user.has_group('geosis_base.group_geosis_portal_resident')
             is_supervisor = user.has_group('geosis_base.group_geosis_portal_supervisor')
+            is_perito_appraiser = user.has_group('geosis_base.group_geosis_portal_appraiser')
             is_admin = user.has_group('geosis_base.group_geosis_admin')
             
-            is_perito = not (is_resident or is_supervisor) or is_admin
+            is_direction = not (is_resident or is_supervisor or is_perito_appraiser)
 
-            role_name = "Perito Valuador"
-            if is_admin:
-                role_name = "Administrador GEOSIS"
-            elif is_resident:
-                role_name = "Residente de Obra"
-            elif is_supervisor:
-                role_name = "Fiscalizador / Supervisor"
+            role_name = user.partner_id.function or "Dirección de Proyecto"
+            if not user.partner_id.function:
+                if is_admin:
+                    role_name = "Administrador GEOSIS"
+                elif is_perito_appraiser:
+                    role_name = "Perito Valuador"
+                elif is_resident:
+                    role_name = "Residente de Obra"
+                elif is_supervisor:
+                    role_name = "Fiscalizador / Supervisor"
 
             return {
                 'status': 'success',
@@ -254,8 +322,9 @@ class GeosisMobileAPI(http.Controller):
                     'role_name': role_name,
                     'is_resident': is_resident,
                     'is_supervisor': is_supervisor,
-                    'is_perito': is_perito,
-                    'is_admin': is_admin
+                    'is_perito': is_perito_appraiser or is_direction or is_admin,
+                    'is_admin': is_admin,
+                    'is_direction': is_direction
                 }
             }
         except Exception as exc:

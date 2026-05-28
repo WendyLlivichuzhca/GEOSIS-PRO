@@ -378,4 +378,31 @@ class OdooService {
     }
     return null;
   }
+
+  Future<List<dynamic>> getTeamMembers() async {
+    try {
+      await _loadSession();
+      final response = await http.post(
+        Uri.parse("$baseUrl/web/geosis/team"),
+        headers: {
+          "Content-Type": "application/json",
+          "Cookie": sessionId ?? ""
+        },
+        body: jsonEncode({
+          "jsonrpc": "2.0",
+          "params": {}
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['result'] != null && data['result']['status'] == 'success') {
+          return data['result']['data'];
+        }
+      }
+    } catch (e) {
+      // Ignorando error en consola de producción por ahora
+    }
+    return [];
+  }
 }
