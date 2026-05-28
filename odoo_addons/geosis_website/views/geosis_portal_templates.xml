@@ -31,10 +31,87 @@
 
     <template id="geosis_portal_layout" name="GEOSIS Portal Layout">
         <t t-call="website.layout">
-            <!-- Google Font: Inter loaded safely via HTML links instead of SCSS HTTP imports -->
-            <link rel="preconnect" href="https://fonts.googleapis.com"/>
-            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
-            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+            <!-- Global Premium UI Styles -->
+            <style>
+                @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&amp;display=swap');
+                
+                body {
+                    font-family: 'Outfit', sans-serif !important;
+                    background-color: #f8f9fa !important;
+                }
+                .geosis-app-sidebar {
+                    background: linear-gradient(180deg, #0f2027 0%, #203a43 50%, #2c5364 100%) !important;
+                    border-right: none !important;
+                }
+                .geosis-app-menu__item {
+                    border-radius: 12px !important;
+                    transition: all 0.3s ease !important;
+                    margin: 2px 12px !important;
+                }
+                .geosis-app-menu__item:hover, .geosis-app-menu__item.is-active {
+                    background: rgba(255,255,255,0.1) !important;
+                    transform: translateX(4px);
+                }
+                .geosis-app-brand__copy strong {
+                    font-weight: 800 !important;
+                    letter-spacing: 1px;
+                }
+                .geosis-panel, .geosis-dashboard-profile-card, .geosis-metric-card, .wow-card {
+                    background: #ffffff !important;
+                    border-radius: 24px !important;
+                    border: 1px solid rgba(0,0,0,0.03) !important;
+                    box-shadow: 0 10px 40px rgba(0,0,0,0.03) !important;
+                    transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
+                }
+                .geosis-panel:hover, .geosis-metric-card:hover {
+                    box-shadow: 0 15px 50px rgba(0,0,0,0.08) !important;
+                    transform: translateY(-4px) !important;
+                }
+                .geosis-panel__header {
+                    border-bottom: 1px solid rgba(0,0,0,0.04) !important;
+                    padding: 24px 30px !important;
+                }
+                .geosis-panel__header h3 {
+                    font-weight: 800 !important;
+                    margin: 0 !important;
+                }
+                .btn-primary {
+                    background: linear-gradient(135deg, #0d6efd, #0b5ed7) !important;
+                    border: none !important;
+                    border-radius: 14px !important;
+                    box-shadow: 0 6px 20px rgba(13,110,253,0.25) !important;
+                    transition: all 0.3s ease !important;
+                    font-weight: 600 !important;
+                    padding: 10px 20px !important;
+                }
+                .btn-primary:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 8px 25px rgba(13,110,253,0.35) !important;
+                }
+                .btn-outline-primary {
+                    border-radius: 14px !important;
+                    border-width: 2px !important;
+                    font-weight: 600 !important;
+                    padding: 8px 20px !important;
+                }
+                .geosis-chip, .geosis-pill {
+                    border-radius: 50px !important;
+                    font-weight: 700 !important;
+                    letter-spacing: 0.5px !important;
+                }
+                .table.geosis-clean-table th {
+                    text-transform: uppercase;
+                    font-size: 11px;
+                    letter-spacing: 1px;
+                    color: #8c98a4;
+                    font-weight: 800;
+                    border-bottom: 2px solid rgba(0,0,0,0.05) !important;
+                }
+                .geosis-dashboard-hero {
+                    border-radius: 24px !important;
+                    overflow: hidden;
+                }
+            </style>
 
             <t t-set="no_header" t-value="True"/>
             <t t-set="no_footer" t-value="True"/>
@@ -376,7 +453,7 @@
                         <a href="/my/projects" class="btn btn-sm btn-outline-primary">Ver todos</a>
                     </div>
                     <div class="table-responsive">
-                        <table class="table geosis-clean-table">
+                        <table class="table table-wow w-100">
                             <thead>
                                 <tr>
                                     <th>Nombre del Proyecto</th>
@@ -390,14 +467,19 @@
                                 <t t-if="latest_projects">
                                     <t t-foreach="latest_projects" t-as="project">
                                         <tr>
-                                            <td>
-                                                <strong><a t-attf-href="/my/project/#{project.id}"><t t-esc="project.name"/></a></strong>
-                                                <div class="small text-muted"><t t-esc="project.code"/></div>
+                                            <td class="align-middle">
+                                                <div class="d-flex align-items-center gap-3">
+                                                    <div class="bg-primary text-white rounded p-2"><i class="fa fa-building-o"></i></div>
+                                                    <div>
+                                                        <strong><a t-attf-href="/my/project/#{project.id}" class="text-dark"><t t-esc="project.name"/></a></strong>
+                                                        <div class="small text-muted"><t t-esc="project.code"/></div>
+                                                    </div>
+                                                </div>
                                             </td>
-                                            <td><t t-esc="project.location or '-'"/></td>
-                                            <td class="text-center"><span class="geosis-chip"><t t-esc="project.budget_count"/></span></td>
-                                            <td class="text-end fw-bold">$<t t-esc="'%.2f' % project.total_budget_amount"/></td>
-                                            <td><span t-attf-class="geosis-state #{project.state}"><t t-esc="dict(project._fields['state'].selection).get(project.state)"/></span></td>
+                                            <td class="align-middle text-muted"><t t-esc="project.location or '-'"/></td>
+                                            <td class="text-center align-middle"><span class="wow-badge bg-light text-dark border"><t t-esc="project.budget_count"/></span></td>
+                                            <td class="text-end align-middle fw-bold text-success">$<t t-esc="'%.2f' % project.total_budget_amount"/></td>
+                                            <td class="align-middle"><span t-attf-class="wow-badge bg-info text-white"><t t-esc="dict(project._fields['state'].selection).get(project.state)"/></span></td>
                                         </tr>
                                     </t>
                                 </t>
@@ -7552,53 +7634,53 @@
             <!-- Dashboard de Resumen Visual -->
             <div class="row g-3 mb-4" t-if="dashboard_metrics">
                 <div class="col-md-3 col-sm-6">
-                    <div class="card shadow-sm" style="background: #ffffff; border-radius: 15px; min-height: 100px; border: 1px solid rgba(0,0,0,0.1) !important;">
-                        <div class="card-body d-flex align-items-center justify-content-between p-3">
+                    <div class="wow-card h-100 border-0 p-3" style="border-left: 4px solid #0d6efd !important;">
+                        <div class="d-flex align-items-center justify-content-between">
                             <div>
-                                <h6 class="text-muted small mb-1" style="font-weight: bold; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px;">Avalúos Totales</h6>
-                                <h3 class="mb-0 font-weight-bold text-dark" style="font-size: 26px;"><t t-esc="dashboard_metrics['total_count']"/></h3>
+                                <h6 class="text-muted small mb-1 text-uppercase fw-bold" style="font-size: 11px; letter-spacing: 0.5px;">Avalúos Totales</h6>
+                                <h3 class="mb-0 font-weight-bold text-dark"><t t-esc="dashboard_metrics['total_count']"/></h3>
                             </div>
-                            <div class="rounded-circle p-2" style="background: rgba(0,123,255,0.1);">
-                                <i class="fa fa-home fa-2x text-primary" style="color: #007bff !important;"/>
+                            <div class="rounded-circle p-3 d-flex align-items-center justify-content-center" style="background: rgba(13,110,253,0.1); width: 48px; height: 48px;">
+                                <i class="fa fa-home text-primary fa-lg"/>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-3 col-sm-6">
-                    <div class="card shadow-sm" style="background: #ffffff; border-radius: 15px; min-height: 100px; border: 1px solid rgba(0,0,0,0.1) !important;">
-                        <div class="card-body d-flex align-items-center justify-content-between p-3">
+                    <div class="wow-card h-100 border-0 p-3" style="border-left: 4px solid #ffc107 !important;">
+                        <div class="d-flex align-items-center justify-content-between">
                             <div>
-                                <h6 class="text-muted small mb-1" style="font-weight: bold; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px;">Pendientes</h6>
-                                <h3 class="mb-0 font-weight-bold text-warning" style="font-size: 26px; color: #ffc107 !important;"><t t-esc="dashboard_metrics['total_count'] - dashboard_metrics['inspected_count'] - dashboard_metrics['calculated_count'] - dashboard_metrics['approved_count']"/></h3>
+                                <h6 class="text-muted small mb-1 text-uppercase fw-bold" style="font-size: 11px; letter-spacing: 0.5px;">Pendientes</h6>
+                                <h3 class="mb-0 font-weight-bold text-warning"><t t-esc="dashboard_metrics['total_count'] - dashboard_metrics['inspected_count'] - dashboard_metrics['calculated_count'] - dashboard_metrics['approved_count']"/></h3>
                             </div>
-                            <div class="rounded-circle p-2" style="background: rgba(255,193,7,0.1);">
-                                <i class="fa fa-clock-o fa-2x text-warning" style="color: #ffc107 !important;"/>
+                            <div class="rounded-circle p-3 d-flex align-items-center justify-content-center" style="background: rgba(255,193,7,0.1); width: 48px; height: 48px;">
+                                <i class="fa fa-clock-o text-warning fa-lg"/>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-3 col-sm-6">
-                    <div class="card shadow-sm" style="background: #ffffff; border-radius: 15px; min-height: 100px; border: 1px solid rgba(0,0,0,0.1) !important;">
-                        <div class="card-body d-flex align-items-center justify-content-between p-3">
+                    <div class="wow-card h-100 border-0 p-3" style="border-left: 4px solid #17a2b8 !important;">
+                        <div class="d-flex align-items-center justify-content-between">
                             <div>
-                                <h6 class="text-muted small mb-1" style="font-weight: bold; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px;">Inspeccionados</h6>
-                                <h3 class="mb-0 font-weight-bold text-info" style="font-size: 26px; color: #17a2b8 !important;"><t t-esc="dashboard_metrics['inspected_count']"/></h3>
+                                <h6 class="text-muted small mb-1 text-uppercase fw-bold" style="font-size: 11px; letter-spacing: 0.5px;">Inspeccionados</h6>
+                                <h3 class="mb-0 font-weight-bold text-info"><t t-esc="dashboard_metrics['inspected_count']"/></h3>
                             </div>
-                            <div class="rounded-circle p-2" style="background: rgba(23,162,184,0.1);">
-                                <i class="fa fa-map-marker fa-2x text-info" style="color: #17a2b8 !important;"/>
+                            <div class="rounded-circle p-3 d-flex align-items-center justify-content-center" style="background: rgba(23,162,184,0.1); width: 48px; height: 48px;">
+                                <i class="fa fa-map-marker text-info fa-lg"/>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-3 col-sm-6">
-                    <div class="card shadow-sm" style="background: #ffffff; border-radius: 15px; min-height: 100px; border: 1px solid rgba(0,0,0,0.1) !important;">
-                        <div class="card-body d-flex align-items-center justify-content-between p-3">
+                    <div class="wow-card h-100 border-0 p-3" style="border-left: 4px solid #28a745 !important;">
+                        <div class="d-flex align-items-center justify-content-between">
                             <div>
-                                <h6 class="text-muted small mb-1" style="font-weight: bold; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px;">Calculados/Aprobados</h6>
-                                <h3 class="mb-0 font-weight-bold text-success" style="font-size: 26px; color: #28a745 !important;"><t t-esc="dashboard_metrics['calculated_count'] + dashboard_metrics['approved_count']"/></h3>
+                                <h6 class="text-muted small mb-1 text-uppercase fw-bold" style="font-size: 11px; letter-spacing: 0.5px;">Aprobados</h6>
+                                <h3 class="mb-0 font-weight-bold text-success"><t t-esc="dashboard_metrics['calculated_count'] + dashboard_metrics['approved_count']"/></h3>
                             </div>
-                            <div class="rounded-circle p-2" style="background: rgba(40,167,69,0.1);">
-                                <i class="fa fa-check-circle fa-2x text-success" style="color: #28a745 !important;"/>
+                            <div class="rounded-circle p-3 d-flex align-items-center justify-content-center" style="background: rgba(40,167,69,0.1); width: 48px; height: 48px;">
+                                <i class="fa fa-check text-success fa-lg"/>
                             </div>
                         </div>
                     </div>
@@ -7622,9 +7704,9 @@
                 </div>
                 <div class="geosis-panel__body p-0">
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0" style="background: transparent; color: #333333;">
+                        <table class="table table-wow w-100">
                             <thead>
-                                <tr style="border-bottom: 2px solid rgba(0,0,0,0.1);">
+                                <tr>
                                     <th>Título</th>
                                     <th>Propietario</th>
                                     <th>Perito</th>
@@ -7637,35 +7719,44 @@
                             <tbody>
                                 <t t-if="avaluos">
                                     <t t-foreach="avaluos" t-as="av">
-                                        <tr style="border-bottom: 1px solid rgba(0,0,0,0.05);">
-                                            <td style="font-weight: 600; color: #333;"><t t-esc="av.title or 'Avalúo General'"/></td>
-                                            <td><t t-esc="av.owner_name or 'No definido'"/></td>
-                                            <td>
-                                                <span class="badge rounded-pill bg-dark text-light p-2" style="font-size: 11px;">
-                                                    <i class="fa fa-user-circle-o mr-1"/> <t t-esc="av.inspector_id.name or 'No asignado'"/>
+                                        <tr>
+                                            <td class="align-middle">
+                                                <div class="d-flex align-items-center gap-3">
+                                                    <div class="bg-primary text-white rounded p-2"><i class="fa fa-file-text-o"></i></div>
+                                                    <strong class="text-dark"><t t-esc="av.title or 'Avalúo General'"/></strong>
+                                                </div>
+                                            </td>
+                                            <td class="align-middle"><t t-esc="av.owner_name or 'No definido'"/></td>
+                                            <td class="align-middle">
+                                                <span class="wow-badge bg-light text-dark border">
+                                                    <i class="fa fa-user-circle-o text-primary me-1"/> <t t-esc="av.inspector_id.name or 'No asignado'"/>
                                                 </span>
                                             </td>
-                                            <td><t t-esc="av.date"/></td>
-                                            <td class="text-end font-weight-bold text-success" style="font-size: 15px; font-weight: bold; color: #1ad1a5 !important;">
+                                            <td class="align-middle text-muted"><t t-esc="av.date"/></td>
+                                            <td class="align-middle text-end font-weight-bold text-success" style="font-size: 15px;">
                                                 $<t t-esc="'{0:,.2f}'.format(av.total_value)"/>
                                             </td>
-                                            <td class="text-center">
-                                                <span t-if="av.state == 'draft'" class="badge bg-warning text-dark p-2" style="font-size: 10px; font-weight: bold;">PENDIENTE</span>
-                                                <span t-if="av.state == 'inspected'" class="badge bg-info text-white p-2" style="font-size: 10px; font-weight: bold;">INSPECCIONADO</span>
-                                                <span t-if="av.state == 'calculated'" class="badge bg-primary text-white p-2" style="font-size: 10px; font-weight: bold;">CALCULADO</span>
-                                                <span t-if="av.state == 'approved'" class="badge bg-success text-white p-2" style="font-size: 10px; font-weight: bold;">APROBADO</span>
-                                                <span t-if="av.state == 'cancelled'" class="badge bg-danger text-white p-2" style="font-size: 10px; font-weight: bold;">CANCELADO</span>
+                                            <td class="align-middle text-center">
+                                                <span t-if="av.state == 'draft'" class="wow-badge bg-warning text-dark"><i class="fa fa-clock-o"></i> PENDIENTE</span>
+                                                <span t-if="av.state == 'inspected'" class="wow-badge bg-info text-white"><i class="fa fa-eye"></i> INSPECCIONADO</span>
+                                                <span t-if="av.state == 'calculated'" class="wow-badge bg-primary text-white"><i class="fa fa-calculator"></i> CALCULADO</span>
+                                                <span t-if="av.state == 'approved'" class="wow-badge bg-success text-white"><i class="fa fa-check"></i> APROBADO</span>
+                                                <span t-if="av.state == 'cancelled'" class="wow-badge bg-danger text-white"><i class="fa fa-times"></i> CANCELADO</span>
                                             </td>
-                                            <td class="text-end">
-                                                <a t-attf-href="/my/avaluo/#{av.id}" class="btn btn-outline-primary btn-sm" style="border-radius: 8px; font-weight: 600;">Ver Detalle</a>
+                                            <td class="align-middle text-end">
+                                                <a t-attf-href="/my/avaluo/#{av.id}" class="btn btn-primary btn-sm">Ver Detalle</a>
                                             </td>
                                         </tr>
                                     </t>
                                 </t>
                                 <t t-else="">
                                     <tr>
-                                        <td colspan="7" class="text-center py-4 text-muted">
-                                            No se encontraron fichas de avalúos.
+                                        <td colspan="7" class="text-center py-5 text-muted bg-white rounded-3 border">
+                                            <div class="p-4">
+                                                <i class="fa fa-folder-open fa-3x mb-3" style="opacity: 0.2"></i>
+                                                <h5 class="font-weight-bold">Bandeja Vacía</h5>
+                                                <p class="mb-0">No se encontraron fichas de avalúos.</p>
+                                            </div>
                                         </td>
                                     </tr>
                                 </t>
