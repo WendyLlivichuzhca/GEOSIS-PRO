@@ -547,6 +547,13 @@ class GeosisCustomerPortal(CustomerPortal):
 
     @http.route(['/geosis/dashboard'], type='http', auth="user", website=True)
     def geosis_private_dashboard(self, **kw):
+        is_resident_dashboard = self._is_portal_resident()
+        is_supervisor_dashboard = self._is_portal_supervisor()
+        is_appraiser_dashboard = self._is_portal_appraiser()
+        is_direction_dashboard = not (
+            is_resident_dashboard or is_supervisor_dashboard or is_appraiser_dashboard
+        )
+
         partner_domain = self._partner_domain()
         Project = request.env['geosis.project'].sudo()
         Apu = request.env['geosis.apu'].sudo()
@@ -554,13 +561,14 @@ class GeosisCustomerPortal(CustomerPortal):
         Estimation = request.env['geosis.estimation'].sudo()
         Bitacora = request.env['geosis.bitacora'].sudo()
         Task = request.env['project.task'].sudo()
+        Avaluo = request.env['geosis.avaluo'].sudo()
 
         today = fields.Date.context_today(request.env.user)
         month_start = today.replace(day=1)
         month_end = (month_start + timedelta(days=32)).replace(day=1) - timedelta(days=1)
 
         all_client_projects = Project.search(partner_domain)
-        if self._is_portal_resident():
+        if is_resident_dashboard:
             all_client_projects = all_client_projects.filtered(lambda project: self._project_has_assigned_task(project))
         latest_projects = all_client_projects[:5]
         all_budgets = request.env['geosis.budget'].sudo().search([('project_id', 'in', all_client_projects.ids)])
@@ -594,7 +602,7 @@ class GeosisCustomerPortal(CustomerPortal):
         completed_project_count = len(all_client_projects.filtered(lambda project: project.state == 'completed'))
 
         base_task_domain = [('project_id', 'in', all_odoo_projects.ids)]
-        if self._is_portal_resident():
+        if is_resident_dashboard:
             base_task_domain += self._assigned_task_domain()
 
         open_task_domain = base_task_domain + self._get_open_task_domain()
@@ -613,7 +621,7 @@ class GeosisCustomerPortal(CustomerPortal):
             ('date', '>=', month_start),
             ('date', '<=', month_end),
         ])
-        if self._is_portal_resident():
+        if is_resident_dashboard:
             month_bitacoras = month_bitacoras.filtered(lambda bitacora: bitacora.user_id.id == request.env.user.id)
         approved_bitacora_count = len(month_bitacoras.filtered(lambda bitacora: bitacora.state == 'approved'))
         month_bitacora_count = len(month_bitacoras)
@@ -634,8 +642,26 @@ class GeosisCustomerPortal(CustomerPortal):
             'P': sum(Resource.search([('category', '=', 'P'), ('active', '=', True)]).mapped('price')),
         }
 
+        avaluo_total_count = 0
+        avaluo_pending_count = 0
+        avaluo_inspected_count = 0
+        avaluo_calculated_count = 0
+        avaluo_approved_count = 0
+        latest_avaluos = Avaluo.browse()
+        if is_appraiser_dashboard:
+            avaluo_domain = self._get_avaluo_domain_for_current_user()
+            avaluo_total_count = Avaluo.search_count(avaluo_domain)
+            avaluo_pending_count = Avaluo.search_count(avaluo_domain + [('state', '=', 'draft')])
+            avaluo_inspected_count = Avaluo.search_count(avaluo_domain + [('state', '=', 'inspected')])
+            avaluo_calculated_count = Avaluo.search_count(avaluo_domain + [('state', '=', 'calculated')])
+            avaluo_approved_count = Avaluo.search_count(avaluo_domain + [('state', '=', 'approved')])
+            latest_avaluos = Avaluo.search(avaluo_domain, order='date desc, id desc', limit=5)
+
         values = {
-            'is_resident_dashboard': self._is_portal_resident(),
+            'is_resident_dashboard': is_resident_dashboard,
+            'is_supervisor_dashboard': is_supervisor_dashboard,
+            'is_appraiser_dashboard': is_appraiser_dashboard,
+            'is_direction_dashboard': is_direction_dashboard,
             'project_count': len(all_client_projects),
             'active_project_count': len(all_client_projects.filtered(lambda project: project.state == 'active')),
             'completed_project_count': completed_project_count,
@@ -658,6 +684,12 @@ class GeosisCustomerPortal(CustomerPortal):
             'res_stats': res_stats,
             'critical_tasks': critical_tasks,
             'cost_dist': cost_dist,
+            'avaluo_total_count': avaluo_total_count,
+            'avaluo_pending_count': avaluo_pending_count,
+            'avaluo_inspected_count': avaluo_inspected_count,
+            'avaluo_calculated_count': avaluo_calculated_count,
+            'avaluo_approved_count': avaluo_approved_count,
+            'latest_avaluos': latest_avaluos,
             'page_name': 'home',
         }
         return request.render("geosis_website.geosis_private_dashboard_page", values)
