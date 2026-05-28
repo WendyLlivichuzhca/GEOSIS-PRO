@@ -993,7 +993,22 @@ class GeosisCustomerPortal(CustomerPortal):
                 else:
                     task_durations[task.id] = 0
 
-        assignable_users = request.env['res.users'].sudo().search([('active', '=', True)], order='name asc')
+        company_partner = self._get_team_company_partner()
+        try:
+            resident_group = request.env.ref('geosis_base.group_geosis_portal_resident').id
+            assignable_domain = [
+                ('active', '=', True),
+                ('partner_id.commercial_partner_id', '=', company_partner.id),
+                ('groups_id', 'in', [resident_group])
+            ]
+        except ValueError:
+            # Fallback si por alguna razón no existe el grupo
+            assignable_domain = [
+                ('active', '=', True),
+                ('partner_id.commercial_partner_id', '=', company_partner.id)
+            ]
+            
+        assignable_users = request.env['res.users'].sudo().search(assignable_domain, order='name asc')
         stage_domain = []
         if odoo_projects:
             stage_domain = ['|', ('project_ids', '=', False), ('project_ids', 'in', odoo_projects.ids)]

@@ -33,83 +33,641 @@
         <t t-call="website.layout">
             <!-- Global Premium UI Styles -->
             <style>
-                @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&amp;display=swap');
+                @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&amp;display=swap');
                 
+                :root {
+                    --geosis-orange: #F39C12;
+                    --geosis-navy: #1E293B; /* Slate 800 - Match "Iniciar Sesión" button */
+                    --geosis-blue-bright: #2563EB; /* Bright Blue from the tablet mockup */
+                    --geosis-bg: #F8FAFC; /* Modern slate-50 background */
+                }
+
                 body {
                     font-family: 'Outfit', sans-serif !important;
-                    background-color: #f8f9fa !important;
+                    font-size: 14px !important; /* Tamaño estándar para dashboards modernos */
+                    line-height: 1.5 !important;
+                    background: var(--geosis-bg) !important;
+                    color: #334155 !important;
                 }
+
+                .geosis-app-shell {
+                    background-color: #F4F7FB !important; /* Fondo gris súper claro estilo MatDash */
+                    background-image: none !important;
+                }
+
+                /* ============================ */
+                /* REDISEÑO SIDEBAR (MENÚ)      */
+                /* ============================ */
                 .geosis-app-sidebar {
-                    background: linear-gradient(180deg, #0f2027 0%, #203a43 50%, #2c5364 100%) !important;
-                    border-right: none !important;
+                    background: #FFFFFF !important; /* Sidebar Blanco Puro */
+                    border-right: 1px solid #E5E7EB !important;
                 }
-                .geosis-app-menu__item {
-                    border-radius: 12px !important;
-                    transition: all 0.3s ease !important;
-                    margin: 2px 12px !important;
+                .geosis-app-brand {
+                    background: transparent !important;
+                    box-shadow: none !important;
+                    border-bottom: none !important;
+                    padding-bottom: 0;
+                    margin-bottom: 0;
+                    display: flex;
+                    align-items: center;
+                    text-decoration: none;
                 }
-                .geosis-app-menu__item:hover, .geosis-app-menu__item.is-active {
-                    background: rgba(255,255,255,0.1) !important;
-                    transform: translateX(4px);
+                .geosis-app-brand__logo {
+                    background: transparent !important;
                 }
                 .geosis-app-brand__copy strong {
                     font-weight: 800 !important;
                     letter-spacing: 1px;
+                    color: var(--geosis-navy) !important;
                 }
-                .geosis-panel, .geosis-dashboard-profile-card, .geosis-metric-card, .wow-card {
-                    background: #ffffff !important;
-                    border-radius: 24px !important;
-                    border: 1px solid rgba(0,0,0,0.03) !important;
-                    box-shadow: 0 10px 40px rgba(0,0,0,0.03) !important;
+                .geosis-app-brand__copy span {
+                    color: #64748B !important;
+                    font-size: 11px !important;
+                }
+                .geosis-app-menu__group {
+                    color: #94A3B8 !important; /* Gris suave para grupos */
+                    font-weight: 700 !important;
+                    letter-spacing: 0.5px;
+                    margin-top: 20px !important;
+                    padding-left: 24px !important;
+                    font-size: 11px !important;
+                    text-transform: uppercase;
+                }
+                .geosis-app-menu__item {
+                    border-radius: 8px !important; /* Botones más redondeados */
+                    transition: all 0.3s ease !important;
+                    margin: 4px 16px !important;
+                    padding: 10px 16px !important;
+                    color: #64748B !important; /* Texto gris para inactivos */
+                    font-weight: 500 !important;
+                    border-left: none !important;
+                }
+                .geosis-app-menu__item i {
+                    color: #94A3B8 !important; /* Iconos grises */
+                    transition: all 0.3s ease;
+                    margin-right: 12px !important;
+                    font-size: 18px !important;
+                }
+                .geosis-app-menu__item:hover {
+                    background: #F1F5F9 !important;
+                    color: var(--geosis-navy) !important;
+                    transform: translateX(4px);
+                }
+                .geosis-app-menu__item:hover i {
+                    color: var(--geosis-blue-bright) !important;
+                }
+                .geosis-app-menu__item.is-active {
+                    background: #6366F1 !important; /* Morado/Azul vibrante como MatDash */
+                    color: #FFFFFF !important;
+                    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3) !important;
+                    transform: none !important;
+                }
+                .geosis-app-menu__item.is-active i {
+                    color: #FFFFFF !important;
+                }
+                .geosis-app-user {
+                    background: transparent !important;
+                    border: none !important;
+                    border-top: 1px solid #F1F5F9 !important;
+                    border-radius: 0 !important;
+                    margin: 10px 0 0 0 !important;
+                    padding: 15px 20px 5px 20px !important;
+                }
+                .geosis-app-user__avatar {
+                    background: #E0E7FF !important;
+                    color: #6366F1 !important;
+                    border-radius: 8px !important;
+                    width: 32px !important;
+                    height: 32px !important;
+                }
+                .geosis-app-user__copy strong {
+                    color: var(--geosis-navy) !important;
+                    font-size: 13px !important;
+                    font-weight: 600 !important;
+                }
+                .geosis-app-user__copy span {
+                    display: none !important;
+                }
+                .geosis-app-logout {
+                    color: #EF4444 !important;
+                    opacity: 0.8;
+                    margin: 0 20px 15px 20px !important;
+                    font-size: 12px !important;
+                    padding: 5px 0 !important;
+                }
+                .geosis-app-logout i {
+                    color: #EF4444 !important;
+                }
+                .geosis-app-logout:hover {
+                    color: #DC2626 !important;
+                    opacity: 1;
+                }
+
+                /* ============================ */
+                /* ============================ */
+                /* TOPBAR GLOBAL Y SCROLLBARS   */
+                /* ============================ */
+                .geosis-app-sidebar {
+                    width: 280px !important;
+                    position: fixed !important;
+                    top: 0 !important;
+                    left: 0 !important;
+                    height: 100vh !important;
+                    z-index: 1000 !important;
+                    overflow-y: auto !important;
+                }
+                .geosis-app-sidebar::-webkit-scrollbar,
+                .geosis-app-menu::-webkit-scrollbar {
+                    display: none !important;
+                }
+                .geosis-app-sidebar, .geosis-app-menu {
+                    -ms-overflow-style: none !important;
+                    scrollbar-width: none !important;
+                }
+                .geosis-app-main {
+                    margin-left: 280px !important;
+                    width: calc(100% - 280px) !important;
+                }
+                .geosis-global-topbar {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 10px 30px;
+                    background: #FFFFFF !important; /* Blanco 100% sólido, sin transparencias */
+                    border-bottom: 1px solid #E5E7EB !important;
+                    border-radius: 0 !important; /* Sin bordes redondeados */
+                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03) !important;
+                    margin-bottom: 0 !important;
+                    position: fixed !important;
+                    top: 0 !important;
+                    right: 0 !important;
+                    left: auto !important;
+                    width: calc(100% - 280px) !important; /* Ocupa todo el ancho hasta el sidebar */
+                    z-index: 999 !important;
+                    height: 70px !important;
+                }
+                .geosis-app-content {
+                    padding-top: 90px !important; /* Ajuste para la barra pegada arriba */
+                    padding-left: 30px !important;
+                    padding-right: 30px !important;
+                }
+                .geosis-global-topbar .geosis-app-user {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    text-decoration: none;
+                    background: #F8FAFC !important; /* Fondo ligerísimamente gris para contrastar con el topbar blanco */
+                    padding: 6px 16px !important;
+                    border-radius: 50px !important;
+                    border: 1px solid #E2E8F0 !important;
+                    box-shadow: none !important;
+                    margin: 0 !important;
+                    transition: all 0.3s ease;
+                }
+                .geosis-global-topbar .geosis-app-user:hover {
+                    background: #F1F5F9 !important;
+                    border-color: #CBD5E1 !important;
+                    transform: translateY(-1px);
+                }
+                .geosis-global-topbar .geosis-app-user__avatar {
+                    width: 32px !important;
+                    height: 32px !important;
+                    border-radius: 50px !important;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    background: rgba(243, 156, 18, 0.1) !important;
+                    color: var(--geosis-orange) !important;
+                }
+                .geosis-global-topbar .geosis-app-user__copy strong {
+                    color: var(--geosis-navy) !important;
+                    font-size: 13px !important;
+                    font-weight: 700 !important;
+                }
+                .geosis-global-topbar .geosis-app-user__copy span {
+                    display: none !important;
+                }
+                .geosis-global-topbar .geosis-app-logout {
+                    margin-left: 20px !important;
+                    color: #EF4444 !important;
+                    opacity: 0.8;
+                    text-decoration: none;
+                    font-weight: 600;
+                    font-size: 13px;
+                    transition: all 0.3s ease;
+                }
+                .geosis-global-topbar .geosis-app-logout:hover {
+                    opacity: 1;
+                }
+
+                /* DASHBOARD HERO AND METRICS   */
+                /* ============================ */
+                .geosis-dashboard-hero {
+                    grid-template-columns: 1fr !important; /* Single column, takes full width */
+                    margin-bottom: 24px !important;
+                }
+                .geosis-dashboard-hero__card {
+                    display: none !important; /* Hide profile card since it's already in topbar */
+                }
+                .geosis-dashboard-hero__copy {
+                    background: #FFFFFF !important;
+                    border: 1px solid #E2E8F0 !important;
+                    border-radius: 16px !important;
+                    padding: 24px 32px !important;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.02) !important;
+                    display: flex !important;
+                    flex-direction: column !important;
+                    justify-content: center !important;
+                }
+                .geosis-dashboard-hero__copy h2 {
+                    color: var(--geosis-navy) !important;
+                    font-family: 'Outfit', sans-serif !important;
+                    font-size: 24px !important;
+                    font-weight: 800 !important;
+                    margin-bottom: 8px !important;
+                    letter-spacing: -0.5px;
+                }
+                .geosis-dashboard-hero__copy p {
+                    color: #64748B !important;
+                    font-size: 14px !important;
+                    margin-bottom: 12px !important;
+                    max-width: 800px !important;
+                }
+                .geosis-dashboard-hero__copy::after,
+                .geosis-dashboard-hero--premium::before {
+                    display: none !important; /* Quitar overlays decorativos excesivos */
+                }
+                .geosis-dashboard-hero__badges .geosis-chip {
+                    background: #F8FAFC !important;
+                    color: #475569 !important;
+                    border: 1px solid #E2E8F0 !important;
+                }
+                
+                /* Layout Spacing */
+                .geosis-dashboard-hero,
+                .geosis-dashboard-grid,
+                .geosis-metric-grid,
+                .geosis-stat-strip {
+                    gap: 24px !important;
+                }
+
+                /* Metric Cards */
+                .geosis-metric-card--premium {
+                    background: #FFFFFF !important;
+                    border: 1px solid #E2E8F0 !important;
+                    border-radius: 16px !important;
+                    padding: 24px !important;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.02) !important;
+                    min-height: auto !important;
+                    transition: all 0.3s ease !important;
+                }
+                .geosis-metric-card--premium:hover {
+                    transform: translateY(-4px) !important;
+                    box-shadow: 0 12px 24px rgba(0,0,0,0.04) !important;
+                }
+                .geosis-metric-card--premium::after {
+                    display: none !important; /* Quitar barras de color gruesas */
+                }
+                .geosis-metric-card--premium span {
+                    color: #64748B !important;
+                    font-size: 12px !important;
+                    font-weight: 600 !important;
+                    letter-spacing: 0.5px !important;
+                    text-transform: uppercase !important;
+                }
+                .geosis-metric-card--premium strong {
+                    color: var(--geosis-navy) !important;
+                    font-family: 'Outfit', sans-serif !important;
+                    font-size: 28px !important;
+                    font-weight: 800 !important;
+                    margin-top: 12px !important;
+                    display: block !important;
+                }
+                
+                /* Mini Cards (Pulse) */
+                .geosis-stat-strip .geosis-mini-card {
+                    background: #FFFFFF !important;
+                    border: 1px solid #E2E8F0 !important;
+                    border-radius: 12px !important;
+                    padding: 16px 20px !important;
+                    box-shadow: none !important;
+                }
+                .geosis-stat-strip .geosis-mini-card span {
+                    color: #64748B !important;
+                    font-size: 12px !important;
+                    font-weight: 500 !important;
+                }
+                .geosis-stat-strip .geosis-mini-card strong {
+                    color: var(--geosis-navy) !important;
+                    font-size: 20px !important;
+                    margin-top: 8px !important;
+                    display: block !important;
+                }
+                
+                /* ============================ */
+                /* PANELES Y TARJETAS GENERALES */
+                /* ============================ */
+                .geosis-panel, .geosis-dashboard-profile-card, .wow-card {
+                    background: #FFFFFF !important;
+                    border-radius: 12px !important; /* Menos redondeado, más profesional */
+                    border: 1px solid #F1F5F9 !important;
+                    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02) !important;
                     transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
                 }
-                .geosis-panel:hover, .geosis-metric-card:hover {
-                    box-shadow: 0 15px 50px rgba(0,0,0,0.08) !important;
-                    transform: translateY(-4px) !important;
+                .geosis-panel:hover, .wow-card:hover {
+                    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.04) !important;
+                    transform: translateY(-2px) !important;
+                    border-color: #E2E8F0 !important;
                 }
                 .geosis-panel__header {
-                    border-bottom: 1px solid rgba(0,0,0,0.04) !important;
-                    padding: 24px 30px !important;
+                    border-bottom: 1px solid #F1F5F9 !important;
+                    padding: 20px 25px !important;
                 }
                 .geosis-panel__header h3 {
-                    font-weight: 800 !important;
+                    font-weight: 700 !important;
                     margin: 0 !important;
+                    color: var(--geosis-navy) !important;
+                    font-size: 15px !important;
+                    text-transform: capitalize;
+                    letter-spacing: 0;
                 }
+
+                /* BOTONES */
                 .btn-primary {
-                    background: linear-gradient(135deg, #0d6efd, #0b5ed7) !important;
+                    background: var(--geosis-orange) !important;
                     border: none !important;
-                    border-radius: 14px !important;
-                    box-shadow: 0 6px 20px rgba(13,110,253,0.25) !important;
+                    border-radius: 12px !important;
+                    box-shadow: 0 6px 15px rgba(243, 156, 18, 0.3) !important;
                     transition: all 0.3s ease !important;
-                    font-weight: 600 !important;
+                    font-weight: 700 !important;
                     padding: 10px 20px !important;
+                    color: white !important;
                 }
                 .btn-primary:hover {
                     transform: translateY(-2px);
-                    box-shadow: 0 8px 25px rgba(13,110,253,0.35) !important;
+                    box-shadow: 0 8px 20px rgba(243, 156, 18, 0.4) !important;
                 }
                 .btn-outline-primary {
-                    border-radius: 14px !important;
-                    border-width: 2px !important;
-                    font-weight: 600 !important;
+                    border-radius: 12px !important;
+                    border: 2px solid var(--geosis-navy) !important;
+                    color: var(--geosis-navy) !important;
+                    font-weight: 700 !important;
                     padding: 8px 20px !important;
                 }
+                .btn-outline-primary:hover {
+                    background: var(--geosis-navy) !important;
+                    color: white !important;
+                }
+
+                /* BADGES / CHIPS */
                 .geosis-chip, .geosis-pill {
                     border-radius: 50px !important;
                     font-weight: 700 !important;
                     letter-spacing: 0.5px !important;
+                    font-size: 11px !important;
                 }
-                .table.geosis-clean-table th {
-                    text-transform: uppercase;
-                    font-size: 11px;
-                    letter-spacing: 1px;
-                    color: #8c98a4;
-                    font-weight: 800;
-                    border-bottom: 2px solid rgba(0,0,0,0.05) !important;
+                
+                /* TABLAS (WOW TABLE / RECIENTES) */
+                .table-wow th {
+                    text-transform: uppercase !important;
+                    font-size: 11px !important;
+                    letter-spacing: 0.5px !important;
+                    color: #94A3B8 !important;
+                    font-weight: 700 !important;
+                    border-bottom: 1px solid #F1F5F9 !important;
+                    border-top: none !important;
+                    padding: 16px 20px !important;
+                }
+                .table-wow td {
+                    padding: 16px 20px !important;
+                    border-bottom: 1px solid #F8FAFC !important;
+                    color: var(--geosis-navy) !important;
+                    font-size: 13px !important;
+                }
+                .table-wow tbody tr {
+                    transition: background 0.2s ease !important;
+                }
+                .table-wow tbody tr:hover {
+                    background: #F8FAFC !important;
+                }
+                /* Icon box inside table */
+                .table-wow tbody .bg-primary {
+                    background: #F1F5F9 !important;
+                    color: #64748B !important;
+                    box-shadow: none !important;
+                }
+                /* Links in table */
+                .table-wow a.text-dark {
+                    color: var(--geosis-navy) !important;
+                    font-weight: 700 !important;
+                    text-decoration: none !important;
+                    font-size: 14px !important;
+                }
+                /* Badge override inside table (Planificacion) */
+                .table-wow .wow-badge.bg-info {
+                    background: #E0F2FE !important;
+                    color: #0284C7 !important;
+                    border: none !important;
+                    border-radius: 6px !important;
+                    font-weight: 600 !important;
+                    padding: 4px 10px !important;
+                    font-size: 11px !important;
+                }
+                .table-wow .small.text-muted {
+                    color: #94A3B8 !important;
+                    font-size: 11px !important;
+                    margin-top: 4px !important;
                 }
                 .geosis-dashboard-hero {
                     border-radius: 24px !important;
                     overflow: hidden;
+                }
+                /* ============================ */
+                /* REDISEÑO MI EQUIPO           */
+                /* ============================ */
+                .geosis-team-hero {
+                    background: #FFFFFF !important;
+                    border: 1px solid #E2E8F0 !important;
+                    border-radius: 16px !important;
+                    padding: 24px 32px !important;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.02) !important;
+                    margin-bottom: 24px !important;
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                }
+                .geosis-team-hero h2 {
+                    color: var(--geosis-navy) !important;
+                    font-family: 'Outfit', sans-serif !important;
+                    font-size: 24px !important;
+                    font-weight: 800 !important;
+                    margin-bottom: 8px !important;
+                    margin-top: 0 !important;
+                }
+                .geosis-team-hero__eyebrow {
+                    color: #94A3B8 !important;
+                    font-size: 11px !important;
+                    font-weight: 700 !important;
+                    text-transform: uppercase !important;
+                    letter-spacing: 0.5px !important;
+                    margin-bottom: 4px !important;
+                }
+                .geosis-team-hero__lead {
+                    color: #64748B !important;
+                    font-size: 14px !important;
+                    margin: 0 !important;
+                }
+                .geosis-team-hero__stats {
+                    display: flex;
+                    gap: 16px;
+                }
+                .geosis-team-stat {
+                    background: #F8FAFC !important;
+                    border: 1px solid #E2E8F0 !important;
+                    border-radius: 12px !important;
+                    padding: 16px 24px !important;
+                    text-align: center;
+                    min-width: 120px;
+                }
+                .geosis-team-stat span {
+                    display: block;
+                    color: #94A3B8 !important;
+                    font-size: 11px !important;
+                    font-weight: 700 !important;
+                    text-transform: uppercase !important;
+                    letter-spacing: 0.5px !important;
+                }
+                .geosis-team-stat strong {
+                    display: block;
+                    color: var(--geosis-navy) !important;
+                    font-size: 28px !important;
+                    font-weight: 800 !important;
+                    margin-top: 4px !important;
+                }
+                
+                .geosis-team-layout {
+                    display: grid;
+                    grid-template-columns: 350px minmax(0, 1fr) !important;
+                    gap: 24px !important;
+                }
+                
+                .geosis-team-table-wrap {
+                    overflow-x: auto !important;
+                    width: 100% !important;
+                }
+                
+                .geosis-team-card {
+                    background: #FFFFFF !important;
+                    border: 1px solid #E2E8F0 !important;
+                    border-radius: 16px !important;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.02) !important;
+                    padding: 24px !important;
+                }
+                .geosis-team-card__header {
+                    border-bottom: 1px solid #F1F5F9 !important;
+                    padding-bottom: 16px !important;
+                    margin-bottom: 24px !important;
+                }
+                .geosis-team-card__header h3 {
+                    color: var(--geosis-navy) !important;
+                    font-size: 16px !important;
+                    font-weight: 700 !important;
+                    margin: 0 0 4px 0 !important;
+                }
+                .geosis-team-card__header p {
+                    color: #94A3B8 !important;
+                    font-size: 13px !important;
+                    margin: 0 !important;
+                }
+                
+                /* Form Inputs */
+                .geosis-team-form label {
+                    display: block;
+                    margin-bottom: 16px;
+                }
+                .geosis-team-form label span {
+                    display: block;
+                    color: var(--geosis-navy) !important;
+                    font-size: 13px !important;
+                    font-weight: 600 !important;
+                    margin-bottom: 8px !important;
+                }
+                .geosis-team-form .form-control,
+                .geosis-team-form .form-select {
+                    width: 100%;
+                    border: 1px solid #CBD5E1 !important;
+                    border-radius: 8px !important;
+                    padding: 10px 14px !important;
+                    font-size: 14px !important;
+                    background: #F8FAFC !important;
+                    color: var(--geosis-navy) !important;
+                    transition: all 0.2s ease;
+                }
+                .geosis-team-form .form-control:focus,
+                .geosis-team-form .form-select:focus {
+                    border-color: #6366F1 !important;
+                    background: #FFFFFF !important;
+                    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1) !important;
+                    outline: none;
+                }
+                .geosis-team-form .geosis-shot-action {
+                    width: 100%;
+                    background: #6366F1 !important;
+                    color: #FFFFFF !important;
+                    border: none !important;
+                    border-radius: 8px !important;
+                    padding: 12px !important;
+                    font-size: 14px !important;
+                    font-weight: 700 !important;
+                    margin-top: 8px !important;
+                    transition: all 0.2s ease;
+                }
+                .geosis-team-form .geosis-shot-action:hover {
+                    background: #4F46E5 !important;
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2) !important;
+                }
+                
+                /* Table overrides */
+                .geosis-team-table th {
+                    text-transform: uppercase !important;
+                    font-size: 11px !important;
+                    letter-spacing: 0.5px !important;
+                    color: #94A3B8 !important;
+                    font-weight: 700 !important;
+                    border-bottom: 1px solid #F1F5F9 !important;
+                    border-top: none !important;
+                    padding: 16px 20px !important;
+                }
+                .geosis-team-table td {
+                    padding: 16px 20px !important;
+                    border-bottom: 1px solid #F8FAFC !important;
+                    color: var(--geosis-navy) !important;
+                    font-size: 13px !important;
+                    vertical-align: middle !important;
+                }
+                .geosis-team-table tbody tr {
+                    transition: background 0.2s ease !important;
+                }
+                .geosis-team-table tbody tr:hover {
+                    background: #F8FAFC !important;
+                }
+                
+                /* Estado Badges */
+                .geosis-team-state {
+                    display: inline-block;
+                    padding: 4px 10px !important;
+                    border-radius: 6px !important;
+                    font-size: 11px !important;
+                    font-weight: 600 !important;
+                }
+                .geosis-team-state.is-active {
+                    background: #D1FAE5 !important;
+                    color: #059669 !important;
+                }
+                .geosis-team-state.is-inactive {
+                    background: #FEE2E2 !important;
+                    color: #DC2626 !important;
                 }
             </style>
 
@@ -118,15 +676,6 @@
             <div id="wrap" class="oe_structure">
                 <div class="geosis-app-shell">
                     <aside class="geosis-app-sidebar">
-                        <a href="/geosis/dashboard" class="geosis-app-brand">
-                            <div class="geosis-app-brand__logo">
-                                <img t-att-src="'/web/image/website/%s/logo' % request.website.id" alt="GEOSIS-PRO"/>
-                            </div>
-                            <div class="geosis-app-brand__copy">
-                                <strong>GEOSIS-PRO</strong>
-                                <span>Presupuestos, APUs y costos de obra</span>
-                            </div>
-                        </a>
 
                         <nav class="geosis-app-menu">
                             <t t-set="is_geosis_team_admin" t-value="request.env.user.has_group('geosis_base.group_geosis_admin') or request.env.user.partner_id.id == request.env.user.partner_id.commercial_partner_id.id"/>
@@ -189,23 +738,35 @@
                             </a>
                         </nav>
 
-                        <a href="/my/profile" class="geosis-app-user">
-                            <div class="geosis-app-user__avatar">
-                                <i class="fa fa-user"/>
-                            </div>
-                            <div class="geosis-app-user__copy">
-                                <strong><t t-esc="request.env.user.name"/></strong>
-                                <span><t t-esc="request.env.user.partner_id.email or 'Portal cliente GEOSIS'"/></span>
-                            </div>
-                        </a>
-
-                        <a href="/web/session/logout?redirect=/" class="geosis-app-logout">
-                            <i class="fa fa-sign-out"/> Cerrar sesión
-                        </a>
                     </aside>
 
                     <main class="geosis-app-main">
-
+                        <header class="geosis-global-topbar">
+                            <a href="/geosis/dashboard" class="geosis-app-brand">
+                                <div class="geosis-app-brand__logo">
+                                    <img t-att-src="'/web/image/website/%s/logo' % request.website.id" alt="GEOSIS-PRO"/>
+                                </div>
+                                <div class="geosis-app-brand__copy">
+                                    <strong>GEOSIS-PRO</strong>
+                                    <span>Presupuestos, APUs y costos de obra</span>
+                                </div>
+                            </a>
+                            
+                            <div style="display: flex; align-items: center;">
+                                <a href="/my/profile" class="geosis-app-user">
+                                <div class="geosis-app-user__avatar">
+                                    <i class="fa fa-user"/>
+                                </div>
+                                <div class="geosis-app-user__copy">
+                                    <strong><t t-esc="request.env.user.name"/></strong>
+                                    <span><t t-esc="request.env.user.partner_id.email or 'Portal cliente GEOSIS'"/></span>
+                                </div>
+                            </a>
+                            <a href="/web/session/logout?redirect=/" class="geosis-app-logout">
+                                <i class="fa fa-sign-out"/> Cerrar sesión
+                            </a>
+                            </div>
+                        </header>
 
                         <section class="geosis-app-content">
                             <t t-out="0"/>
