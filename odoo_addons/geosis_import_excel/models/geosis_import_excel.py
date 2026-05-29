@@ -635,11 +635,15 @@ class GeosisExcelImportWizard(models.TransientModel):
         else:
             domain.append(('name', '=', project_name))
 
+        partner_id_to_use = self.partner_id.id if self.partner_id else self._resolve_partner(metadata.get('partner_id'))
+        if partner_id_to_use:
+            domain.append(('partner_id', '=', partner_id_to_use))
+
         project = project_model.search(domain, limit=1)
         values = {
             'code': project_code or self._make_code('PROY', project_name),
             'name': project_name or project_code,
-            'partner_id': self.partner_id.id if self.partner_id else self._resolve_partner(metadata.get('partner_id')),
+            'partner_id': partner_id_to_use,
             'location': self.location or metadata.get('location') or False,
             'latitude': self.latitude or 0.0,
             'longitude': self.longitude or 0.0,
@@ -652,6 +656,9 @@ class GeosisExcelImportWizard(models.TransientModel):
         if project:
             project.write(values)
         else:
+            existing = project_model.search([('company_id', '=', company.id), ('code', '=', values['code'])], limit=1)
+            if existing:
+                values['code'] = f"{values['code']}-{partner_id_to_use}"
             project = project_model.create(values)
 
         return project
@@ -664,24 +671,25 @@ class GeosisExcelImportWizard(models.TransientModel):
             (self.budget_code or metadata.get('budget_code') or '').strip()
             or self._make_code('PRES', file_stem)
         )
-        
-        # Limpieza de seguridad para evitar errores de integridad en el borrado (si existiera)
-        self.env.cr.execute("UPDATE geosis_budget SET project_id = NULL WHERE code = %s", [budget_code])
+
 
         budget_name = (
             (self.budget_name or metadata.get('budget_name') or '').strip()
             or file_stem
         )
 
-        budget = budget_model.search(
-            [('company_id', '=', company.id), ('code', '=', budget_code)],
-            limit=1,
-        )
+        partner_id_to_use = self.partner_id.id if self.partner_id else self._resolve_partner(metadata.get('partner_id'))
+        
+        domain = [('company_id', '=', company.id), ('code', '=', budget_code)]
+        if partner_id_to_use:
+            domain.append(('partner_id', '=', partner_id_to_use))
+
+        budget = budget_model.search(domain, limit=1)
 
         values = {
             'code': budget_code,
             'name': budget_name,
-            'partner_id': self.partner_id.id if self.partner_id else self._resolve_partner(metadata.get('partner_id')),
+            'partner_id': partner_id_to_use,
             'location': self.location or metadata.get('location') or False,
             'budget_date': self.budget_date,
             'description': self.note or False,
@@ -693,6 +701,9 @@ class GeosisExcelImportWizard(models.TransientModel):
         if budget:
             budget.write(values)
         else:
+            existing = budget_model.search([('company_id', '=', company.id), ('code', '=', values['code'])], limit=1)
+            if existing:
+                values['code'] = f"{values['code']}-{partner_id_to_use}"
             budget = budget_model.create(values)
 
         return budget

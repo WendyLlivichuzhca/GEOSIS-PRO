@@ -2114,9 +2114,9 @@ class GeosisCustomerPortal(CustomerPortal):
             url_args={'search': search, 'active': active, 'sort_by': sort_by, 'location': location},
             total=rubro_count,
             page=page,
-            step=20,
+            step=10,
         )
-        rubros = Apu.search(domain, order=order, limit=20, offset=pager['offset'])
+        rubros = Apu.search(domain, order=order, limit=10, offset=pager['offset'])
 
         # Obtener ubicaciones únicas disponibles
         available_locations = Apu.read_group([], ['location'], ['location'])
@@ -2142,8 +2142,8 @@ class GeosisCustomerPortal(CustomerPortal):
         }
         return request.render("geosis_website.portal_my_rubros", values)
 
-    @http.route(['/my/rubro/<int:apu_id>'], type='http', auth="user", website=True)
-    def portal_my_rubro_detail(self, apu_id, **kw):
+    @http.route(['/my/rubro/<int:apu_id>', '/my/rubro/<int:apu_id>/page/<int:page>'], type='http', auth="user", website=True)
+    def portal_my_rubro_detail(self, apu_id, page=1, **kw):
         if self._is_portal_resident() or self._is_portal_appraiser():
             return self._deny_portal_access()
 
@@ -2168,8 +2168,20 @@ class GeosisCustomerPortal(CustomerPortal):
             resource_grouped_lines.setdefault(category, []).append(line)
             resource_subtotals[category] = resource_subtotals.get(category, 0.0) + (line.cost or 0.0)
 
+        lines = apu.line_ids.sorted(lambda l: (l.sequence, l.id))
+        line_count = len(lines)
+        pager = portal_pager(
+            url=f"/my/rubro/{apu_id}",
+            total=line_count,
+            page=page,
+            step=10
+        )
+        lines_paged = lines[pager['offset']:pager['offset'] + 10]
+
         values = {
             'apu': apu,
+            'lines_paged': lines_paged,
+            'pager': pager,
             'page_name': 'rubro',
             'resource_categories': resource_categories,
             'success': kw.get('success'),
