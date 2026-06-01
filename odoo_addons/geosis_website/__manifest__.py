@@ -17,11 +17,13 @@
         'geosis_avaluos',
     ],
     'data': [
+        'views/geosis_website_templates.xml',
         'views/geosis_portal_templates.xml',
         'views/geosis_report_templates.xml',
     ],
     'assets': {
         'web.assets_frontend': [
+            'geosis_website/static/src/scss/geosis_website.scss',
             'geosis_website/static/src/scss/geosis_portal.scss',
         ],
     },

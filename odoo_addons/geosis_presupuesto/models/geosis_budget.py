@@ -1,4 +1,5 @@
 from odoo import api, fields, models
+from odoo.exceptions import UserError
 
 
 class GeosisBudget(models.Model):
@@ -218,7 +219,7 @@ class GeosisBudget(models.Model):
                 index_data[index_id] = index_data.get(index_id, 0.0) + resource_cost
 
         if total_calculated_direct_cost <= 0:
-            raise models.UserError("El presupuesto no tiene costos de recursos para calcular.")
+            raise UserError("El presupuesto no tiene costos de recursos para calcular.")
 
         # 2. Crear las líneas de la fórmula
         # Primero la Mano de Obra (Símbolo 'a')

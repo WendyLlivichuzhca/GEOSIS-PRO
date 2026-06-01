@@ -1,5 +1,10 @@
 import base64
+import logging
+
 from odoo import api, fields, models
+
+_logger = logging.getLogger(__name__)
+
 
 class GeosisBitacora(models.Model):
     _name = 'geosis.bitacora'
@@ -64,7 +69,8 @@ class GeosisBitacora(models.Model):
                 if last_est and last_est.code and last_est.code.startswith('EST-'):
                     try:
                         next_num = int(last_est.code.split('-')[1]) + 1
-                    except: pass
+                    except (IndexError, ValueError):
+                        _logger.warning("No se pudo calcular el siguiente codigo de planilla desde %s", last_est.code)
                 code = "EST-%04d" % next_num
 
                 estimation = Estimation.create({

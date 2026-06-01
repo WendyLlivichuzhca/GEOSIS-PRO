@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import logging
 from datetime import date, timedelta
 from urllib.parse import quote
 
@@ -7,6 +8,9 @@ from odoo.http import request
 from odoo.addons.portal.controllers.portal import CustomerPortal, pager as portal_pager
 from odoo.osv import expression
 import base64
+
+_logger = logging.getLogger(__name__)
+
 
 class GeosisCustomerPortal(CustomerPortal):
     def _parse_portal_float(self, value, default=0.0):
@@ -2901,7 +2905,8 @@ class GeosisCustomerPortal(CustomerPortal):
         if last_est and last_est.code.startswith('EST-'):
             try:
                 next_num = int(last_est.code.split('-')[1]) + 1
-            except: pass
+            except (IndexError, ValueError):
+                _logger.warning("No se pudo calcular el siguiente codigo de planilla desde %s", last_est.code)
         code = "EST-%04d" % next_num
         
         # Crear planilla

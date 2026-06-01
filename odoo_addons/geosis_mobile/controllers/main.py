@@ -238,8 +238,8 @@ class GeosisMobileAPI(http.Controller):
             is_admin = current_user.has_group('geosis_base.group_geosis_admin')
             
             # Chequeo seguro del rol perito
-            has_perito_group = request.env.ref('geosis_base.group_geosis_perito', raise_if_not_found=False)
-            is_perito = current_user.has_group('geosis_base.group_geosis_perito') if has_perito_group else (not (is_resident or is_supervisor) or is_admin)
+            has_perito_group = request.env.ref('geosis_base.group_geosis_portal_appraiser', raise_if_not_found=False)
+            is_perito = current_user.has_group('geosis_base.group_geosis_portal_appraiser') if has_perito_group else (not (is_resident or is_supervisor) or is_admin)
 
             User = request.env['res.users'].sudo()
             
@@ -252,7 +252,7 @@ class GeosisMobileAPI(http.Controller):
                 u_is_admin = u.has_group('geosis_base.group_geosis_admin')
                 u_is_supervisor = u.has_group('geosis_base.group_geosis_portal_supervisor')
                 u_is_resident = u.has_group('geosis_base.group_geosis_portal_resident')
-                u_is_perito = u.has_group('geosis_base.group_geosis_perito') if has_perito_group else (not (u_is_resident or u_is_supervisor) or u_is_admin)
+                u_is_perito = u.has_group('geosis_base.group_geosis_portal_appraiser') if has_perito_group else (not (u_is_resident or u_is_supervisor) or u_is_admin)
                 
                 # Reglas de visibilidad
                 if is_admin:
