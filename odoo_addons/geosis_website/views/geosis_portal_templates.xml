@@ -4832,61 +4832,246 @@
                 </a>
             </div>
 
-            <section class="geosis-apu-header-card">
-                <div class="border-bottom pb-3 mb-4 d-flex align-items-center gap-3">
-                    <div class="geosis-meta-item__icon is-blue">
+            <style>
+                .geosis-premium-form-card {
+                    background: #ffffff;
+                    border: 1px solid rgba(226, 232, 240, 0.8);
+                    border-radius: 20px;
+                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0, 0, 0, 0.02);
+                    padding: 2.5rem;
+                    position: relative;
+                    overflow: hidden;
+                }
+                .geosis-premium-form-card::before {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    height: 6px;
+                    background: linear-gradient(90deg, var(--geosis-blue), var(--geosis-cyan));
+                }
+                .geosis-input-group {
+                    margin-bottom: 1.5rem;
+                }
+                .geosis-input-group label {
+                    display: block;
+                    font-size: 0.75rem;
+                    font-weight: 700;
+                    color: #64748b;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    margin-bottom: 0.5rem;
+                }
+                .geosis-input {
+                    display: block;
+                    width: 100%;
+                    padding: 0.75rem 1rem;
+                    font-size: 0.95rem;
+                    font-weight: 500;
+                    color: #1e293b;
+                    background-color: #f8fafc;
+                    background-clip: padding-box;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 12px;
+                    transition: all 0.2s ease-in-out;
+                }
+                .geosis-input:focus {
+                    color: #1e293b;
+                    background-color: #ffffff;
+                    border-color: var(--geosis-blue);
+                    outline: 0;
+                    box-shadow: 0 0 0 4px rgba(15, 117, 188, 0.1);
+                }
+                .geosis-input::placeholder {
+                    color: #94a3b8;
+                    font-weight: 400;
+                }
+                .geosis-input-readonly {
+                    background-color: #f1f5f9;
+                    border-color: #cbd5e1;
+                    border-style: dashed;
+                    color: #64748b;
+                    cursor: not-allowed;
+                }
+                .geosis-checkbox-card {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 1rem;
+                    padding: 1rem 1.25rem;
+                    background: #f8fafc;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 12px;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                }
+                .geosis-checkbox-card:hover {
+                    background: #f1f5f9;
+                    border-color: #cbd5e1;
+                }
+                .geosis-checkbox-card input[type="checkbox"] {
+                    width: 20px;
+                    height: 20px;
+                    accent-color: var(--geosis-blue);
+                    cursor: pointer;
+                }
+                .geosis-checkbox-card span {
+                    font-size: 0.9rem;
+                    font-weight: 600;
+                    color: #334155;
+                }
+                .geosis-btn-premium {
+                    padding: 0.75rem 1.5rem;
+                    font-size: 0.95rem;
+                    font-weight: 600;
+                    border-radius: 12px;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    transition: all 0.2s ease;
+                    text-decoration: none !important;
+                }
+                .geosis-btn-primary {
+                    background: linear-gradient(135deg, var(--geosis-blue), #0d64a3);
+                    color: white !important;
+                    border: none;
+                    box-shadow: 0 4px 12px rgba(15, 117, 188, 0.25);
+                }
+                .geosis-btn-primary:hover {
+                    transform: translateY(-1px);
+                    box-shadow: 0 6px 16px rgba(15, 117, 188, 0.35);
+                    color: white !important;
+                }
+                .geosis-btn-secondary {
+                    background: #ffffff;
+                    color: #475569 !important;
+                    border: 1px solid #cbd5e1;
+                }
+                .geosis-btn-secondary:hover {
+                    background: #f8fafc;
+                    color: #1e293b !important;
+                    border-color: #94a3b8;
+                }
+                .geosis-form-grid-premium {
+                    display: grid;
+                    grid-template-columns: repeat(12, 1fr);
+                    gap: 1.5rem;
+                }
+                .geosis-col-12 { grid-column: span 12; }
+                .geosis-col-md-6 { grid-column: span 12; }
+                .geosis-col-md-4 { grid-column: span 12; }
+                .geosis-col-md-8 { grid-column: span 12; }
+                @media (min-width: 768px) {
+                    .geosis-col-md-6 { grid-column: span 6; }
+                    .geosis-col-md-4 { grid-column: span 4; }
+                    .geosis-col-md-8 { grid-column: span 8; }
+                }
+                .geosis-header-premium {
+                    display: flex;
+                    align-items: center;
+                    gap: 1.25rem;
+                    margin-bottom: 2rem;
+                    padding-bottom: 1.5rem;
+                    border-bottom: 1px solid #e2e8f0;
+                }
+                .geosis-header-icon {
+                    width: 56px;
+                    height: 56px;
+                    border-radius: 16px;
+                    background: linear-gradient(135deg, rgba(15, 117, 188, 0.1), rgba(0, 180, 216, 0.1));
+                    color: var(--geosis-blue);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 1.5rem;
+                }
+                .geosis-header-title {
+                    margin: 0;
+                    font-size: 1.5rem;
+                    font-weight: 800;
+                    color: #0f172a;
+                    letter-spacing: -0.02em;
+                }
+                .geosis-header-subtitle {
+                    margin: 0 0 0.25rem 0;
+                    font-size: 0.85rem;
+                    font-weight: 700;
+                    color: var(--geosis-cyan);
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                }
+            </style>
+
+            <section class="geosis-premium-form-card">
+                <div class="geosis-header-premium">
+                    <div class="geosis-header-icon">
                         <i class="fa fa-folder-open"/>
                     </div>
                     <div>
-                        <span class="geosis-pill mb-1">Formulario Técnico</span>
-                        <h2 class="h4 mb-0 font-weight-bold text-dark"><t t-esc="'Editar rubro' if apu else 'Crear nuevo rubro'"/></h2>
+                        <p class="geosis-header-subtitle">Formulario Técnico</p>
+                        <h2 class="geosis-header-title"><t t-esc="'Editar rubro' if apu else 'Crear nuevo rubro'"/></h2>
                     </div>
                 </div>
 
                 <div t-if="error_message" class="alert alert-danger" role="alert"><t t-esc="error_message"/></div>
                 
-                <form t-att-action="'/my/rubro/%s/edit' % apu.id if apu else '/my/rubros/new'" method="post" class="geosis-form">
+                <form t-att-action="'/my/rubro/%s/edit' % apu.id if apu else '/my/rubros/new'" method="post">
                     <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                     <input type="hidden" name="code" t-att-value="form_data.get('code', '')"/>
                     
-                    <div class="geosis-form__grid mb-4">
-                        <label>
-                            <span class="text-uppercase small font-weight-bold text-muted mb-1 d-block"><i class="fa fa-lock me-1"/> Código (Automático)</span>
-                            <input type="text" class="form-control bg-light text-muted font-weight-bold border-dashed" t-att-value="form_data.get('code') or 'Se genera automáticamente al guardar'" readonly="readonly" style="cursor: not-allowed; border-style: dashed;"/>
-                        </label>
-                        <label>
-                            <span class="text-uppercase small font-weight-bold text-muted mb-1 d-block">Nombre del rubro</span>
-                            <input type="text" name="name" t-att-value="form_data.get('name', '')" class="form-control form-control-lg font-weight-bold" required="required" placeholder="Ej: Excavación de zanjas a mano..."/>
-                        </label>
-                        <label>
-                            <span class="text-uppercase small font-weight-bold text-muted mb-1 d-block">Unidad de Medida</span>
-                            <input type="text" name="uom_name" t-att-value="form_data.get('uom_name', 'U')" class="form-control" required="required" placeholder="m3, m2, kg, U, etc..."/>
-                        </label>
-                        <label>
-                            <span class="text-uppercase small font-weight-bold text-muted mb-1 d-block">Costos Indirectos (%)</span>
-                            <input type="number" step="0.01" min="0" max="100" name="indirect_percent" t-att-value="form_data.get('indirect_percent', 0.0)" class="form-control text-end font-weight-bold" placeholder="15.00"/>
-                        </label>
-                        <label>
-                            <span class="text-uppercase small font-weight-bold text-muted mb-1 d-block">Código CPC</span>
-                            <input type="text" name="cpc_code" t-att-value="form_data.get('cpc_code', '')" class="form-control" placeholder="Ej: 54110..."/>
-                        </label>
+                    <div class="geosis-form-grid-premium">
+                        <!-- Codigo -->
+                        <div class="geosis-input-group geosis-col-md-4">
+                            <label><i class="fa fa-lock me-1"/> Código (Automático)</label>
+                            <input type="text" class="geosis-input geosis-input-readonly" t-att-value="form_data.get('code') or 'Se genera al guardar'" readonly="readonly"/>
+                        </div>
+                        
+                        <!-- Nombre -->
+                        <div class="geosis-input-group geosis-col-md-8">
+                            <label>Nombre del rubro</label>
+                            <input type="text" name="name" t-att-value="form_data.get('name', '')" class="geosis-input" required="required" placeholder="Ej: Excavación de zanjas a mano..."/>
+                        </div>
+                        
+                        <!-- Unidad -->
+                        <div class="geosis-input-group geosis-col-md-4">
+                            <label>Unidad de Medida</label>
+                            <input type="text" name="uom_name" t-att-value="form_data.get('uom_name', 'U')" class="geosis-input" required="required" placeholder="m3, m2, kg, U, etc..."/>
+                        </div>
+                        
+                        <!-- Costos Indirectos -->
+                        <div class="geosis-input-group geosis-col-md-4">
+                            <label>Costos Indirectos (%)</label>
+                            <input type="number" step="0.01" min="0" max="100" name="indirect_percent" t-att-value="form_data.get('indirect_percent', 0.0)" class="geosis-input" placeholder="15.00"/>
+                        </div>
+                        
+                        <!-- CPC -->
+                        <div class="geosis-input-group geosis-col-md-4">
+                            <label>Código CPC</label>
+                            <input type="text" name="cpc_code" t-att-value="form_data.get('cpc_code', '')" class="geosis-input" placeholder="Ej: 54110..."/>
+                        </div>
+                        
+                        <!-- Observaciones -->
+                        <div class="geosis-input-group geosis-col-12">
+                            <label>Observaciones y Especificaciones</label>
+                            <textarea name="description" class="geosis-input" rows="4" placeholder="Escribe aquí las especificaciones técnicas o notas especiales de este rubro..."><t t-esc="form_data.get('description', '')"/></textarea>
+                        </div>
+                        
+                        <!-- Activo -->
+                        <div class="geosis-col-12 mb-2">
+                            <label class="geosis-checkbox-card">
+                                <input type="checkbox" name="active" value="1" t-att-checked="'checked' if form_data.get('active') else None"/>
+                                <span>Habilitar este rubro en el catálogo (Activo)</span>
+                            </label>
+                        </div>
                     </div>
 
-                    <label class="geosis-form__block mb-4">
-                        <span class="text-uppercase small font-weight-bold text-muted mb-1 d-block">Observaciones y Especificaciones</span>
-                        <textarea name="description" class="form-control" rows="4" placeholder="Escribe aquí las especificaciones técnicas o notas especiales de este rubro..."><t t-esc="form_data.get('description', '')"/></textarea>
-                    </label>
-
-                    <div class="mb-4 p-3 bg-light rounded border d-inline-block">
-                        <label class="geosis-form__check m-0 d-flex align-items-center gap-2" style="cursor: pointer;">
-                            <input type="checkbox" name="active" value="1" t-att-checked="'checked' if form_data.get('active') else None" style="width: 18px; height: 18px;"/>
-                            <span class="font-weight-bold text-dark">Habilitar este rubro en el catálogo (Activo)</span>
-                        </label>
-                    </div>
-
-                    <div class="geosis-form__actions border-top pt-3 d-flex gap-2">
-                        <button type="submit" class="btn btn-primary px-4"><i class="fa fa-save me-1"/> <t t-esc="'Guardar cambios' if apu else 'Guardar rubro'"/></button>
-                        <a t-att-href="'/my/rubro/%s' % apu.id if apu else '/my/rubros'" class="btn btn-outline-secondary px-4"><i class="fa fa-times me-1"/> Cancelar</a>
+                    <div class="pt-4 mt-2 border-top d-flex gap-3">
+                        <button type="submit" class="geosis-btn-premium geosis-btn-primary">
+                            <i class="fa fa-save"/> <t t-esc="'Guardar cambios' if apu else 'Guardar rubro'"/>
+                        </button>
+                        <a t-att-href="'/my/rubro/%s' % apu.id if apu else '/my/rubros'" class="geosis-btn-premium geosis-btn-secondary">
+                            <i class="fa fa-times"/> Cancelar
+                        </a>
                     </div>
                 </form>
             </section>
@@ -5076,7 +5261,7 @@
                                                     <select name="resource_id" class="form-select bg-light border-0" id="geosis-rubro-resource" onchange="geosisSyncResourceForm()">
                                                         <t t-foreach="resource_available" t-as="resource">
                                                             <option t-att-value="resource.id"
-                                                                    t-att-data-category="resource.category"
+                                                                    t-att-data-category="resource.category_id.id"
                                                                     t-att-data-price="'%.4f' % (resource.price or 0.0)"
                                                                     t-att-data-uom="resource.uom_id.name or ''">
                                                                 <t t-esc="resource.name"/>
@@ -5170,12 +5355,12 @@
                                                 <td class="font-weight-bold text-dark" style="max-width: 250px;"><t t-esc="line.resource_id.name or '-'"/></td>
                                                 <td>
                                                     <span t-attf-class="geosis-category-badge #{
-                                                        'is-equipos' if line.category == 'M' else
-                                                        'is-mano' if line.category == 'N' else
-                                                        'is-materiales' if line.category == 'O' else
-                                                        'is-transporte' if line.category == 'P' else ''
+                                                        'is-equipos' if line.category_id.code == 'M' else
+                                                        'is-mano' if line.category_id.code == 'N' else
+                                                        'is-materiales' if line.category_id.code == 'O' else
+                                                        'is-transporte' if line.category_id.code == 'P' else ''
                                                     }" style="font-size: 0.70rem; padding: 2px 6px;">
-                                                        <t t-esc="dict(line._fields['category'].selection).get(line.category) or '-'"/>
+                                                        <t t-esc="line.category_id.name or '-'"/>
                                                     </span>
                                                 </td>
                                                 <td class="text-center"><span class="geosis-chip px-2"><t t-esc="line.uom_name or '-'"/></span></td>
@@ -5527,10 +5712,9 @@
                     </div>
                     <select name="category" class="form-select">
                         <option value="all" t-att-selected="'selected' if selected_category == 'all' else None">Todas las categorias</option>
-                        <option value="M" t-att-selected="'selected' if selected_category == 'M' else None">Equipos</option>
-                        <option value="N" t-att-selected="'selected' if selected_category == 'N' else None">Mano de obra</option>
-                        <option value="O" t-att-selected="'selected' if selected_category == 'O' else None">Materiales</option>
-                        <option value="P" t-att-selected="'selected' if selected_category == 'P' else None">Transporte</option>
+                        <t t-foreach="categories" t-as="cat">
+                            <option t-att-value="cat.id" t-att-selected="'selected' if selected_category == str(cat.id) else None"><t t-esc="cat.name"/></option>
+                        </t>
                     </select>
                     <select name="location" class="form-select">
                         <option value="all" t-att-selected="'selected' if selected_location == 'all' else None">Todas las ubicaciones</option>
@@ -5591,8 +5775,8 @@
                                         </td>
                                         <td><t t-esc="resource.location or 'Global'"/></td>
                                         <td>
-                                             <span t-attf-class="geosis-chip #{'is-equipos' if resource.category == 'M' else 'is-mano-de-obra' if resource.category == 'N' else 'is-materiales' if resource.category == 'O' else 'is-transporte'}">
-                                                 <t t-esc="dict(resource._fields['category'].selection).get(resource.category)"/>
+                                             <span t-attf-class="geosis-chip #{'is-equipos' if resource.category_id.code == 'M' else 'is-mano-de-obra' if resource.category_id.code == 'N' else 'is-materiales' if resource.category_id.code == 'O' else 'is-transporte'}">
+                                                 <t t-esc="resource.category_id.name"/>
                                              </span>
                                          </td>
                                          <td><t t-esc="resource.uom_id.name"/></td>
@@ -5987,7 +6171,7 @@
                             </div>
                             <div class="geosis-meta-item__content">
                                 <span>Categoría</span>
-                                <strong><t t-esc="dict(resource._fields['category'].selection).get(resource.category) or '-'"/></strong>
+                                <strong><t t-esc="resource.category_id.name or '-'"/></strong>
                             </div>
                         </div>
                         <!-- Ubicacion -->
@@ -6212,13 +6396,21 @@
                         </label>
                         <label>
                             <span class="text-uppercase small font-weight-bold text-muted mb-1 d-block">Categoría</span>
-                            <select name="category" class="form-select font-weight-bold">
-                                <option value="M" t-att-selected="'selected' if form_data.get('category') == 'M' else None">Equipos</option>
-                                <option value="N" t-att-selected="'selected' if form_data.get('category') == 'N' else None">Mano de Obra</option>
-                                <option value="O" t-att-selected="'selected' if form_data.get('category', 'O') == 'O' else None">Materiales</option>
-                                <option value="P" t-att-selected="'selected' if form_data.get('category') == 'P' else None">Transporte</option>
+                            <select name="category" class="form-select font-weight-bold" onchange="if(this.value === 'other') { document.getElementById('new-category-container').style.display = 'block'; document.getElementById('new_category_name').setAttribute('required', 'required'); } else { document.getElementById('new-category-container').style.display = 'none'; document.getElementById('new_category_name').removeAttribute('required'); }">
+                                <t t-foreach="categories" t-as="cat">
+                                    <option t-att-value="cat.id" t-att-selected="'selected' if form_data.get('category_id') == cat.id else None">
+                                        <t t-esc="cat.name"/>
+                                    </option>
+                                </t>
+                                <option value="other" class="text-primary font-weight-bold" t-att-selected="'selected' if form_data.get('category') == 'other' else None">Otro / Nueva Categoría...</option>
                             </select>
                         </label>
+                        <div id="new-category-container" t-att-style="'display: block;' if form_data.get('category') == 'other' else 'display: none;'">
+                            <label>
+                                <span class="text-uppercase small font-weight-bold text-primary mb-1 d-block"><i class="fa fa-plus-circle me-1"/> Nombre de la Nueva Categoría</span>
+                                <input type="text" id="new_category_name" name="new_category_name" class="form-control border-primary" placeholder="Ej: Subcontratos..."/>
+                            </label>
+                        </div>
                         <label>
                             <span class="text-uppercase small font-weight-bold text-muted mb-1 d-block">Unidad de Medida</span>
                             <select name="uom_id" class="form-select" required="required">

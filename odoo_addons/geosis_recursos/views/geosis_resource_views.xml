@@ -7,7 +7,7 @@
             <tree>
                 <field name="code"/>
                 <field name="name"/>
-                <field name="category"/>
+                <field name="category_id"/>
                 <field name="uom_id"/>
                 <field name="cpc_code" optional="show"/>
                 <field name="inec_index_id" optional="show"/>
@@ -28,7 +28,7 @@
                         <group>
                             <field name="code"/>
                             <field name="name"/>
-                            <field name="category"/>
+                            <field name="category_id"/>
                         </group>
                         <group>
                             <field name="uom_id"/>
@@ -57,12 +57,13 @@
                 <filter string="Activos" name="active_true" domain="[('active', '=', True)]"/>
                 <filter string="Inactivos" name="active_false" domain="[('active', '=', False)]"/>
                 <separator/>
-                <filter string="Equipos" name="category_m" domain="[('category', '=', 'M')]"/>
-                <filter string="Mano de Obra" name="category_n" domain="[('category', '=', 'N')]"/>
-                <filter string="Materiales" name="category_o" domain="[('category', '=', 'O')]"/>
-                <filter string="Transporte" name="category_p" domain="[('category', '=', 'P')]"/>
+                <filter string="Equipos" name="category_m" domain="[('category_id.code', '=', 'E')]"/>
+                <filter string="Mano de Obra" name="category_n" domain="[('category_id.code', '=', 'M')]"/>
+                <filter string="Materiales" name="category_o" domain="[('category_id.code', '=', 'N')]"/>
+                <filter string="Transporte" name="category_p" domain="[('category_id.code', '=', 'T')]"/>
+                <separator/>
                 <group expand="0" string="Agrupar por">
-                    <filter string="Categoria" name="group_by_category" context="{'group_by': 'category'}"/>
+                    <filter string="Categoria" name="group_by_category" context="{'group_by': 'category_id'}"/>
                     <filter string="Unidad" name="group_by_uom" context="{'group_by': 'uom_id'}"/>
                 </group>
             </search>

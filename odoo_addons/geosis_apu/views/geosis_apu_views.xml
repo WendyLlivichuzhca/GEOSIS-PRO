@@ -68,7 +68,7 @@
                                 <tree editable="bottom" string="Detalle de recursos">
                                     <field name="sequence" widget="handle"/>
                                     <field name="resource_id"/>
-                                    <field name="category"/>
+                                    <field name="category_id"/>
                                     <field name="uom_name"/>
                                     <field name="quantity"/>
                                     <field name="rate"/>

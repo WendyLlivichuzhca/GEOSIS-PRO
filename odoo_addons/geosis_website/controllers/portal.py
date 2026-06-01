@@ -514,7 +514,7 @@ class GeosisCustomerPortal(CustomerPortal):
         # Estadisticas de recursos
         res_stats = {}
         for cat in ['M', 'N', 'O', 'P']:
-            resources = Resource.search([('category', '=', cat)])
+            resources = Resource.search([('category_id.code', '=', cat)])
             res_stats[cat] = {
                 'count': len(resources),
                 'avg': sum(resources.mapped('price')) / len(resources) if resources else 0.0
@@ -535,11 +535,11 @@ class GeosisCustomerPortal(CustomerPortal):
         )
 
         # Datos para gráfico de pastel (Distribución de Costos Global)
-        cost_dist = {
-            'M': sum(Resource.search([('category', '=', 'M')]).mapped('price')),
-            'N': sum(Resource.search([('category', '=', 'N')]).mapped('price')),
-            'O': sum(Resource.search([('category', '=', 'O')]).mapped('price')),
-            'P': sum(Resource.search([('category', '=', 'P')]).mapped('price')),
+        cat_subtotals = {
+            'M': sum(Resource.search([('category_id.code', '=', 'M')]).mapped('price')),
+            'N': sum(Resource.search([('category_id.code', '=', 'N')]).mapped('price')),
+            'O': sum(Resource.search([('category_id.code', '=', 'O')]).mapped('price')),
+            'P': sum(Resource.search([('category_id.code', '=', 'P')]).mapped('price')),
         }
 
         values = {
@@ -550,7 +550,7 @@ class GeosisCustomerPortal(CustomerPortal):
             'latest_projects': latest_projects,
             'res_stats': res_stats,
             'critical_tasks': critical_tasks,
-            'cost_dist': cost_dist,
+            'cost_dist': cat_subtotals,
             'page_name': 'home',
         }
         return request.render("geosis_website.geosis_private_dashboard_page", values)
@@ -586,7 +586,7 @@ class GeosisCustomerPortal(CustomerPortal):
 
         res_stats = {}
         for cat in ['M', 'N', 'O', 'P']:
-            resources = Resource.search([('category', '=', cat), ('active', '=', True)])
+            resources = Resource.search([('category_id.code', '=', cat), ('active', '=', True)])
             res_stats[cat] = {
                 'count': len(resources),
                 'avg': sum(resources.mapped('price')) / len(resources) if resources else 0.0,
@@ -645,11 +645,11 @@ class GeosisCustomerPortal(CustomerPortal):
             'rejected': Estimation.search_count(estimation_domain + [('state', '=', 'rejected')]),
         }
 
-        cost_dist = {
-            'M': sum(Resource.search([('category', '=', 'M'), ('active', '=', True)]).mapped('price')),
-            'N': sum(Resource.search([('category', '=', 'N'), ('active', '=', True)]).mapped('price')),
-            'O': sum(Resource.search([('category', '=', 'O'), ('active', '=', True)]).mapped('price')),
-            'P': sum(Resource.search([('category', '=', 'P'), ('active', '=', True)]).mapped('price')),
+        cat_subtotals = {
+            'M': sum(Resource.search([('category_id.code', '=', 'M'), ('active', '=', True)]).mapped('price')),
+            'N': sum(Resource.search([('category_id.code', '=', 'N'), ('active', '=', True)]).mapped('price')),
+            'O': sum(Resource.search([('category_id.code', '=', 'O'), ('active', '=', True)]).mapped('price')),
+            'P': sum(Resource.search([('category_id.code', '=', 'P'), ('active', '=', True)]).mapped('price')),
         }
 
         avaluo_total_count = 0
@@ -693,7 +693,7 @@ class GeosisCustomerPortal(CustomerPortal):
             'latest_projects': latest_projects,
             'res_stats': res_stats,
             'critical_tasks': critical_tasks,
-            'cost_dist': cost_dist,
+            'cost_dist': cat_subtotals,
             'avaluo_total_count': avaluo_total_count,
             'avaluo_pending_count': avaluo_pending_count,
             'avaluo_inspected_count': avaluo_inspected_count,
@@ -2150,23 +2150,24 @@ class GeosisCustomerPortal(CustomerPortal):
         apu = request.env['geosis.apu'].sudo().browse(apu_id)
         if not apu.exists():
             return request.redirect('/my/rubros')
-        resource_categories = {
-            'M': {'label': 'Equipos', 'description': 'Herramientas y maquinaria pesada'},
-            'N': {'label': 'Mano de Obra', 'description': 'Personal tecnico y obreros'},
-            'O': {'label': 'Materiales', 'description': 'Suministros y materia prima'},
-            'P': {'label': 'Transporte', 'description': 'Logistica y movilizacion'},
-        }
+        resource_categories = {}
+        for cat in request.env['geosis.resource.category'].sudo().search([]):
+            resource_categories[cat.id] = {'label': cat.name, 'description': cat.code}
+            
         resource_domain = [('active', '=', True)]
         if apu.location:
             resource_domain += [('location', 'in', [apu.location, False, ''])]
-        resource_available = request.env['geosis.resource'].sudo().search(resource_domain, order='category, name asc')
+        resource_available = request.env['geosis.resource'].sudo().search(resource_domain, order='category_id, name asc')
 
-        resource_grouped_lines = {code: [] for code in resource_categories}
-        resource_subtotals = {code: 0.0 for code in resource_categories}
+        resource_grouped_lines = {cid: [] for cid in resource_categories}
+        resource_subtotals = {cid: 0.0 for cid in resource_categories}
         for line in apu.line_ids.sorted(lambda l: (l.sequence, l.id)):
-            category = line.category or line.resource_id.category or 'O'
-            resource_grouped_lines.setdefault(category, []).append(line)
-            resource_subtotals[category] = resource_subtotals.get(category, 0.0) + (line.cost or 0.0)
+            cat_id = line.category_id.id or line.resource_id.category_id.id
+            if cat_id not in resource_grouped_lines:
+                resource_grouped_lines[cat_id] = []
+                resource_subtotals[cat_id] = 0.0
+            resource_grouped_lines[cat_id].append(line)
+            resource_subtotals[cat_id] += (line.cost or 0.0)
 
         lines = apu.line_ids.sorted(lambda l: (l.sequence, l.id))
         line_count = len(lines)
@@ -2280,6 +2281,7 @@ class GeosisCustomerPortal(CustomerPortal):
             return request.redirect('/my/rubros')
         
         category = kw.get('category')
+        category_id = int(category) if category and str(category).isdigit() else False
         resource = False
         
         Resource = request.env['geosis.resource'].sudo()
@@ -2290,7 +2292,7 @@ class GeosisCustomerPortal(CustomerPortal):
         if not resource:
             resource = Resource.create({
                 'name': resource_name,
-                'category': category,
+                'category_id': category_id,
                 'uom_id': request.env.ref('uom.product_uom_unit').id,
                 'price': float(kw.get('rate', 0)),
             })
@@ -2298,7 +2300,7 @@ class GeosisCustomerPortal(CustomerPortal):
         request.env['geosis.apu.line'].sudo().create({
             'apu_id': apu.id,
             'resource_id': resource.id,
-            'category': category,
+            'category_id': category_id,
             'uom_name': kw.get('uom_name') or (resource.uom_id.name if resource.uom_id else False),
             'quantity': float(kw.get('quantity', 1.0)),
             'rate': float(kw.get('rate', resource.price)),
@@ -2416,7 +2418,7 @@ class GeosisCustomerPortal(CustomerPortal):
                 ('description', 'ilike', search),
             ]
         if category and category != 'all':
-            domain += [('category', '=', category)]
+            domain += [('category_id.id', '=', int(category))]
             
         if location and location != 'all':
             domain += [('location', '=', location)]
@@ -2426,7 +2428,7 @@ class GeosisCustomerPortal(CustomerPortal):
             'name_desc':{'label': 'Nombre Z-A',      'order': 'name desc'},
             'price':    {'label': 'Precio mayor',    'order': 'price desc'},
             'price_asc':{'label': 'Precio menor',    'order': 'price asc'},
-            'category': {'label': 'Categoría',       'order': 'category, name'},
+            'category': {'label': 'Categoría',       'order': 'category_id, name'},
         }
         order = sortings.get(sort_by, sortings['name'])['order']
 
@@ -2458,20 +2460,36 @@ class GeosisCustomerPortal(CustomerPortal):
             'resources': resources,
             'resource_counts': resource_counts,
             'resource_total_count': resource_count,
-            'resource_equipment_count': Resource.search_count([('active', '=', True), ('category', '=', 'M')]),
-            'resource_labor_count':     Resource.search_count([('active', '=', True), ('category', '=', 'N')]),
-            'resource_material_count':  Resource.search_count([('active', '=', True), ('category', '=', 'O')]),
+            'resource_equipment_count': Resource.search_count([('active', '=', True), ('category_id.code', '=', 'M')]),
+            'resource_labor_count':     Resource.search_count([('active', '=', True), ('category_id.code', '=', 'N')]),
+            'resource_material_count':  Resource.search_count([('active', '=', True), ('category_id.code', '=', 'O')]),
             'pager': pager,
             'search': search or '',
             'selected_category': category,
             'selected_location': location,
             'locations': sorted(locations),
+            'categories': request.env['geosis.resource.category'].sudo().search([]),
             'sort_by': sort_by,
             'sortings': sortings,
             'page_name': 'resource',
             'success': kw.get('success'),
         }
         return request.render("geosis_website.portal_my_resources", values)
+
+    def _process_portal_category(self, kw):
+        category = kw.get('category')
+        if category == 'other':
+            new_cat_name = kw.get('new_category_name')
+            if new_cat_name:
+                new_cat = request.env['geosis.resource.category'].sudo().create({
+                    'name': new_cat_name,
+                    'code': new_cat_name[:2].upper(),
+                })
+                return new_cat.id
+        try:
+            return int(category) if category else False
+        except (ValueError, TypeError):
+            return False
 
     @http.route(['/my/resources/new'], type='http', auth="user", website=True, methods=['GET', 'POST'])
     def portal_my_resource_new(self, **kw):
@@ -2487,7 +2505,7 @@ class GeosisCustomerPortal(CustomerPortal):
                 vals = {
                     'code': kw.get('code') or False,
                     'name': kw.get('name'),
-                    'category': kw.get('category') or 'O',
+                    'category_id': self._process_portal_category(kw),
                     'uom_id': int(kw.get('uom_id')) if kw.get('uom_id') else False,
                     'price': self._parse_portal_float(kw.get('price'), 0.0),
                     'cpc_code': kw.get('cpc_code') or False,
@@ -2509,18 +2527,20 @@ class GeosisCustomerPortal(CustomerPortal):
                     'uoms': Uom.search([], order='name asc'),
                     'inec_indices': Inec.search([('active', '=', True)], order='code asc'),
                     'error_message': str(exc),
+                    'categories': request.env['geosis.resource.category'].sudo().search([]),
                 }
                 return request.render("geosis_website.portal_resource_form", values)
 
         values = {
             'page_name': 'resource',
             'resource': False,
-            'form_data': {'category': 'O', 'price': 0.0, 'vae_percent': 0.0, 'active': True},
+            'form_data': {'category_id': False, 'price': 0.0, 'vae_percent': 0.0, 'active': True},
             'selected_uom_id': '',
             'selected_inec_index_id': '',
             'uoms': Uom.search([], order='name asc'),
             'inec_indices': Inec.search([('active', '=', True)], order='code asc'),
             'error_message': False,
+            'categories': request.env['geosis.resource.category'].sudo().search([]),
         }
         return request.render("geosis_website.portal_resource_form", values)
 
@@ -2562,7 +2582,7 @@ class GeosisCustomerPortal(CustomerPortal):
                 resource.write({
                     'code': kw.get('code') or resource.code,
                     'name': kw.get('name'),
-                    'category': kw.get('category') or resource.category or 'O',
+                    'category_id': self._process_portal_category(kw) or resource.category_id.id,
                     'uom_id': int(kw.get('uom_id')) if kw.get('uom_id') else False,
                     'price': self._parse_portal_float(kw.get('price'), resource.price),
                     'cpc_code': kw.get('cpc_code') or False,
@@ -2583,6 +2603,7 @@ class GeosisCustomerPortal(CustomerPortal):
                     'uoms': Uom.search([], order='name asc'),
                     'inec_indices': Inec.search([('active', '=', True)], order='code asc'),
                     'error_message': str(exc),
+                    'categories': request.env['geosis.resource.category'].sudo().search([]),
                 }
                 return request.render("geosis_website.portal_resource_form", values)
 
@@ -2590,7 +2611,7 @@ class GeosisCustomerPortal(CustomerPortal):
             'page_name': 'resource',
             'resource': resource,
             'form_data': resource.read([
-                'code', 'name', 'category', 'uom_id', 'price', 'cpc_code',
+                'code', 'name', 'category_id', 'uom_id', 'price', 'cpc_code',
                 'vae_percent', 'inec_index_id', 'location', 'description', 'active'
             ])[0],
             'selected_uom_id': str(resource.uom_id.id or ''),
@@ -2598,6 +2619,7 @@ class GeosisCustomerPortal(CustomerPortal):
             'uoms': Uom.search([], order='name asc'),
             'inec_indices': Inec.search([('active', '=', True)], order='code asc'),
             'error_message': False,
+            'categories': request.env['geosis.resource.category'].sudo().search([]),
         }
         return request.render("geosis_website.portal_resource_form", values)
 

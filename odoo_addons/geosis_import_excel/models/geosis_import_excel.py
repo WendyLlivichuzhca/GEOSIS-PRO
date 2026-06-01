@@ -779,7 +779,7 @@ class GeosisExcelImportWizard(models.TransientModel):
                 'apu_id': apu.id,
                 'sequence': index * 10,
                 'resource_id': resource.id,
-                'category': resource_data['category'],
+                'category_id': resource_data['category_id'],
                 'uom_name': resource_data['uom_name'],
                 'quantity': resource_data['quantity'],
                 'rate': resource_data['rate'],
@@ -850,8 +850,12 @@ class GeosisExcelImportWizard(models.TransientModel):
             if not name:
                 continue
 
-            category = self._map_category(raw_category) or current_category or self._infer_category_from_code(code) or 'O'
-            code = code or self._make_resource_code(name, category)
+            category_id = self._map_category(raw_category) or current_category or self._infer_category_from_code(code)
+            if not category_id:
+                default_cat = self.env['geosis.resource.category'].search([('code', '=', 'O')], limit=1)
+                category_id = default_cat.id if default_cat else False
+                
+            code = code or self._make_resource_code(name, category_id)
 
             if not rate and quantity and total_cost:
                 rate = total_cost / quantity
@@ -862,7 +866,7 @@ class GeosisExcelImportWizard(models.TransientModel):
                 {
                     'code': code,
                     'name': name,
-                    'category': category,
+                    'category_id': category_id,
                     'uom_name': uom_name or 'Unit(s)',
                     'quantity': quantity or 1.0,
                     'rate': rate or total_cost or 0.0,
@@ -890,7 +894,7 @@ class GeosisExcelImportWizard(models.TransientModel):
         values = {
             'code': resource_data['code'],
             'name': resource_data['name'],
-            'category': resource_data['category'],
+            'category_id': resource_data['category_id'],
             'uom_id': uom.id,
             'price': resource_data['rate'],
             'location': location,
@@ -976,25 +980,34 @@ class GeosisExcelImportWizard(models.TransientModel):
         normalized = _normalize_text(raw_value)
         if not normalized:
             return False
+            
+        # Buscar coincidencia directa por nombre en la base de datos
+        cat = self.env['geosis.resource.category'].search([('name', 'ilike', raw_value)], limit=1)
+        if cat:
+            return cat.id
 
         for category_code, aliases in CATEGORY_LABELS.items():
-            # Buscamos coincidencia exacta o que empiece con la palabra clave
-            # para evitar confundirnos con "subtotal de..." o "rendimiento de..."
             for alias in aliases:
                 if normalized == alias or normalized.startswith(alias + ' '):
-                    return category_code
+                    base_cat = self.env['geosis.resource.category'].search([('code', '=', category_code)], limit=1)
+                    return base_cat.id if base_cat else False
         return False
 
     def _infer_category_from_code(self, code):
         normalized = _normalize_text(code)
+        target_code = False
         if normalized.startswith('mo'):
-            return 'N'
-        if normalized.startswith('eq'):
-            return 'M'
-        if normalized.startswith('tr'):
-            return 'P'
-        if normalized.startswith('ma'):
-            return 'O'
+            target_code = 'N'
+        elif normalized.startswith('eq'):
+            target_code = 'M'
+        elif normalized.startswith('tr'):
+            target_code = 'P'
+        elif normalized.startswith('ma'):
+            target_code = 'O'
+            
+        if target_code:
+            cat = self.env['geosis.resource.category'].search([('code', '=', target_code)], limit=1)
+            return cat.id if cat else False
         return False
 
     def _make_code(self, prefix, seed):
@@ -1002,10 +1015,15 @@ class GeosisExcelImportWizard(models.TransientModel):
         slug = slug[:30] or fields.Date.today().strftime('%Y%m%d')
         return '%s-%s' % (prefix, slug)
 
-    def _make_resource_code(self, name, category):
-        prefix_map = {'M': 'EQ', 'N': 'MO', 'O': 'MA', 'P': 'TR'}
+    def _make_resource_code(self, name, category_id):
+        prefix = 'RE'
+        if category_id:
+            cat = self.env['geosis.resource.category'].browse(category_id)
+            if cat.exists():
+                prefix = (cat.code or cat.name[:2] or 'RE').upper()
+                
         base_code = '%s-%s' % (
-            prefix_map.get(category, 'RE'),
+            prefix,
             re.sub(r'[^A-Z0-9]+', '', (name or '').upper())[:10] or 'AUTO',
         )
 

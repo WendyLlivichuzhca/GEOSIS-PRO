@@ -2,3 +2,6 @@ id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_geosis_resource_admin,access.geosis.resource.admin,model_geosis_resource,geosis_base.group_geosis_admin,1,1,1,1
 access_geosis_resource_user,access.geosis.resource.user,model_geosis_resource,geosis_base.group_geosis_user,1,1,1,0
 access_geosis_resource_readonly,access.geosis.resource.readonly,model_geosis_resource,geosis_base.group_geosis_readonly,1,0,0,0
+access_geosis_resource_category_admin,access.geosis.resource.category.admin,model_geosis_resource_category,geosis_base.group_geosis_admin,1,1,1,1
+access_geosis_resource_category_user,access.geosis.resource.category.user,model_geosis_resource_category,geosis_base.group_geosis_user,1,1,1,0
+access_geosis_resource_category_readonly,access.geosis.resource.category.readonly,model_geosis_resource_category,geosis_base.group_geosis_readonly,1,0,0,0

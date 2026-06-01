@@ -5,20 +5,14 @@ from odoo import api, fields, models
 class GeosisResource(models.Model):
     _name = 'geosis.resource'
     _description = 'Recurso GEOSIS'
-    _order = 'category, code, name'
+    _order = 'category_id, code, name'
 
     code = fields.Char(string='Codigo', index=True)
     name = fields.Char(string='Descripcion', required=True)
-    category = fields.Selection(
-        selection=[
-            ('M', 'Equipos'),
-            ('N', 'Mano de Obra'),
-            ('O', 'Materiales'),
-            ('P', 'Transporte'),
-        ],
+    category_id = fields.Many2one(
+        'geosis.resource.category',
         string='Categoria',
         required=True,
-        default='O',
         index=True,
     )
     uom_id = fields.Many2one(
@@ -49,13 +43,19 @@ class GeosisResource(models.Model):
     ]
 
     @api.model
-    def _get_next_resource_code(self, category=None, location=None):
-        prefix_map = {'M': 'EQ', 'N': 'MO', 'O': 'MA', 'P': 'TR'}
-        prefix = prefix_map.get(category or 'O', 'RE')
+    def _get_next_resource_code(self, category_id=None, location=None):
         domain = [('location', '=', location or False)]
-        next_number = self.search_count(domain + [('category', '=', category or 'O')]) + 1
+        prefix = 'RE'
+        
+        if category_id:
+            category = self.env['geosis.resource.category'].browse(category_id)
+            if category.exists():
+                prefix = (category.code or category.name[:2] or 'RE').upper()
+                domain.append(('category_id', '=', category_id))
+        
+        next_number = self.search_count(domain) + 1
         code = f"{prefix}-{next_number:04d}"
-        while self.search_count(domain + [('code', '=', code)]):
+        while self.search_count([('location', '=', location or False), ('code', '=', code)]):
             next_number += 1
             code = f"{prefix}-{next_number:04d}"
         return code
@@ -65,7 +65,7 @@ class GeosisResource(models.Model):
         for vals in vals_list:
             if not vals.get('code'):
                 vals['code'] = self._get_next_resource_code(
-                    category=vals.get('category'),
+                    category_id=vals.get('category_id'),
                     location=vals.get('location'),
                 )
         return super().create(vals_list)

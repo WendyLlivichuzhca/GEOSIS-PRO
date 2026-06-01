@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+        <record id="cat_equipos" model="geosis.resource.category">
+            <field name="name">Equipos</field>
+            <field name="code">M</field>
+            <field name="sequence">10</field>
+        </record>
+        
+        <record id="cat_mano_obra" model="geosis.resource.category">
+            <field name="name">Mano de Obra</field>
+            <field name="code">N</field>
+            <field name="sequence">20</field>
+        </record>
+        
+        <record id="cat_materiales" model="geosis.resource.category">
+            <field name="name">Materiales</field>
+            <field name="code">O</field>
+            <field name="sequence">30</field>
+        </record>
+        
+        <record id="cat_transporte" model="geosis.resource.category">
+            <field name="name">Transporte</field>
+            <field name="code">P</field>
+            <field name="sequence">40</field>
+        </record>
+    </data>
+</odoo>

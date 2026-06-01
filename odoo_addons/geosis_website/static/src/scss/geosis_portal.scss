@@ -4,17 +4,192 @@
 html:has(.geosis-app-shell) {
     overflow: hidden !important;
     height: 100% !important;
+    font-size: 80% !important;
 }
 
 body:has(.geosis-app-shell) {
     overflow: hidden !important;
     height: 100% !important;
-}
+    font-size: 0.875rem !important;
 
-body:has(.geosis-app-shell) #wrapwrap {
-    overflow-y: scroll !important;
-    overflow-x: hidden !important;
-    height: 100vh !important;
+    #wrapwrap {
+        overflow-y: scroll !important;
+        overflow-x: hidden !important;
+        height: 100vh !important;
+    }
+
+    .geosis-app-sidebar {
+        width: 17.5rem !important;
+        height: 100vh !important;
+        min-height: 100vh !important;
+    }
+
+    .geosis-app-main {
+        margin-left: 17.5rem !important;
+        width: calc(100% - 17.5rem) !important;
+        min-height: 100vh !important;
+    }
+
+    .geosis-global-topbar {
+        width: calc(100% - 17.5rem) !important;
+        height: 4.375rem !important;
+    }
+
+    .geosis-app-content {
+        padding-top: 5.625rem !important;
+        padding-left: 1.875rem !important;
+        padding-right: 1.875rem !important;
+    }
+
+    /* Convert hardcoded inline styles in templates to scale with root font-size (rem) */
+    .table-wow {
+        th {
+            font-size: 0.65rem !important; /* ~10px */
+            padding: 0.75rem 1rem !important;
+        }
+        td {
+            padding: 0.75rem 1rem !important;
+            font-size: 0.75rem !important; /* ~12px */
+        }
+        a.text-dark {
+            font-size: 0.75rem !important; /* ~12px */
+        }
+        .wow-badge.bg-info {
+            padding: 0.25rem 0.5rem !important;
+            font-size: 0.65rem !important;
+        }
+        .small.text-muted {
+            font-size: 0.6875rem !important;
+        }
+    }
+
+    .geosis-filterbar {
+        padding: 0.5rem 0.75rem !important;
+        .form-control,
+        .form-select {
+            font-size: 0.75rem !important;
+            min-height: 32px !important;
+            padding: 0.35rem 0.65rem !important;
+        }
+        .btn {
+            font-size: 0.75rem !important;
+            padding: 0.35rem 0.75rem !important;
+        }
+    }
+
+    .geosis-team-hero {
+        padding: 1.25rem 1.75rem !important;
+        margin-bottom: 1.25rem !important;
+        h2 {
+            font-size: 1.35rem !important;
+        }
+        .geosis-team-hero__eyebrow {
+            font-size: 0.6875rem !important;
+        }
+        .geosis-team-hero__lead {
+            font-size: 0.75rem !important;
+        }
+        .geosis-team-hero__stats {
+            gap: 0.875rem !important;
+        }
+        .geosis-team-stat {
+            padding: 0.875rem 1.25rem !important;
+            min-width: 6.5rem !important;
+            span {
+                font-size: 0.6875rem !important;
+            }
+            strong {
+                font-size: 1.5rem !important;
+            }
+        }
+    }
+
+    .geosis-team-layout {
+        grid-template-columns: 21.875rem minmax(0, 1fr) !important;
+    }
+
+    .geosis-team-card {
+        border-radius: 10px !important;
+        padding: 1.25rem !important;
+        .geosis-team-card__header {
+            padding: 0 0 1rem 0 !important;
+            margin-bottom: 1.25rem !important;
+            border-bottom: 1px solid #F1F5F9 !important;
+            h3 {
+                font-size: 0.875rem !important;
+            }
+            p {
+                font-size: 0.75rem !important;
+            }
+        }
+    }
+
+    .geosis-team-form {
+        padding: 0.875rem 1.25rem 1.25rem !important;
+        gap: 0.75rem !important;
+        label {
+            margin-bottom: 0.75rem !important;
+            span {
+                font-size: 0.75rem !important;
+                margin-bottom: 0.35rem !important;
+            }
+        }
+        .form-control,
+        .form-select {
+            padding: 0.5rem 0.75rem !important;
+            font-size: 0.75rem !important;
+            min-height: auto !important;
+        }
+        .geosis-shot-action {
+            padding: 0.5rem !important;
+            font-size: 0.75rem !important;
+            margin-top: 0.5rem !important;
+        }
+    }
+    
+    .geosis-team-table {
+        th {
+            font-size: 0.6875rem !important;
+            padding: 0.75rem 1rem !important;
+        }
+        td {
+            padding: 0.75rem 1rem !important;
+            font-size: 0.75rem !important;
+        }
+        .geosis-team-state {
+            font-size: 0.6875rem !important;
+            padding: 0.25rem 0.5rem !important;
+        }
+        .btn-sm {
+            font-size: 0.6875rem !important;
+            padding: 0.25rem 0.5rem !important;
+        }
+    }
+
+    .geosis-dashboard-hero__copy {
+        h2 {
+            font-size: 1.35rem !important; /* 24px -> 21.6px */
+        }
+        p {
+            font-size: 0.75rem !important; /* 14px -> 12px */
+        }
+    }
+    
+    .geosis-metric-card--premium {
+        padding: 1rem 1.25rem !important;
+        span {
+            font-size: 0.6875rem !important;
+        }
+        strong {
+            font-size: 1.5rem !important; /* 28px -> 24px */
+        }
+    }
+    
+    .geosis-stat-strip .geosis-mini-card {
+        strong {
+            font-size: 1.125rem !important; /* 20px -> 18px */
+        }
+    }
 }
 
 body.modal-open {
@@ -71,7 +246,7 @@ body:has(.geosis-app-shell) .o_portal_wrap [class*="col-"] {
 
 .geosis-app-shell {
     display: block;
-    min-height: 100vh;
+    min-height: 100vh !important;
     width: 100vw;
     margin-left: calc(50% - 50vw);
     overflow-x: hidden;
@@ -125,7 +300,7 @@ body:has(.geosis-app-shell) .o_portal_wrap [class*="col-"] {
     top: 0;
     left: 0;
     bottom: 0;
-    width: 13.5rem !important;
+    width: 17.5rem !important;
     display: flex;
     flex-direction: column;
     min-height: 100vh;
@@ -1636,8 +1811,8 @@ a.geosis-app-user {
 
 .geosis-app-main {
     min-width: 0;
-    margin-left: 13.5rem !important;
-    width: calc(100% - 13.5rem) !important;
+    margin-left: 17.5rem !important;
+    width: calc(100% - 17.5rem) !important;
     min-height: 100vh;
 }
 

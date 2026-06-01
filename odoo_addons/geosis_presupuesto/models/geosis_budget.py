@@ -212,7 +212,7 @@ class GeosisBudget(models.Model):
                 index_id = index.id if index else 0
                 
                 # Detectar si es Mano de Obra para asignarle la 'a' luego
-                if detail.category == 'N' and not labor_index_id:
+                if detail.category_id.code == 'N' and not labor_index_id:
                     labor_index_id = index_id
 
                 index_data[index_id] = index_data.get(index_id, 0.0) + resource_cost
@@ -255,23 +255,20 @@ class GeosisBudget(models.Model):
                         'qty': 0.0,
                         'cost': 0.0,
                         'resource': detail.resource_id,
-                        'category': detail.category
+                        'category_id': detail.category_id.id
                     }
                 totals[rid]['qty'] += qty
                 totals[rid]['cost'] += cost
         
         # Agrupar por categoria para el reporte
-        categories = {
-            'M': {'name': 'EQUIPOS', 'lines': []},
-            'N': {'name': 'MANO DE OBRA', 'lines': []},
-            'O': {'name': 'MATERIALES', 'lines': []},
-            'P': {'name': 'TRANSPORTE', 'lines': []},
-        }
+        categories = {}
+        for cat in self.env['geosis.resource.category'].search([]):
+            categories[cat.id] = {'name': cat.name.upper(), 'lines': []}
         
         for rid, data in totals.items():
-            cat = data['category']
-            if cat in categories:
-                categories[cat]['lines'].append(data)
+            cat_id = data['category_id']
+            if cat_id in categories:
+                categories[cat_id]['lines'].append(data)
                 
         return categories
 

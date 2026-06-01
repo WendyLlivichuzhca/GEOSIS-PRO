@@ -15,6 +15,7 @@ Administra recursos de mano de obra, equipos, materiales y transporte.
     'depends': ['base', 'uom', 'geosis_base'],
     'data': [
         'security/ir.model.access.csv',
+        'data/resource_category_data.xml',
         'views/geosis_resource_views.xml',
     ],
     'installable': True,

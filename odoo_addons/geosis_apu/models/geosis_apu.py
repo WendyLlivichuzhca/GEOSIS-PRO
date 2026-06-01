@@ -183,7 +183,7 @@ class GeosisApu(models.Model):
             # Buscar el recurso más parecido en el catálogo usando fallbacks
             for name in name_list:
                 resource = resource_obj.search([
-                    ('category', '=', cat),
+                    ('category_id.code', '=', cat),
                     ('name', 'ilike', name)
                 ], limit=1)
                 if resource:
@@ -221,8 +221,8 @@ class GeosisApuLine(models.Model):
         required=True,
         ondelete='restrict',
     )
-    category = fields.Selection(
-        RESOURCE_CATEGORY_SELECTION,
+    category_id = fields.Many2one(
+        'geosis.resource.category',
         string='Categoria',
     )
     uom_name = fields.Char(string='Unidad')
@@ -271,8 +271,8 @@ class GeosisApuLine(models.Model):
                     field_names = resource._fields
                     if 'price' in field_names and not vals.get('rate'):
                         vals['rate'] = resource.price or 0.0
-                    if 'category' in field_names and not vals.get('category'):
-                        vals['category'] = resource.category
+                    if 'category_id' in field_names and not vals.get('category_id'):
+                        vals['category_id'] = resource.category_id.id
                     if 'vae_percent' in field_names and not vals.get('vae_percent'):
                         vals['vae_percent'] = resource.vae_percent
                     if not vals.get('uom_name'):
@@ -293,8 +293,8 @@ class GeosisApuLine(models.Model):
                 field_names = resource._fields
                 if 'price' in field_names and 'rate' not in vals:
                     vals['rate'] = resource.price or 0.0
-                if 'category' in field_names and 'category' not in vals:
-                    vals['category'] = resource.category
+                if 'category_id' in field_names and 'category_id' not in vals:
+                    vals['category_id'] = resource.category_id.id
                 if 'vae_percent' in field_names and 'vae_percent' not in vals:
                     vals['vae_percent'] = resource.vae_percent
                 if 'uom_name' not in vals:
